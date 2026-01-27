@@ -10,6 +10,12 @@ A web application for collecting, parsing, and visualizing rsync synchronization
 - **Visualizations**: Charts showing sync duration, file counts, and bytes transferred over time
 - **Dry Run Detection**: Automatically identifies and filters dry run syncs
 
+## Prerequisites
+
+- Python 3.11+
+- Docker and Docker Compose (for containerized deployment)
+- PostgreSQL 16+ (or use the provided Docker setup)
+
 ## Quick Start
 
 ### Using Docker Compose
@@ -111,6 +117,10 @@ rsync-viewer/
 ├── docker-compose.yml      # Docker configuration
 └── requirements.txt        # Python dependencies
 ```
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
