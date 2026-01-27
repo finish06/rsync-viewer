@@ -13,19 +13,40 @@ from app.schemas.sync_log import (
     SyncLogList,
     PaginatedResponse,
     SourceListResponse,
+    ErrorResponse,
 )
 from app.services.rsync_parser import RsyncParser
 
 router = APIRouter(prefix="/sync-logs", tags=["sync-logs"])
 
 
-@router.post("", response_model=SyncLogRead, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "",
+    response_model=SyncLogRead,
+    status_code=status.HTTP_201_CREATED,
+    summary="Create a sync log",
+    responses={
+        201: {"description": "Sync log created successfully"},
+        401: {"model": ErrorResponse, "description": "API key missing or invalid"},
+        422: {"description": "Validation error in request body"},
+    },
+)
 async def create_sync_log(
     data: SyncLogCreate,
     session: SessionDep,
     api_key: ApiKeyDep,
 ):
-    """Create a new sync log entry"""
+    """
+    Create a new sync log entry by submitting raw rsync output.
+
+    The raw content will be automatically parsed to extract:
+    - Transfer statistics (bytes sent/received, speed)
+    - Total size and speedup ratio
+    - List of transferred files
+    - Dry run detection
+
+    **Authentication required**: Pass your API key via the `X-API-Key` header.
+    """
     # Parse the raw content
     parsed = RsyncParser.parse(data.raw_content)
 
@@ -52,16 +73,27 @@ async def create_sync_log(
     return sync_log
 
 
-@router.get("", response_model=PaginatedResponse)
+@router.get(
+    "",
+    response_model=PaginatedResponse,
+    summary="List sync logs",
+    responses={
+        200: {"description": "List of sync logs with pagination"},
+    },
+)
 async def list_sync_logs(
     session: SessionDep,
     source_name: Optional[str] = Query(None, description="Filter by source name"),
-    start_date: Optional[datetime] = Query(None, description="Filter syncs after this date"),
-    end_date: Optional[datetime] = Query(None, description="Filter syncs before this date"),
-    offset: int = Query(0, ge=0, description="Pagination offset"),
-    limit: int = Query(50, ge=1, le=100, description="Page size"),
+    start_date: Optional[datetime] = Query(None, description="Filter syncs after this date (ISO 8601)"),
+    end_date: Optional[datetime] = Query(None, description="Filter syncs before this date (ISO 8601)"),
+    offset: int = Query(0, ge=0, description="Number of records to skip"),
+    limit: int = Query(50, ge=1, le=100, description="Maximum number of records to return"),
 ):
-    """List sync logs with optional filtering"""
+    """
+    List sync logs with optional filtering and pagination.
+
+    Results are ordered by start time (most recent first).
+    """
     # Build query
     statement = select(SyncLog)
 
@@ -88,17 +120,43 @@ async def list_sync_logs(
     )
 
 
-@router.get("/sources", response_model=SourceListResponse)
+@router.get(
+    "/sources",
+    response_model=SourceListResponse,
+    summary="List sync sources",
+    responses={
+        200: {"description": "List of unique source names"},
+    },
+)
 async def list_sources(session: SessionDep):
-    """List unique source names"""
+    """
+    List all unique source names that have submitted sync logs.
+
+    Useful for populating filter dropdowns in the UI.
+    """
     statement = select(SyncLog.source_name).distinct().order_by(SyncLog.source_name)
     sources = session.exec(statement).all()
     return SourceListResponse(sources=sources)
 
 
-@router.get("/{sync_id}", response_model=SyncLogDetail)
+@router.get(
+    "/{sync_id}",
+    response_model=SyncLogDetail,
+    summary="Get sync log details",
+    responses={
+        200: {"description": "Sync log details including raw content and file list"},
+        404: {"model": ErrorResponse, "description": "Sync log not found"},
+    },
+)
 async def get_sync_log(sync_id: UUID, session: SessionDep):
-    """Get a single sync log by ID"""
+    """
+    Get detailed information about a specific sync log.
+
+    Returns the full sync log including:
+    - All parsed statistics
+    - Raw rsync output
+    - List of transferred files
+    """
     sync_log = session.get(SyncLog, sync_id)
     if not sync_log:
         raise HTTPException(

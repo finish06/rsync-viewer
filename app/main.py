@@ -26,7 +26,27 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title=settings.app_name,
+    description="""
+Rsync Log Viewer API collects, parses, and provides access to rsync synchronization logs.
+
+## Features
+
+- **Log Ingestion**: Submit raw rsync output for automatic parsing
+- **Query Logs**: Filter and paginate through sync history
+- **Statistics**: View transfer stats, file counts, and speeds
+
+## Authentication
+
+Protected endpoints require an API key passed via the `X-API-Key` header.
+    """,
+    version="1.0.0",
     lifespan=lifespan,
+    openapi_tags=[
+        {
+            "name": "sync-logs",
+            "description": "Operations for managing rsync synchronization logs",
+        },
+    ],
 )
 
 # Mount static files
