@@ -1,0 +1,67 @@
+{% if syncs %}
+<table class="sync-table">
+    <thead>
+        <tr>
+            <th>Source</th>
+            <th>Start Time</th>
+            <th>End Time</th>
+            <th>Duration</th>
+            <th>Total Size</th>
+            <th>Transferred</th>
+            <th>Files</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for sync in syncs %}
+        <tr>
+            <td>
+                <span class="source-badge">{{ sync.source_name }}</span>
+                {% if sync.is_dry_run %}<span class="dry-run-badge">DRY RUN</span>{% endif %}
+            </td>
+            <td>{{ sync.start_time.strftime('%Y-%m-%d %H:%M') }}</td>
+            <td>{{ sync.end_time.strftime('%Y-%m-%d %H:%M') }}</td>
+            <td>{{ (sync.end_time - sync.start_time) | format_duration }}</td>
+            <td>{{ sync.total_size_bytes | format_bytes }}</td>
+            <td>{{ sync.bytes_received | format_bytes }}</td>
+            <td>{{ sync.file_count or 0 }}</td>
+            <td>
+                <button class="btn btn-small"
+                        hx-get="/htmx/sync-detail/{{ sync.id }}"
+                        hx-target="#modal-container"
+                        hx-swap="innerHTML">
+                    View
+                </button>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<div class="pagination">
+    {% if offset > 0 %}
+    <button class="btn btn-secondary"
+            hx-get="/htmx/sync-table?offset={{ offset - limit }}&limit={{ limit }}{% if selected_source %}&source_name={{ selected_source }}{% endif %}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}&show_dry_run={{ show_dry_run }}&hide_empty={{ hide_empty }}"
+            hx-target="#sync-table">
+        Previous
+    </button>
+    {% endif %}
+
+    <span class="pagination-info">
+        Showing {{ offset + 1 }} - {{ offset + syncs|length }} of {{ total }}
+    </span>
+
+    {% if offset + limit < total %}
+    <button class="btn btn-secondary"
+            hx-get="/htmx/sync-table?offset={{ offset + limit }}&limit={{ limit }}{% if selected_source %}&source_name={{ selected_source }}{% endif %}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}&show_dry_run={{ show_dry_run }}&hide_empty={{ hide_empty }}"
+            hx-target="#sync-table">
+        Next
+    </button>
+    {% endif %}
+</div>
+{% else %}
+<div class="empty-state">
+    <p>No sync logs found.</p>
+    <p class="hint">Sync logs will appear here when remote machines send their rsync output to the API.</p>
+</div>
+{% endif %}

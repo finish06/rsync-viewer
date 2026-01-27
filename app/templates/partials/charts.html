@@ -1,0 +1,220 @@
+{% if has_data %}
+<div class="charts-section">
+    <div class="charts-header">
+        <h2>Sync Statistics</h2>
+        <button class="charts-toggle" onclick="toggleCharts(this)">Hide</button>
+    </div>
+    <div class="charts-content" id="charts-content">
+        <div class="charts-grid">
+            <div class="chart-container">
+                <h3>Duration per Sync</h3>
+                <canvas id="duration-chart"></canvas>
+            </div>
+            <div class="chart-container">
+                <h3>Files Sent</h3>
+                <canvas id="files-chart"></canvas>
+            </div>
+            <div class="chart-container">
+                <h3>Amount Transferred</h3>
+                <canvas id="bytes-chart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function() {
+    const chartData = {{ chart_data | tojson }};
+
+    // Generate colors based on source names
+    const sourceColors = {};
+    const colorPalette = [
+        'rgba(37, 99, 235, 0.7)',   // blue
+        'rgba(16, 185, 129, 0.7)',  // green
+        'rgba(245, 158, 11, 0.7)',  // amber
+        'rgba(239, 68, 68, 0.7)',   // red
+        'rgba(139, 92, 246, 0.7)',  // purple
+        'rgba(236, 72, 153, 0.7)',  // pink
+        'rgba(20, 184, 166, 0.7)',  // teal
+        'rgba(249, 115, 22, 0.7)',  // orange
+    ];
+
+    let colorIndex = 0;
+    chartData.sources.forEach(source => {
+        if (!sourceColors[source]) {
+            sourceColors[source] = colorPalette[colorIndex % colorPalette.length];
+            colorIndex++;
+        }
+    });
+
+    const backgroundColors = chartData.sources.map(s => sourceColors[s]);
+
+    const commonOptions = {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+            legend: { display: false },
+        },
+        scales: {
+            x: {
+                ticks: {
+                    maxRotation: 45,
+                    minRotation: 45,
+                    font: { size: 10 }
+                }
+            },
+            y: {
+                beginAtZero: true,
+                ticks: { font: { size: 10 } }
+            }
+        }
+    };
+
+    // Destroy existing charts if they exist
+    ['duration-chart', 'files-chart', 'bytes-chart'].forEach(id => {
+        const existing = Chart.getChart(id);
+        if (existing) existing.destroy();
+    });
+
+    // Duration Chart
+    new Chart(document.getElementById('duration-chart'), {
+        type: 'bar',
+        data: {
+            labels: chartData.labels,
+            datasets: [{
+                data: chartData.durations,
+                backgroundColor: backgroundColors,
+            }]
+        },
+        options: {
+            ...commonOptions,
+            plugins: {
+                ...commonOptions.plugins,
+                tooltip: {
+                    callbacks: {
+                        label: (ctx) => {
+                            const idx = ctx.dataIndex;
+                            return [
+                                `Source: ${chartData.sources[idx]}`,
+                                `Duration: ${chartData.duration_labels[idx]}`
+                            ];
+                        }
+                    }
+                }
+            },
+            scales: {
+                ...commonOptions.scales,
+                y: {
+                    ...commonOptions.scales.y,
+                    title: { display: true, text: 'Seconds', font: { size: 10 } }
+                }
+            }
+        }
+    });
+
+    // Files Chart
+    new Chart(document.getElementById('files-chart'), {
+        type: 'bar',
+        data: {
+            labels: chartData.labels,
+            datasets: [{
+                data: chartData.file_counts,
+                backgroundColor: backgroundColors,
+            }]
+        },
+        options: {
+            ...commonOptions,
+            plugins: {
+                ...commonOptions.plugins,
+                tooltip: {
+                    callbacks: {
+                        label: (ctx) => {
+                            const idx = ctx.dataIndex;
+                            return [
+                                `Source: ${chartData.sources[idx]}`,
+                                `Files: ${chartData.file_counts[idx]}`
+                            ];
+                        }
+                    }
+                }
+            },
+            scales: {
+                ...commonOptions.scales,
+                y: {
+                    ...commonOptions.scales.y,
+                    title: { display: true, text: 'Files', font: { size: 10 } }
+                }
+            }
+        }
+    });
+
+    // Bytes Chart
+    new Chart(document.getElementById('bytes-chart'), {
+        type: 'bar',
+        data: {
+            labels: chartData.labels,
+            datasets: [{
+                data: chartData.bytes_transferred,
+                backgroundColor: backgroundColors,
+            }]
+        },
+        options: {
+            ...commonOptions,
+            plugins: {
+                ...commonOptions.plugins,
+                tooltip: {
+                    callbacks: {
+                        label: (ctx) => {
+                            const idx = ctx.dataIndex;
+                            return [
+                                `Source: ${chartData.sources[idx]}`,
+                                `Transferred: ${chartData.bytes_labels[idx]}`
+                            ];
+                        }
+                    }
+                }
+            },
+            scales: {
+                ...commonOptions.scales,
+                y: {
+                    ...commonOptions.scales.y,
+                    title: { display: true, text: 'Bytes', font: { size: 10 } },
+                    ticks: {
+                        ...commonOptions.scales.y.ticks,
+                        callback: function(value) {
+                            if (value >= 1073741824) return (value / 1073741824).toFixed(1) + ' GB';
+                            if (value >= 1048576) return (value / 1048576).toFixed(1) + ' MB';
+                            if (value >= 1024) return (value / 1024).toFixed(1) + ' KB';
+                            return value + ' B';
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // Restore collapsed state from localStorage
+    const collapsed = localStorage.getItem('chartsCollapsed') === 'true';
+    if (collapsed) {
+        document.getElementById('charts-content').classList.add('collapsed');
+        document.querySelector('.charts-toggle').textContent = 'Show';
+    }
+})();
+
+function toggleCharts(btn) {
+    const content = document.getElementById('charts-content');
+    const isCollapsed = content.classList.toggle('collapsed');
+    btn.textContent = isCollapsed ? 'Show' : 'Hide';
+    localStorage.setItem('chartsCollapsed', isCollapsed);
+}
+</script>
+{% else %}
+<div class="charts-section">
+    <div class="charts-header">
+        <h2>Sync Statistics</h2>
+    </div>
+    <div class="charts-empty">
+        <p>No sync data available for the selected filters.</p>
+    </div>
+</div>
+{% endif %}

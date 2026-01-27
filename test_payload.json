@@ -1,0 +1,6 @@
+{
+  "source_name": "Movies",
+  "start_time": "2025-01-14T10:30:00Z",
+  "end_time": "2025-01-14T10:35:00Z",
+  "raw_content": "Starting Movies Sync\nPID file created\nBeginning Movies transfer\nreceiving file list ... done\nThe Noel Diary (2022)/The Noel Diary.2022.WEBDL-1080p.EAC3 Atmos.x264.en.srt\nThe Noel Diary (2022)/The Noel Diary.2022.WEBDL-1080p.EAC3 Atmos.x264.mkv\nThe Perfect Christmas Present (2017)/The Perfect Christmas Present.2017.WEBDL-1080p.EAC3.h264.en.srt\nThe Perfect Christmas Present (2017)/The Perfect Christmas Present.2017.WEBDL-1080p.EAC3.h264.mkv\nThe Polar Express (2004)/The Polar Express.2004.Bluray-1080p.EAC3.x265.en.srt\nThe Polar Express (2004)/The Polar Express.2004.Bluray-1080p.EAC3.x265.mkv\n\nsent 2.87K bytes  received 291.07K bytes  117.58K bytes/sec\ntotal size is 18.70T  speedup is 63,604,231.94"
+}

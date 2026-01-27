@@ -1,0 +1,31 @@
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: rsync-viewer-db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - POSTGRES_DB=${POSTGRES_DB:-rsync_viewer}
+    volumes:
+      - ./db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-rsync_viewer}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
+    image: dockerhub.calebdunn.tech/rsync-viewer:01142026
+    container_name: rsync-viewer-app
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql+psycopg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-rsync_viewer}
+      - DEBUG=false
+      - DEFAULT_API_KEY=${API_KEY:-rsv_dev_key_12345}
+    depends_on:
+      db:
+        condition: service_healthy
+

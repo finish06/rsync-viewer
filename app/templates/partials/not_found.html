@@ -1,0 +1,11 @@
+<div class="modal-backdrop" onclick="this.remove()">
+    <div class="modal modal-error" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <h2>Not Found</h2>
+            <button class="modal-close" onclick="this.closest('.modal-backdrop').remove()">X</button>
+        </div>
+        <div class="modal-body">
+            <p>The requested sync log could not be found.</p>
+        </div>
+    </div>
+</div>

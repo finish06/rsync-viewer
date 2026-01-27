@@ -1,0 +1,69 @@
+<div class="modal-backdrop" onclick="this.remove()">
+    <div class="modal" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <h2>{{ sync.source_name }}{% if sync.is_dry_run %} <span class="dry-run-badge">DRY RUN</span>{% endif %}</h2>
+            <span class="modal-date">{{ sync.start_time.strftime('%Y-%m-%d %H:%M') }}</span>
+            <button class="modal-close" onclick="this.closest('.modal-backdrop').remove()">X</button>
+        </div>
+
+        <div class="modal-body">
+            <div class="detail-grid">
+                <div class="detail-item">
+                    <label>Start Time:</label>
+                    <span>{{ sync.start_time.strftime('%Y-%m-%d %H:%M:%S') }}</span>
+                </div>
+                <div class="detail-item">
+                    <label>End Time:</label>
+                    <span>{{ sync.end_time.strftime('%Y-%m-%d %H:%M:%S') }}</span>
+                </div>
+                <div class="detail-item">
+                    <label>Duration:</label>
+                    <span>{{ (sync.end_time - sync.start_time) | format_duration }}</span>
+                </div>
+                <div class="detail-item">
+                    <label>Total Size:</label>
+                    <span>{{ sync.total_size_bytes | format_bytes }}</span>
+                </div>
+                <div class="detail-item">
+                    <label>Bytes Sent:</label>
+                    <span>{{ sync.bytes_sent | format_bytes }}</span>
+                </div>
+                <div class="detail-item">
+                    <label>Bytes Received:</label>
+                    <span>{{ sync.bytes_received | format_bytes }}</span>
+                </div>
+                <div class="detail-item">
+                    <label>Speed:</label>
+                    <span>{{ sync.transfer_speed | format_bytes }}/sec</span>
+                </div>
+                <div class="detail-item">
+                    <label>Speedup Ratio:</label>
+                    <span>{{ "{:,.2f}".format(sync.speedup_ratio or 0) }}</span>
+                </div>
+                <div class="detail-item">
+                    <label>Files Transferred:</label>
+                    <span>{{ sync.file_count or 0 }}</span>
+                </div>
+            </div>
+
+            {% if sync.file_list %}
+            <div class="file-list-section">
+                <h3>Files Transferred</h3>
+                <ul class="file-list">
+                    {% for file in sync.file_list[:100] %}
+                    <li>{{ file }}</li>
+                    {% endfor %}
+                    {% if sync.file_count > 100 %}
+                    <li class="more">... and {{ sync.file_count - 100 }} more files</li>
+                    {% endif %}
+                </ul>
+            </div>
+            {% endif %}
+
+            <div class="raw-content-section">
+                <h3>Raw Output</h3>
+                <pre><code>{{ sync.raw_content }}</code></pre>
+            </div>
+        </div>
+    </div>
+</div>
