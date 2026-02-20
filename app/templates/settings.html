@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}Settings - Rsync Log Viewer{% endblock %}
+
+{% block content %}
+<div class="settings-page">
+    <h1 style="font-size: 1.5rem; font-weight: 600; margin-bottom: 1.5rem;">Settings</h1>
+
+    <div class="settings-section">
+        <div class="settings-section-header">
+            <h2>Appearance</h2>
+        </div>
+        <div class="settings-section-body">
+            <label class="settings-label">Theme</label>
+            <div class="theme-options">
+                <button class="theme-option" data-theme-value="light" type="button">Light</button>
+                <button class="theme-option" data-theme-value="dark" type="button">Dark</button>
+                <button class="theme-option" data-theme-value="system" type="button">System</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
