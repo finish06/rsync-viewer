@@ -34,7 +34,7 @@ class TestSettingsPage:
         """AC-008: Settings page is navigable from the header"""
         response = await client.get("/")
         html = response.text
-        assert '/settings' in html
+        assert "/settings" in html
 
 
 class TestThemeCSS:
@@ -50,17 +50,17 @@ class TestThemeCSS:
         """AC-003: Dark theme provides dark background"""
         response = await client.get("/static/css/styles.css")
         css = response.text
-        assert '--bg-color' in css
+        assert "--bg-color" in css
         # Dark bg color should be present
-        assert '#111827' in css
+        assert "#111827" in css
 
     async def test_ac002_light_theme_preserved(self, client):
         """AC-002: Light theme matches existing appearance (CSS vars in :root)"""
         response = await client.get("/static/css/styles.css")
         css = response.text
         # Existing light theme values should still be in :root
-        assert '#f9fafb' in css
-        assert '#ffffff' in css
+        assert "#f9fafb" in css
+        assert "#ffffff" in css
 
 
 class TestThemeJavaScript:
@@ -70,15 +70,15 @@ class TestThemeJavaScript:
         """AC-005: Theme JS is included in the page"""
         response = await client.get("/")
         html = response.text
-        assert 'theme' in html.lower()
+        assert "theme" in html.lower()
 
     async def test_ac011_fouc_prevention_script(self, client):
         """AC-011: Inline FOUC prevention script in <head>"""
         response = await client.get("/")
         html = response.text
-        head_section = html.split('</head>')[0] if '</head>' in html else html
-        assert 'localStorage' in head_section
-        assert 'data-theme' in head_section
+        head_section = html.split("</head>")[0] if "</head>" in html else html
+        assert "localStorage" in head_section
+        assert "data-theme" in head_section
 
     async def test_ac005_theme_js_file_exists(self, client):
         """AC-005: theme.js static file is servable"""

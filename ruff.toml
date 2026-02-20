@@ -1,0 +1,4 @@
+[lint]
+# E711/E712: SQLAlchemy/SQLModel requires == None / == True / == False
+# for proper SQL generation. Python `is` comparisons don't work with ORM columns.
+ignore = ["E711", "E712"]

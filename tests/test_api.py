@@ -90,8 +90,8 @@ class TestListSyncLogs:
 
     async def test_list_sync_logs_with_data(self, client, create_sync_log):
         """Test listing sync logs returns created logs"""
-        log1 = create_sync_log(source_name="source-a")
-        log2 = create_sync_log(source_name="source-b")
+        create_sync_log(source_name="source-a")
+        create_sync_log(source_name="source-b")
 
         response = await client.get("/api/v1/sync-logs")
 
@@ -135,7 +135,9 @@ class TestListSyncLogs:
         recent_date = now - timedelta(hours=1)
 
         create_sync_log(start_time=old_date, end_time=old_date + timedelta(minutes=5))
-        create_sync_log(start_time=recent_date, end_time=recent_date + timedelta(minutes=5))
+        create_sync_log(
+            start_time=recent_date, end_time=recent_date + timedelta(minutes=5)
+        )
 
         start_filter = (now - timedelta(days=1)).isoformat()
         response = await client.get(f"/api/v1/sync-logs?start_date={start_filter}")

@@ -127,9 +127,13 @@ async def htmx_sync_table(
     if source_name:
         statement = statement.where(SyncLog.source_name == source_name)
     if start_date:
-        statement = statement.where(SyncLog.start_time >= datetime.fromisoformat(start_date))
+        statement = statement.where(
+            SyncLog.start_time >= datetime.fromisoformat(start_date)
+        )
     if end_date:
-        statement = statement.where(SyncLog.start_time <= datetime.fromisoformat(end_date))
+        statement = statement.where(
+            SyncLog.start_time <= datetime.fromisoformat(end_date)
+        )
 
     # Filter dry runs
     if show_dry_run == "hide":
@@ -141,14 +145,18 @@ async def htmx_sync_table(
     if hide_empty == "hide":
         statement = statement.where(SyncLog.file_count > 0)
     elif hide_empty == "only":
-        statement = statement.where((SyncLog.file_count == 0) | (SyncLog.file_count == None))
+        statement = statement.where(
+            (SyncLog.file_count == 0) | (SyncLog.file_count == None)
+        )
 
     # Get total count
     count_statement = select(func.count()).select_from(statement.subquery())
     total = session.exec(count_statement).one()
 
     # Apply pagination and ordering
-    statement = statement.order_by(SyncLog.start_time.desc()).offset(offset).limit(limit)
+    statement = (
+        statement.order_by(SyncLog.start_time.desc()).offset(offset).limit(limit)
+    )
     syncs = session.exec(statement).all()
 
     # Get sources for filter
@@ -192,9 +200,13 @@ async def htmx_charts(
     if source_name:
         statement = statement.where(SyncLog.source_name == source_name)
     if start_date:
-        statement = statement.where(SyncLog.start_time >= datetime.fromisoformat(start_date))
+        statement = statement.where(
+            SyncLog.start_time >= datetime.fromisoformat(start_date)
+        )
     if end_date:
-        statement = statement.where(SyncLog.start_time <= datetime.fromisoformat(end_date))
+        statement = statement.where(
+            SyncLog.start_time <= datetime.fromisoformat(end_date)
+        )
 
     # Filter dry runs
     if show_dry_run == "hide":
@@ -206,7 +218,9 @@ async def htmx_charts(
     if hide_empty == "hide":
         statement = statement.where(SyncLog.file_count > 0)
     elif hide_empty == "only":
-        statement = statement.where((SyncLog.file_count == 0) | (SyncLog.file_count == None))
+        statement = statement.where(
+            (SyncLog.file_count == 0) | (SyncLog.file_count == None)
+        )
 
     # Get recent syncs (limit 50, ordered by time ascending for charts)
     statement = statement.order_by(SyncLog.start_time.desc()).limit(50)
@@ -236,7 +250,9 @@ async def htmx_charts(
         if sync.start_time and sync.end_time:
             duration = (sync.end_time - sync.start_time).total_seconds()
             chart_data["durations"].append(duration)
-            chart_data["duration_labels"].append(format_duration(sync.end_time - sync.start_time))
+            chart_data["duration_labels"].append(
+                format_duration(sync.end_time - sync.start_time)
+            )
         else:
             chart_data["durations"].append(0)
             chart_data["duration_labels"].append("-")
@@ -260,7 +276,9 @@ async def htmx_charts(
 
 
 @app.get("/htmx/sync-detail/{sync_id}")
-async def htmx_sync_detail(request: Request, sync_id: UUID, session: Session = Depends(get_session)):
+async def htmx_sync_detail(
+    request: Request, sync_id: UUID, session: Session = Depends(get_session)
+):
     """HTMX partial: sync log detail modal"""
     sync = session.get(SyncLog, sync_id)
 

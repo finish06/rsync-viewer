@@ -84,10 +84,16 @@ async def create_sync_log(
 async def list_sync_logs(
     session: SessionDep,
     source_name: Optional[str] = Query(None, description="Filter by source name"),
-    start_date: Optional[datetime] = Query(None, description="Filter syncs after this date (ISO 8601)"),
-    end_date: Optional[datetime] = Query(None, description="Filter syncs before this date (ISO 8601)"),
+    start_date: Optional[datetime] = Query(
+        None, description="Filter syncs after this date (ISO 8601)"
+    ),
+    end_date: Optional[datetime] = Query(
+        None, description="Filter syncs before this date (ISO 8601)"
+    ),
     offset: int = Query(0, ge=0, description="Number of records to skip"),
-    limit: int = Query(50, ge=1, le=100, description="Maximum number of records to return"),
+    limit: int = Query(
+        50, ge=1, le=100, description="Maximum number of records to return"
+    ),
 ):
     """
     List sync logs with optional filtering and pagination.
@@ -109,7 +115,9 @@ async def list_sync_logs(
     total = session.exec(count_statement).one()
 
     # Apply pagination and ordering
-    statement = statement.order_by(SyncLog.start_time.desc()).offset(offset).limit(limit)
+    statement = (
+        statement.order_by(SyncLog.start_time.desc()).offset(offset).limit(limit)
+    )
     sync_logs = session.exec(statement).all()
 
     return PaginatedResponse(
