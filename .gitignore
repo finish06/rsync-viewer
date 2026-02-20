@@ -53,3 +53,7 @@ Thumbs.db
 
 # Local development
 TODO/
+
+# ADD — ephemeral artifacts (don't commit)
+.add/away-logs/
+tests/screenshots/errors/
