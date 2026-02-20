@@ -93,14 +93,19 @@ class RsyncParser:
         return result
 
     @classmethod
-    def _parse_size(cls, value: str, unit: str) -> int:
+    def _parse_size(cls, value: str, unit: str) -> Optional[int]:
         number = cls._parse_number(value)
+        if number is None:
+            return None
         multiplier = cls.UNIT_MULTIPLIERS.get(unit.upper(), 1)
         return int(number * multiplier)
 
     @classmethod
-    def _parse_number(cls, value: str) -> float:
-        return float(value.replace(",", ""))
+    def _parse_number(cls, value: str) -> Optional[float]:
+        try:
+            return float(value.replace(",", ""))
+        except (ValueError, TypeError):
+            return None
 
     @classmethod
     def _is_file_line(cls, line: str) -> bool:
