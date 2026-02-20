@@ -18,3 +18,7 @@ and this project adheres to [Conventional Commits](https://www.conventionalcommi
 - Add README with project documentation
 - Add initial project files
 - Add .gitignore for Python/Docker project
+
+### Documentation
+
+- Add MIT license
