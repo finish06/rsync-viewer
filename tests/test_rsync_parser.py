@@ -1,5 +1,3 @@
-import pytest
-
 from app.services.rsync_parser import RsyncParser, ParsedRsyncOutput
 
 

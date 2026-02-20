@@ -18,7 +18,7 @@ from app.models.sync_log import SyncLog
 # Get database URL from environment or use default test database
 TEST_DATABASE_URL = os.environ.get(
     "DATABASE_URL",
-    "postgresql+psycopg://postgres:postgres@localhost:5433/rsync_viewer_test"
+    "postgresql+psycopg://postgres:postgres@localhost:5433/rsync_viewer_test",
 )
 
 
