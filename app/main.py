@@ -276,6 +276,15 @@ async def htmx_sync_detail(request: Request, sync_id: UUID, session: Session = D
     )
 
 
+@app.get("/settings")
+async def settings_page(request: Request):
+    """Settings page"""
+    return templates.TemplateResponse(
+        "settings.html",
+        {"request": request},
+    )
+
+
 @app.get("/health")
 async def health():
     """Health check endpoint"""

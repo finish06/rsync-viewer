@@ -4,17 +4,32 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Rsync Log Viewer{% endblock %}</title>
+    <script>
+        (function() {
+            try {
+                var theme = localStorage.getItem('theme') || 'system';
+                var dark = theme === 'dark' || (theme === 'system' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+                if (dark) document.documentElement.setAttribute('data-theme', 'dark');
+            } catch (e) {}
+        })();
+    </script>
     <script src="https://unpkg.com/htmx.org@1.9.12"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <link rel="stylesheet" href="/static/css/styles.css">
 </head>
 <body>
     <header>
-        <h1>Rsync Log Viewer</h1>
+        <div class="header-content">
+            <h1><a href="/" style="text-decoration: none; color: inherit;">Rsync Log Viewer</a></h1>
+            <nav class="header-nav">
+                <a href="/settings">Settings</a>
+            </nav>
+        </div>
     </header>
     <main>
         {% block content %}{% endblock %}
     </main>
     <div id="modal-container"></div>
+    <script src="/static/js/theme.js"></script>
 </body>
 </html>
