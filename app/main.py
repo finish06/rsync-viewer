@@ -14,6 +14,8 @@ from app.config import get_settings
 from app.database import engine, get_session
 from app.api.endpoints import sync_logs
 from app.errors import make_error_response, INTERNAL_ERROR, VALIDATION_ERROR
+from app.logging_config import setup_logging
+from app.middleware import RequestLoggingMiddleware
 from app.models.sync_log import SyncLog
 
 
@@ -22,6 +24,8 @@ settings = get_settings()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Configure logging on startup
+    setup_logging(log_level=settings.log_level, log_format=settings.log_format)
     # Create tables on startup
     SQLModel.metadata.create_all(engine)
     yield
@@ -51,7 +55,6 @@ Protected endpoints require an API key passed via the `X-API-Key` header.
         },
     ],
 )
-
 
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException):
@@ -112,6 +115,9 @@ async def global_exception_handler(request: Request, exc: Exception):
         ),
     )
 
+
+# Add request logging middleware
+app.add_middleware(RequestLoggingMiddleware)
 
 # Mount static files
 app.mount("/static", StaticFiles(directory="app/static"), name="static")

@@ -13,6 +13,9 @@ jinja2>=3.1.0
 # Settings
 pydantic-settings>=2.0.0
 
+# Logging
+python-json-logger>=3.0.0
+
 # Utilities
 python-dotenv>=1.0.0
 

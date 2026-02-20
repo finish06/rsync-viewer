@@ -1,6 +1,9 @@
+import logging
 import re
 from dataclasses import dataclass, field
 from typing import Optional
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -89,6 +92,23 @@ class RsyncParser:
                 result.file_list.append(line)
 
         result.file_count = len(result.file_list)
+
+        # Warn about fields that couldn't be parsed
+        none_fields = [
+            name
+            for name in (
+                "total_size_bytes",
+                "bytes_sent",
+                "bytes_received",
+                "transfer_speed",
+            )
+            if getattr(result, name) is None
+        ]
+        if none_fields:
+            logger.warning(
+                "Some fields could not be parsed",
+                extra={"none_fields": none_fields},
+            )
 
         return result
 
