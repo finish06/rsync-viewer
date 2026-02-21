@@ -9,6 +9,7 @@ from sqlmodel import Session, select
 from app.models.failure_event import FailureEvent
 from app.models.notification_log import NotificationLog
 from app.models.webhook import WebhookEndpoint
+from app.models.webhook_options import WebhookOptions
 
 logger = logging.getLogger(__name__)
 
@@ -17,10 +18,12 @@ RETRY_DELAYS = [30, 60, 120]
 MAX_ATTEMPTS = 3
 AUTO_DISABLE_THRESHOLD = 10
 REQUEST_TIMEOUT = 10.0
+DEFAULT_DISCORD_COLOR = 16711680  # Red
+DEFAULT_DISCORD_USERNAME = "Rsync Viewer"
 
 
 def _build_payload(event: FailureEvent) -> dict:
-    """Build the webhook JSON payload from a FailureEvent."""
+    """Build the generic webhook JSON payload from a FailureEvent."""
     return {
         "event": "failure_detected",
         "source_name": event.source_name,
@@ -30,6 +33,47 @@ def _build_payload(event: FailureEvent) -> dict:
         "sync_log_id": str(event.sync_log_id) if event.sync_log_id else None,
         "failure_event_id": str(event.id),
     }
+
+
+def _build_discord_payload(event: FailureEvent, options: dict | None) -> dict:
+    """Build a Discord execute-webhook payload with embeds."""
+    opts = options or {}
+    color = opts.get("color", DEFAULT_DISCORD_COLOR)
+    username = opts.get("username", DEFAULT_DISCORD_USERNAME)
+    avatar_url = opts.get("avatar_url")
+    footer_text = opts.get("footer")
+
+    embed = {
+        "title": "Rsync Failure Detected",
+        "color": color,
+        "url": f"/htmx/sync-detail/{event.sync_log_id}" if event.sync_log_id else "http://localhost:8000/",
+        "fields": [
+            {"name": "Source", "value": event.source_name, "inline": True},
+            {"name": "Failure Type", "value": event.failure_type, "inline": True},
+            {"name": "Details", "value": event.details or "No details available"},
+            {"name": "Detected At", "value": event.detected_at.isoformat(), "inline": True},
+        ],
+    }
+
+    if footer_text:
+        embed["footer"] = {"text": footer_text}
+
+    payload = {
+        "username": username,
+        "embeds": [embed],
+    }
+
+    if avatar_url:
+        payload["avatar_url"] = avatar_url
+
+    return payload
+
+
+def _should_deliver(webhook: WebhookEndpoint, event: FailureEvent) -> bool:
+    """Check if the webhook should receive this event based on source filters."""
+    if webhook.source_filters is None:
+        return True
+    return event.source_name in webhook.source_filters
 
 
 async def _deliver_to_endpoint(
@@ -52,6 +96,17 @@ async def _deliver_to_endpoint(
             headers=headers,
             timeout=REQUEST_TIMEOUT,
         )
+        # Handle Discord rate limiting
+        if response.status_code == 429:
+            retry_after = float(response.headers.get("Retry-After", "5"))
+            await asyncio.sleep(retry_after)
+            # Retry after waiting
+            response = await client.post(
+                webhook.url,
+                json=payload,
+                headers=headers,
+                timeout=REQUEST_TIMEOUT,
+            )
         if 200 <= response.status_code < 300:
             return True, response.status_code, None
         return False, response.status_code, f"HTTP {response.status_code}"
@@ -76,11 +131,27 @@ async def dispatch_webhooks(session: Session, event: FailureEvent) -> None:
     if not webhooks:
         return
 
-    payload = _build_payload(event)
     any_success = False
 
     async with httpx.AsyncClient() as client:
         for webhook in webhooks:
+            # Source filter check
+            if not _should_deliver(webhook, event):
+                continue
+
+            # Build payload based on webhook type
+            if webhook.webhook_type == "discord":
+                # Load webhook options
+                opts_row = session.exec(
+                    select(WebhookOptions).where(
+                        WebhookOptions.webhook_endpoint_id == webhook.id
+                    )
+                ).first()
+                options_dict = opts_row.options if opts_row else None
+                payload = _build_discord_payload(event, options_dict)
+            else:
+                payload = _build_payload(event)
+
             success = False
 
             for attempt in range(1, MAX_ATTEMPTS + 1):
