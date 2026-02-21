@@ -3,7 +3,6 @@
 Covers: AC-001, AC-003, AC-004, AC-005, AC-006, AC-009, AC-010, AC-011
 """
 
-from datetime import datetime
 from unittest.mock import AsyncMock, patch
 from uuid import uuid4
 
@@ -76,7 +75,7 @@ async def test_ac001_webhook_receives_post_on_failure(
     db_session, create_webhook, create_failure_event
 ):
     """When a FailureEvent is created, enabled webhooks receive HTTP POST."""
-    webhook = create_webhook(url="https://example.com/hook")
+    create_webhook(url="https://example.com/hook")
     event = create_failure_event()
 
     mock_response = AsyncMock()
@@ -106,7 +105,7 @@ async def test_ac003_payload_includes_required_fields(
     db_session, create_webhook, create_failure_event
 ):
     """Webhook payload includes source_name, failure_type, details, detected_at."""
-    webhook = create_webhook()
+    create_webhook()
     event = create_failure_event(
         source_name="backup-server",
         failure_type="exit_code",
@@ -149,7 +148,7 @@ async def test_ac004_retries_on_failure(
     db_session, create_webhook, create_failure_event
 ):
     """Failed deliveries are retried up to 3 times."""
-    webhook = create_webhook()
+    create_webhook()
     event = create_failure_event()
 
     mock_response = AsyncMock()
@@ -213,7 +212,7 @@ async def test_ac005_failed_attempts_all_logged(
     db_session, create_webhook, create_failure_event
 ):
     """All retry attempts are logged when delivery fails."""
-    webhook = create_webhook()
+    create_webhook()
     event = create_failure_event()
 
     mock_response = AsyncMock()
@@ -308,7 +307,7 @@ async def test_ac009_failure_event_notified_on_success(
     db_session, create_webhook, create_failure_event
 ):
     """After successful delivery, FailureEvent.notified is set to True."""
-    webhook = create_webhook()
+    create_webhook()
     event = create_failure_event()
     assert event.notified is False
 
@@ -335,7 +334,7 @@ async def test_ac009_failure_event_not_notified_on_all_failures(
     db_session, create_webhook, create_failure_event
 ):
     """If all deliveries fail, FailureEvent.notified stays False."""
-    webhook = create_webhook()
+    create_webhook()
     event = create_failure_event()
 
     mock_response = AsyncMock()
@@ -365,7 +364,7 @@ async def test_ac010_dispatch_is_called_inline(
     db_session, create_webhook, create_failure_event
 ):
     """Webhook dispatch happens synchronously (inline), not via scheduler."""
-    webhook = create_webhook()
+    create_webhook()
     event = create_failure_event()
 
     mock_response = AsyncMock()
@@ -454,7 +453,7 @@ async def test_ac008_custom_headers_sent(
     db_session, create_webhook, create_failure_event
 ):
     """Custom headers are included in the webhook POST request."""
-    webhook = create_webhook(
+    create_webhook(
         headers={"Authorization": "Bearer token123", "X-Custom": "value"}
     )
     event = create_failure_event()
