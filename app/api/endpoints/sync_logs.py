@@ -1,6 +1,8 @@
+import logging
 from datetime import datetime
 from typing import Optional
 from uuid import UUID
+
 from fastapi import APIRouter, HTTPException, Query, status
 from sqlmodel import select, func
 
@@ -16,6 +18,8 @@ from app.schemas.sync_log import (
     ErrorResponse,
 )
 from app.services.rsync_parser import RsyncParser
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/sync-logs", tags=["sync-logs"])
 
@@ -69,6 +73,15 @@ async def create_sync_log(
     session.add(sync_log)
     session.commit()
     session.refresh(sync_log)
+
+    logger.info(
+        "Sync log created",
+        extra={
+            "source_name": data.source_name,
+            "file_count": parsed.file_count,
+            "is_dry_run": parsed.is_dry_run,
+        },
+    )
 
     return sync_log
 

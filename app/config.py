@@ -10,6 +10,8 @@ class Settings(BaseSettings):
     database_url: str
     secret_key: str = "change-me"
     default_api_key: str = "rsv_dev_key"
+    log_level: str = "INFO"
+    log_format: str = "json"
 
 
 @lru_cache
