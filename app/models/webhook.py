@@ -13,6 +13,10 @@ class WebhookEndpoint(SQLModel, table=True):
     name: str = Field(max_length=100)
     url: str = Field(max_length=2048)
     headers: Optional[dict] = Field(default=None, sa_column=Column(JSONB))
+    webhook_type: str = Field(default="generic", max_length=20)
+    source_filters: Optional[list] = Field(
+        default=None, sa_column=Column(JSONB, nullable=True)
+    )
     enabled: bool = Field(default=True)
     consecutive_failures: int = Field(default=0)
     created_at: datetime = Field(default_factory=datetime.utcnow)

@@ -1,0 +1,150 @@
+<div class="modal-backdrop" onclick="this.remove()">
+    <div class="modal webhook-modal" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <h2>{% if webhook %}Edit Webhook{% else %}Add Webhook{% endif %}</h2>
+            <button class="modal-close" onclick="this.closest('.modal-backdrop').remove()">X</button>
+        </div>
+        <div class="modal-body">
+            <form id="webhook-form"
+                  {% if webhook %}
+                  hx-put="/htmx/webhooks/{{ webhook.id }}"
+                  {% else %}
+                  hx-post="/htmx/webhooks"
+                  {% endif %}
+                  hx-target="#webhooks-list"
+                  hx-swap="innerHTML">
+
+                <div class="form-group">
+                    <label for="wh-name">Name <span class="required">*</span></label>
+                    <input type="text" id="wh-name" name="name"
+                           value="{{ form.get('name', '') if form is defined and form else (webhook.name if webhook else '') }}"
+                           required maxlength="100"
+                           placeholder="My Discord Webhook"
+                           class="{% if errors.get('name') %}input-error{% endif %}">
+                    {% if errors.get('name') %}
+                    <span class="form-error">{{ errors.name }}</span>
+                    {% endif %}
+                </div>
+
+                <div class="form-group">
+                    <label for="wh-url">URL <span class="required">*</span></label>
+                    <input type="url" id="wh-url" name="url"
+                           value="{{ form.get('url', '') if form is defined and form else (webhook.url if webhook else '') }}"
+                           required maxlength="2048"
+                           placeholder="https://discord.com/api/webhooks/..."
+                           class="{% if errors.get('url') %}input-error{% endif %}">
+                    {% if errors.get('url') %}
+                    <span class="form-error">{{ errors.url }}</span>
+                    {% endif %}
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group form-group-half">
+                        <label for="wh-type">Webhook Type</label>
+                        <select id="wh-type" name="webhook_type" onchange="toggleDiscordOptions(this.value)">
+                            {% set current_type = form.get('webhook_type', '') if form is defined and form else (webhook.webhook_type if webhook else 'generic') %}
+                            <option value="generic" {% if current_type == 'generic' %}selected{% endif %}>Generic</option>
+                            <option value="discord" {% if current_type == 'discord' %}selected{% endif %}>Discord</option>
+                        </select>
+                    </div>
+                    <div class="form-group form-group-half">
+                        <label for="wh-sources">Source Filters</label>
+                        <input type="text" id="wh-sources" name="source_filters"
+                               value="{{ form.get('source_filters', '') if form is defined and form else (webhook.source_filters|join(', ') if webhook and webhook.source_filters else '') }}"
+                               placeholder="source1, source2 (blank = all)">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-checkbox">
+                        <input type="checkbox" name="enabled"
+                               {% if form is defined and form %}
+                                   {% if form.get('enabled') == 'on' %}checked{% endif %}
+                               {% elif webhook %}
+                                   {% if webhook.enabled %}checked{% endif %}
+                               {% else %}
+                                   checked
+                               {% endif %}>
+                        Enabled
+                    </label>
+                </div>
+
+                <div class="form-group">
+                    <button type="button" class="btn-link" onclick="toggleAdvanced()">
+                        Custom Headers (Advanced)
+                    </button>
+                    <div id="headers-section" class="advanced-section" style="display: none;">
+                        <textarea id="wh-headers" name="headers" rows="3"
+                                  placeholder='{"Authorization": "Bearer token"}'
+                                  class="{% if errors.get('headers') %}input-error{% endif %}"
+                        >{{ form.get('headers', '') if form is defined and form else (webhook.headers|tojson if webhook and webhook.headers else '') }}</textarea>
+                        {% if errors.get('headers') %}
+                        <span class="form-error">{{ errors.headers }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div id="discord-options" class="discord-options-section"
+                     style="display: {% if (form is defined and form and form.get('webhook_type') == 'discord') or (webhook and webhook.webhook_type == 'discord') %}block{% else %}none{% endif %};">
+                    <h3>Discord Options</h3>
+                    <div class="form-row">
+                        <div class="form-group form-group-half">
+                            <label for="wh-discord-color">Embed Color</label>
+                            {% set default_color = '#FF0045' %}
+                            {% if form is defined and form and form.get('discord_color') %}
+                                {% set color_val = form.get('discord_color') %}
+                            {% elif options and options.get('color') is not none %}
+                                {% set color_val = '#%06x' % options.color %}
+                            {% else %}
+                                {% set color_val = default_color %}
+                            {% endif %}
+                            <input type="color" id="wh-discord-color" name="discord_color"
+                                   value="{{ color_val }}">
+                        </div>
+                        <div class="form-group form-group-half">
+                            <label for="wh-discord-username">Bot Username</label>
+                            <input type="text" id="wh-discord-username" name="discord_username"
+                                   value="{{ form.get('discord_username', '') if form is defined and form else (options.get('username', 'Rsync Viewer') if options else 'Rsync Viewer') }}"
+                                   placeholder="Rsync Viewer">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group form-group-half">
+                            <label for="wh-discord-avatar">Avatar URL</label>
+                            <input type="url" id="wh-discord-avatar" name="discord_avatar_url"
+                                   value="{{ form.get('discord_avatar_url', '') if form is defined and form else (options.get('avatar_url', '') if options else '') }}"
+                                   placeholder="https://example.com/avatar.png">
+                        </div>
+                        <div class="form-group form-group-half">
+                            <label for="wh-discord-footer">Footer Text</label>
+                            <input type="text" id="wh-discord-footer" name="discord_footer"
+                                   value="{{ form.get('discord_footer', '') if form is defined and form else (options.get('footer', '') if options else '') }}"
+                                   placeholder="Rsync Log Viewer">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="this.closest('.modal-backdrop').remove()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        {% if webhook %}Update{% else %}Create{% endif %} Webhook
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleDiscordOptions(value) {
+    document.getElementById('discord-options').style.display = value === 'discord' ? 'block' : 'none';
+}
+function toggleAdvanced() {
+    var section = document.getElementById('headers-section');
+    section.style.display = section.style.display === 'none' ? 'block' : 'none';
+}
+document.body.addEventListener('closeModal', function() {
+    var backdrop = document.querySelector('.modal-backdrop');
+    if (backdrop) backdrop.remove();
+});
+</script>

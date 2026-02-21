@@ -689,6 +689,270 @@ main {
     color: var(--text-color);
 }
 
+/* Webhook Settings */
+.settings-section-header-flex {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.settings-section-header-flex .theme-option {
+    flex: none;
+}
+
+.webhook-table {
+    table-layout: auto;
+}
+
+.webhook-url-cell {
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: monospace;
+    font-size: 0.75rem;
+}
+
+.webhook-type-badge {
+    display: inline-block;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-transform: capitalize;
+}
+
+.webhook-type-generic {
+    background-color: var(--source-badge-bg);
+    color: var(--source-badge-text);
+}
+
+.webhook-type-discord {
+    background-color: #5865f21a;
+    color: #5865f2;
+}
+
+[data-theme="dark"] .webhook-type-discord {
+    background-color: #5865f233;
+    color: #7289da;
+}
+
+.webhook-actions {
+    display: flex;
+    gap: 0.25rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.btn-danger {
+    background-color: var(--danger-color);
+    color: white;
+}
+
+.btn-danger:hover {
+    opacity: 0.85;
+}
+
+.btn-test {
+    background-color: var(--success-color);
+    color: white;
+}
+
+.btn-test:hover {
+    opacity: 0.85;
+}
+
+.failure-count-badge {
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    background-color: var(--danger-color);
+    color: white;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.text-muted {
+    color: var(--text-muted);
+    font-size: 0.875rem;
+}
+
+/* Toggle Switch */
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 40px;
+    height: 22px;
+    background-color: var(--border-color);
+    border-radius: 11px;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    padding: 0;
+}
+
+.toggle-switch.active {
+    background-color: var(--success-color);
+}
+
+.toggle-slider {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 18px;
+    height: 18px;
+    background-color: white;
+    border-radius: 50%;
+    transition: transform 0.2s ease;
+}
+
+.toggle-switch.active .toggle-slider {
+    transform: translateX(18px);
+}
+
+/* Test result */
+.test-result-container {
+    font-size: 0.75rem;
+}
+
+.test-result {
+    font-size: 0.75rem;
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+}
+
+.test-success {
+    color: var(--success-color);
+}
+
+.test-failure {
+    color: var(--danger-color);
+}
+
+/* Webhook Form */
+.webhook-modal {
+    max-width: 600px;
+}
+
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-group label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    margin-bottom: 0.25rem;
+}
+
+.form-group input[type="text"],
+.form-group input[type="url"],
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 0.875rem;
+    background-color: var(--input-bg);
+    color: var(--input-text);
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+.form-group input[type="color"] {
+    height: 36px;
+    padding: 2px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    cursor: pointer;
+    background-color: var(--input-bg);
+}
+
+.input-error {
+    border-color: var(--danger-color) !important;
+}
+
+.form-error {
+    display: block;
+    color: var(--danger-color);
+    font-size: 0.75rem;
+    margin-top: 0.25rem;
+}
+
+.required {
+    color: var(--danger-color);
+}
+
+.form-row {
+    display: flex;
+    gap: 1rem;
+}
+
+.form-group-half {
+    flex: 1;
+}
+
+.form-checkbox {
+    display: flex !important;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    color: var(--text-color) !important;
+}
+
+.form-checkbox input[type="checkbox"] {
+    width: auto;
+}
+
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.btn-link {
+    background: none;
+    border: none;
+    color: var(--primary-color);
+    cursor: pointer;
+    font-size: 0.875rem;
+    padding: 0;
+    text-decoration: underline;
+}
+
+.btn-link:hover {
+    opacity: 0.8;
+}
+
+.advanced-section {
+    margin-top: 0.5rem;
+}
+
+.discord-options-section {
+    margin-top: 1rem;
+    padding: 1rem;
+    background-color: var(--file-list-bg);
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+}
+
+.discord-options-section h3 {
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+}
+
 /* Print: force light theme */
 @media print {
     :root {

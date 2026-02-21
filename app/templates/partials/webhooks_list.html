@@ -1,0 +1,82 @@
+{% if webhooks %}
+<table class="sync-table webhook-table">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>URL</th>
+            <th>Type</th>
+            <th>Sources</th>
+            <th>Enabled</th>
+            <th>Failures</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for webhook in webhooks %}
+        <tr>
+            <td>{{ webhook.name }}</td>
+            <td class="webhook-url-cell" title="{{ webhook.url }}">
+                {{ webhook.url[:50] }}{% if webhook.url|length > 50 %}...{% endif %}
+            </td>
+            <td>
+                <span class="webhook-type-badge webhook-type-{{ webhook.webhook_type }}">
+                    {{ webhook.webhook_type }}
+                </span>
+            </td>
+            <td>
+                {% if webhook.source_filters %}
+                    {% for src in webhook.source_filters %}
+                    <span class="source-badge">{{ src }}</span>
+                    {% endfor %}
+                {% else %}
+                    <span class="text-muted">All sources</span>
+                {% endif %}
+            </td>
+            <td>
+                <button class="toggle-switch {% if webhook.enabled %}active{% endif %}"
+                        hx-post="/htmx/webhooks/{{ webhook.id }}/toggle"
+                        hx-target="#webhooks-list"
+                        hx-swap="innerHTML"
+                        title="{% if webhook.enabled %}Disable{% else %}Enable{% endif %}">
+                    <span class="toggle-slider"></span>
+                </button>
+            </td>
+            <td>
+                {% if webhook.consecutive_failures > 0 %}
+                <span class="failure-count-badge">{{ webhook.consecutive_failures }}</span>
+                {% else %}
+                <span class="text-muted">0</span>
+                {% endif %}
+            </td>
+            <td class="webhook-actions">
+                <button class="btn btn-small"
+                        hx-get="/htmx/webhooks/{{ webhook.id }}/edit"
+                        hx-target="#modal-container"
+                        hx-swap="innerHTML">
+                    Edit
+                </button>
+                <button class="btn btn-small btn-test"
+                        hx-post="/htmx/webhooks/{{ webhook.id }}/test"
+                        hx-target="#test-result-{{ webhook.id }}"
+                        hx-swap="innerHTML">
+                    Test
+                </button>
+                <button class="btn btn-small btn-danger"
+                        hx-delete="/htmx/webhooks/{{ webhook.id }}"
+                        hx-target="#webhooks-list"
+                        hx-swap="innerHTML"
+                        hx-confirm="Delete webhook '{{ webhook.name }}'?">
+                    Delete
+                </button>
+                <span id="test-result-{{ webhook.id }}" class="test-result-container"></span>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<div class="empty-state">
+    <p>No webhooks configured</p>
+    <p class="hint">Add a webhook to receive notifications when sync failures are detected.</p>
+</div>
+{% endif %}
