@@ -19,5 +19,26 @@
             </div>
         </div>
     </div>
+
+    <div class="settings-section">
+        <div class="settings-section-header settings-section-header-flex">
+            <h2>Webhooks</h2>
+            <button class="theme-option"
+                    hx-get="/htmx/webhooks/add"
+                    hx-target="#modal-container"
+                    hx-swap="innerHTML"
+                    type="button">
+                Add Webhook
+            </button>
+        </div>
+        <div class="settings-section-body">
+            <div id="webhooks-list"
+                 hx-get="/htmx/webhooks"
+                 hx-trigger="load"
+                 hx-swap="innerHTML">
+                <div class="loading">Loading webhooks...</div>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}

@@ -1,11 +1,15 @@
+import json
+import logging
+import re
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
 from typing import Optional
 from uuid import UUID
 
+import httpx
 from fastapi import FastAPI, HTTPException, Request, Query, Depends
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlmodel import SQLModel, Session, select, func
@@ -19,9 +23,21 @@ from app.middleware import RequestLoggingMiddleware
 from app.models.sync_log import SyncLog
 from app.models.monitor import SyncSourceMonitor  # noqa: F401 — ensure table creation
 from app.models.failure_event import FailureEvent  # noqa: F401 — ensure table creation
-from app.models.webhook import WebhookEndpoint  # noqa: F401 — ensure table creation
+from app.models.webhook import WebhookEndpoint
 from app.models.notification_log import NotificationLog  # noqa: F401 — ensure table creation
-from app.models.webhook_options import WebhookOptions  # noqa: F401 — ensure table creation
+from app.models.webhook_options import WebhookOptions
+
+logger = logging.getLogger(__name__)
+
+DISCORD_URL_PATTERN = re.compile(
+    r"^https://(discord\.com|discordapp\.com)/api/webhooks/\d+/.+"
+)
+
+
+def _form_str(form: object, key: str, default: str = "") -> str:
+    """Extract a string value from form data, handling UploadFile edge cases."""
+    value = getattr(form, "get", lambda k, d: d)(key, default)
+    return str(value) if value is not None else default
 
 
 settings = get_settings()
@@ -407,6 +423,371 @@ async def settings_page(request: Request):
         "settings.html",
         {"request": request},
     )
+
+
+@app.get("/htmx/webhooks")
+async def htmx_webhooks_list(
+    request: Request, session: Session = Depends(get_session)
+):
+    """HTMX partial: webhook list table."""
+    webhooks_list = session.exec(
+        select(WebhookEndpoint).order_by(WebhookEndpoint.name)
+    ).all()
+
+    # Batch load options to avoid N+1
+    webhook_ids = [wh.id for wh in webhooks_list]
+    options_map: dict = {}
+    if webhook_ids:
+        all_opts = session.exec(
+            select(WebhookOptions).where(
+                WebhookOptions.webhook_endpoint_id.in_(webhook_ids)
+            )
+        ).all()
+        options_map = {opt.webhook_endpoint_id: opt.options for opt in all_opts}
+
+    return templates.TemplateResponse(
+        "partials/webhooks_list.html",
+        {
+            "request": request,
+            "webhooks": webhooks_list,
+            "options_map": options_map,
+        },
+    )
+
+
+@app.get("/htmx/webhooks/add")
+async def htmx_webhook_add_form(request: Request):
+    """HTMX partial: empty webhook add form."""
+    return templates.TemplateResponse(
+        "partials/webhook_form.html",
+        {"request": request, "webhook": None, "options": None, "errors": {}},
+    )
+
+
+@app.post("/htmx/webhooks")
+async def htmx_webhook_create(
+    request: Request, session: Session = Depends(get_session)
+):
+    """HTMX: create a new webhook endpoint."""
+    form = await request.form()
+    errors: dict[str, str] = {}
+
+    name = _form_str(form, "name").strip()
+    url = _form_str(form, "url").strip()
+    webhook_type = _form_str(form, "webhook_type", "generic")
+    source_filters_raw = _form_str(form, "source_filters").strip()
+    headers_raw = _form_str(form, "headers").strip()
+    enabled = _form_str(form, "enabled") == "on"
+
+    # Validation
+    if not name:
+        errors["name"] = "Name is required."
+    if not url:
+        errors["url"] = "URL is required."
+    elif webhook_type == "discord" and not DISCORD_URL_PATTERN.match(url):
+        errors["url"] = (
+            "Discord webhooks require a URL matching "
+            "https://discord.com/api/webhooks/... or "
+            "https://discordapp.com/api/webhooks/..."
+        )
+
+    headers = None
+    if headers_raw:
+        try:
+            headers = json.loads(headers_raw)
+        except json.JSONDecodeError:
+            errors["headers"] = "Headers must be valid JSON."
+
+    if errors:
+        return templates.TemplateResponse(
+            "partials/webhook_form.html",
+            {"request": request, "webhook": None, "options": None, "errors": errors, "form": form},
+        )
+
+    source_filters = (
+        [s.strip() for s in source_filters_raw.split(",") if s.strip()]
+        if source_filters_raw
+        else None
+    )
+
+    webhook = WebhookEndpoint(
+        name=name,
+        url=url,
+        headers=headers,
+        webhook_type=webhook_type,
+        source_filters=source_filters,
+        enabled=enabled,
+    )
+    session.add(webhook)
+    session.commit()
+    session.refresh(webhook)
+
+    # Create options for Discord webhooks
+    if webhook_type == "discord":
+        color_raw = _form_str(form, "discord_color", "#FF0045").strip()
+        try:
+            color_int = int(color_raw.lstrip("#"), 16)
+        except ValueError:
+            color_int = 16711749
+        opts: dict[str, object] = {
+            "color": color_int,
+            "username": _form_str(form, "discord_username", "Rsync Viewer").strip() or "Rsync Viewer",
+        }
+        avatar_url_val = _form_str(form, "discord_avatar_url").strip()
+        if avatar_url_val:
+            opts["avatar_url"] = avatar_url_val
+        footer = _form_str(form, "discord_footer").strip()
+        if footer:
+            opts["footer"] = footer
+
+        wh_opts = WebhookOptions(webhook_endpoint_id=webhook.id, options=opts)
+        session.add(wh_opts)
+        session.commit()
+
+    logger.info("Webhook created via UI", extra={"webhook_name": name})
+
+    # Return updated list with closeModal trigger
+    response = await htmx_webhooks_list(request, session)
+    response.headers["HX-Trigger"] = "closeModal"
+    return response
+
+
+@app.get("/htmx/webhooks/{webhook_id}/edit")
+async def htmx_webhook_edit_form(
+    request: Request, webhook_id: UUID, session: Session = Depends(get_session)
+):
+    """HTMX partial: pre-filled webhook edit form."""
+    webhook = session.get(WebhookEndpoint, webhook_id)
+    if not webhook:
+        return HTMLResponse("<p>Webhook not found.</p>", status_code=404)
+
+    opts_row = session.exec(
+        select(WebhookOptions).where(
+            WebhookOptions.webhook_endpoint_id == webhook_id
+        )
+    ).first()
+    options = opts_row.options if opts_row else None
+
+    return templates.TemplateResponse(
+        "partials/webhook_form.html",
+        {"request": request, "webhook": webhook, "options": options, "errors": {}},
+    )
+
+
+@app.put("/htmx/webhooks/{webhook_id}")
+async def htmx_webhook_update(
+    request: Request, webhook_id: UUID, session: Session = Depends(get_session)
+):
+    """HTMX: update an existing webhook endpoint."""
+    webhook = session.get(WebhookEndpoint, webhook_id)
+    if not webhook:
+        return HTMLResponse("<p>Webhook not found.</p>", status_code=404)
+
+    form = await request.form()
+    errors: dict[str, str] = {}
+
+    name = _form_str(form, "name").strip()
+    url = _form_str(form, "url").strip()
+    webhook_type = _form_str(form, "webhook_type", "generic")
+    source_filters_raw = _form_str(form, "source_filters").strip()
+    headers_raw = _form_str(form, "headers").strip()
+    enabled = _form_str(form, "enabled") == "on"
+
+    if not name:
+        errors["name"] = "Name is required."
+    if not url:
+        errors["url"] = "URL is required."
+    elif webhook_type == "discord" and not DISCORD_URL_PATTERN.match(url):
+        errors["url"] = (
+            "Discord webhooks require a URL matching "
+            "https://discord.com/api/webhooks/... or "
+            "https://discordapp.com/api/webhooks/..."
+        )
+
+    headers = None
+    if headers_raw:
+        try:
+            headers = json.loads(headers_raw)
+        except json.JSONDecodeError:
+            errors["headers"] = "Headers must be valid JSON."
+
+    if errors:
+        # Reload options for re-rendering the form
+        opts_row = session.exec(
+            select(WebhookOptions).where(
+                WebhookOptions.webhook_endpoint_id == webhook_id
+            )
+        ).first()
+        return templates.TemplateResponse(
+            "partials/webhook_form.html",
+            {
+                "request": request,
+                "webhook": webhook,
+                "options": opts_row.options if opts_row else None,
+                "errors": errors,
+                "form": form,
+            },
+        )
+
+    source_filters = (
+        [s.strip() for s in source_filters_raw.split(",") if s.strip()]
+        if source_filters_raw
+        else None
+    )
+
+    webhook.name = name
+    webhook.url = url
+    webhook.headers = headers
+    webhook.webhook_type = webhook_type
+    webhook.source_filters = source_filters
+    webhook.enabled = enabled
+    webhook.updated_at = datetime.utcnow()
+    session.add(webhook)
+    session.commit()
+
+    # Update or create Discord options
+    if webhook_type == "discord":
+        color_raw = _form_str(form, "discord_color", "#FF0045").strip()
+        try:
+            color_int = int(color_raw.lstrip("#"), 16)
+        except ValueError:
+            color_int = 16711749
+        opts: dict[str, object] = {
+            "color": color_int,
+            "username": _form_str(form, "discord_username", "Rsync Viewer").strip() or "Rsync Viewer",
+        }
+        avatar_url_val = _form_str(form, "discord_avatar_url").strip()
+        if avatar_url_val:
+            opts["avatar_url"] = avatar_url_val
+        footer = _form_str(form, "discord_footer").strip()
+        if footer:
+            opts["footer"] = footer
+
+        existing_opts = session.exec(
+            select(WebhookOptions).where(
+                WebhookOptions.webhook_endpoint_id == webhook_id
+            )
+        ).first()
+        if existing_opts:
+            existing_opts.options = opts
+            existing_opts.updated_at = datetime.utcnow()
+            session.add(existing_opts)
+        else:
+            new_opts = WebhookOptions(webhook_endpoint_id=webhook_id, options=opts)
+            session.add(new_opts)
+        session.commit()
+    else:
+        # Remove options if switching away from Discord
+        existing_opts = session.exec(
+            select(WebhookOptions).where(
+                WebhookOptions.webhook_endpoint_id == webhook_id
+            )
+        ).first()
+        if existing_opts:
+            session.delete(existing_opts)
+            session.commit()
+
+    logger.info("Webhook updated via UI", extra={"webhook_id": str(webhook_id)})
+
+    response = await htmx_webhooks_list(request, session)
+    response.headers["HX-Trigger"] = "closeModal"
+    return response
+
+
+@app.delete("/htmx/webhooks/{webhook_id}")
+async def htmx_webhook_delete(
+    request: Request, webhook_id: UUID, session: Session = Depends(get_session)
+):
+    """HTMX: delete a webhook endpoint."""
+    webhook = session.get(WebhookEndpoint, webhook_id)
+    if not webhook:
+        return HTMLResponse("<p>Webhook not found.</p>", status_code=404)
+
+    session.delete(webhook)
+    session.commit()
+
+    logger.info("Webhook deleted via UI", extra={"webhook_id": str(webhook_id)})
+
+    return await htmx_webhooks_list(request, session)
+
+
+@app.post("/htmx/webhooks/{webhook_id}/toggle")
+async def htmx_webhook_toggle(
+    request: Request, webhook_id: UUID, session: Session = Depends(get_session)
+):
+    """HTMX: toggle webhook enabled/disabled."""
+    webhook = session.get(WebhookEndpoint, webhook_id)
+    if not webhook:
+        return HTMLResponse("<p>Webhook not found.</p>", status_code=404)
+
+    webhook.enabled = not webhook.enabled
+    webhook.updated_at = datetime.utcnow()
+    session.add(webhook)
+    session.commit()
+
+    return await htmx_webhooks_list(request, session)
+
+
+@app.post("/htmx/webhooks/{webhook_id}/test")
+async def htmx_webhook_test(
+    request: Request, webhook_id: UUID, session: Session = Depends(get_session)
+):
+    """HTMX: send a test notification to a webhook endpoint."""
+    webhook = session.get(WebhookEndpoint, webhook_id)
+    if not webhook:
+        return HTMLResponse("<p>Webhook not found.</p>", status_code=404)
+
+    # Build test payload based on webhook type
+    if webhook.webhook_type == "discord":
+        opts_row = session.exec(
+            select(WebhookOptions).where(
+                WebhookOptions.webhook_endpoint_id == webhook_id
+            )
+        ).first()
+        opts = opts_row.options if opts_row else {}
+        color = opts.get("color", 16711680)
+        username = opts.get("username", "Rsync Viewer")
+        payload = {
+            "username": username,
+            "embeds": [
+                {
+                    "title": "Test Notification",
+                    "description": "This is a test notification from Rsync Viewer.",
+                    "color": color,
+                }
+            ],
+        }
+        if opts.get("avatar_url"):
+            payload["avatar_url"] = opts["avatar_url"]
+    else:
+        payload = {
+            "event": "test",
+            "message": "This is a test notification from Rsync Viewer.",
+        }
+
+    req_headers = {"Content-Type": "application/json"}
+    if webhook.headers:
+        req_headers.update(webhook.headers)
+
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                webhook.url,
+                json=payload,
+                headers=req_headers,
+                timeout=10.0,
+            )
+        if 200 <= response.status_code < 300:
+            return HTMLResponse(
+                '<span class="test-result test-success">Test sent successfully!</span>'
+            )
+        return HTMLResponse(
+            f'<span class="test-result test-failure">Failed: HTTP {response.status_code}</span>'
+        )
+    except httpx.RequestError as e:
+        return HTMLResponse(
+            f'<span class="test-result test-failure">Failed: {e}</span>'
+        )
 
 
 @app.get("/health")
