@@ -7,6 +7,16 @@ and this project adheres to [Conventional Commits](https://www.conventionalcommi
 
 ## [Unreleased]
 
+### Added
+
+- Add structured JSON logging with request tracking
+- Add structured error handling with error codes
+
+### Documentation
+
+- Add error handling and structured logging specs and plans
+- Add versioned changelog sections for 1.0.0 and 1.1.0
+
 ## [1.1.0] - 2026-02-19
 
 ### Added
