@@ -2,6 +2,10 @@
 
 A web application for collecting, parsing, and visualizing rsync synchronization logs. Built with FastAPI, PostgreSQL, and HTMX.
 
+## Overview
+
+![Project Infographic](docs/infographic.svg)
+
 ## Features
 
 - **Log Collection**: REST API endpoint to receive rsync output logs

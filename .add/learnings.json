@@ -41,6 +41,32 @@
       "date": "2026-02-20",
       "classified_by": "agent",
       "checkpoint_type": "retro"
+    },
+    {
+      "id": "L-004",
+      "title": "Webhook service TDD cycle: clean RED→GREEN→REFACTOR in one away session",
+      "body": "ACs covered: AC-001 through AC-011 (except AC-007 UI). RED: 27 tests across 3 files (unit API, unit dispatcher, integration). GREEN: all passed first implementation attempt. Blockers: none. Mock pattern for httpx.AsyncClient with AsyncMock __aenter__/__aexit__ works well for testing async context managers. Proactively dropping/recreating test DB tables before RED phase avoided schema mismatch issues seen in failure-detection cycle.",
+      "scope": "project",
+      "stack": ["python", "fastapi"],
+      "category": "technical",
+      "severity": "medium",
+      "source": "rsync-viewer",
+      "date": "2026-02-21",
+      "classified_by": "agent",
+      "checkpoint_type": "post-tdd"
+    },
+    {
+      "id": "L-005",
+      "title": "httpx AsyncClient mock pattern for webhook testing",
+      "body": "Patch 'module.httpx.AsyncClient' and set mock_client.__aenter__ = AsyncMock(return_value=mock_client), __aexit__ = AsyncMock(return_value=False). For capture tests, replace mock_client.post with a plain async function that captures args. Patch asyncio.sleep with AsyncMock to skip retry delays. This pattern is reusable for any service using httpx async context managers.",
+      "scope": "workstation",
+      "stack": ["python"],
+      "category": "technical",
+      "severity": "medium",
+      "source": "rsync-viewer",
+      "date": "2026-02-21",
+      "classified_by": "agent",
+      "checkpoint_type": "post-tdd"
     }
   ]
 }

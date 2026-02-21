@@ -15,6 +15,13 @@
 - **[medium] Promoted POC → Alpha: evidence score 9/10** (L-003, 2026-02-20)
   M1 milestone complete with all 6 features shipped. Promotion backed by: 6 specs, 92% coverage, CI pipeline, 3 PRs merged, conventional commits (15/20), 3 release tags, TDD evidence. Only gap: branch protection not enforced on GitHub (only declared in config). Next target: Beta requires full TDD on all paths and 30+ days stability.
 
+## Technical
+- **[medium] Webhook service TDD cycle: clean RED→GREEN→REFACTOR in one away session** (L-004, 2026-02-21)
+  ACs covered: AC-001 through AC-011 (except AC-007 UI). RED: 27 tests across 3 files (unit API, unit dispatcher, integration). GREEN: all passed first implementation attempt. Blockers: none. Mock pattern for httpx.AsyncClient with AsyncMock __aenter__/__aexit__ works well for testing async context managers. Proactively dropping/recreating test DB tables before RED phase avoided schema mismatch issues seen in failure-detection cycle.
+
+- **[medium] httpx AsyncClient mock pattern for webhook testing** (L-005, 2026-02-21)
+  Patch 'module.httpx.AsyncClient' and set mock_client.__aenter__ = AsyncMock(return_value=mock_client), __aexit__ = AsyncMock(return_value=False). For capture tests, replace mock_client.post with a plain async function that captures args. Patch asyncio.sleep with AsyncMock to skip retry delays. This pattern is reusable for any service using httpx async context managers.
+
 ## Technical Discoveries
 
 - 2026-02-19: RsyncParser uses regex patterns to extract transfer stats from raw rsync output. Supports unit parsing for B, K, M, G, T, P suffixes. Source: app/services/rsync_parser.py
@@ -34,4 +41,4 @@
 - Spec-driven flow with "default" answers for non-critical questions keeps interviews fast.
 
 ---
-*3 JSON entries + legacy discoveries. Last updated: 2026-02-20. Source: .add/learnings.json*
+*5 JSON entries + legacy discoveries. Last updated: 2026-02-21. Source: .add/learnings.json*

@@ -7,6 +7,20 @@ and this project adheres to [Conventional Commits](https://www.conventionalcommi
 
 ## [Unreleased]
 
+### Added
+
+- Implement webhook notification service
+- Add failure detection with exit code tracking and stale sync monitoring
+
+### Changed
+
+- Fix lint warnings in webhook dispatcher tests
+
+### Documentation
+
+- Add webhook service spec and update M2 milestone progress
+- Update changelog for v1.2.0 and complete M1 cycle
+
 ## [1.2.0] - 2026-02-20
 
 ### Added
