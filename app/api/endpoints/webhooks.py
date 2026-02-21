@@ -51,11 +51,22 @@ async def list_webhooks(session: SessionDep, api_key: ApiKeyDep):
     """List all configured webhook endpoints."""
     statement = select(WebhookEndpoint).order_by(WebhookEndpoint.name)
     webhooks = session.exec(statement).all()
-    result = []
-    for wh in webhooks:
-        opts = _get_options_dict(session, wh.id)
-        result.append(_webhook_to_read(wh, opts))
-    return result
+
+    # Batch load all options in a single query to avoid N+1
+    webhook_ids = [wh.id for wh in webhooks]
+    options_map: dict[UUID, dict] = {}
+    if webhook_ids:
+        all_opts = session.exec(
+            select(WebhookOptions).where(
+                WebhookOptions.webhook_endpoint_id.in_(webhook_ids)
+            )
+        ).all()
+        options_map = {opt.webhook_endpoint_id: opt.options for opt in all_opts}
+
+    return [
+        _webhook_to_read(wh, options_map.get(wh.id))
+        for wh in webhooks
+    ]
 
 
 @router.post(

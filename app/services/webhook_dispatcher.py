@@ -133,6 +133,20 @@ async def dispatch_webhooks(session: Session, event: FailureEvent) -> None:
 
     any_success = False
 
+    # Batch load webhook options for all Discord webhooks to avoid N+1 queries
+    discord_webhook_ids = [
+        wh.id for wh in webhooks
+        if wh.webhook_type == "discord" and _should_deliver(wh, event)
+    ]
+    options_map: dict = {}
+    if discord_webhook_ids:
+        all_opts = session.exec(
+            select(WebhookOptions).where(
+                WebhookOptions.webhook_endpoint_id.in_(discord_webhook_ids)
+            )
+        ).all()
+        options_map = {opt.webhook_endpoint_id: opt.options for opt in all_opts}
+
     async with httpx.AsyncClient() as client:
         for webhook in webhooks:
             # Source filter check
@@ -141,13 +155,7 @@ async def dispatch_webhooks(session: Session, event: FailureEvent) -> None:
 
             # Build payload based on webhook type
             if webhook.webhook_type == "discord":
-                # Load webhook options
-                opts_row = session.exec(
-                    select(WebhookOptions).where(
-                        WebhookOptions.webhook_endpoint_id == webhook.id
-                    )
-                ).first()
-                options_dict = opts_row.options if opts_row else None
+                options_dict = options_map.get(webhook.id)
                 payload = _build_discord_payload(event, options_dict)
             else:
                 payload = _build_payload(event)
@@ -169,7 +177,6 @@ async def dispatch_webhooks(session: Session, event: FailureEvent) -> None:
                     attempt_number=attempt,
                 )
                 session.add(log_entry)
-                session.commit()
 
                 if ok:
                     success = True
@@ -181,13 +188,9 @@ async def dispatch_webhooks(session: Session, event: FailureEvent) -> None:
                     await asyncio.sleep(delay)
 
             if success:
-                # Reset consecutive failures on success
                 webhook.consecutive_failures = 0
-                session.add(webhook)
-                session.commit()
                 any_success = True
             else:
-                # Increment consecutive failures
                 webhook.consecutive_failures += 1
                 if webhook.consecutive_failures >= AUTO_DISABLE_THRESHOLD:
                     webhook.enabled = False
@@ -196,10 +199,11 @@ async def dispatch_webhooks(session: Session, event: FailureEvent) -> None:
                         webhook.consecutive_failures,
                         extra={"webhook_id": str(webhook.id), "webhook_name": webhook.name},
                     )
-                session.add(webhook)
-                session.commit()
+            session.add(webhook)
 
     if any_success:
         event.notified = True
         session.add(event)
-        session.commit()
+
+    # Single commit for all log entries and status updates
+    session.commit()

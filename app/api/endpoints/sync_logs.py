@@ -79,6 +79,7 @@ async def create_sync_log(
     session.refresh(sync_log)
 
     # Create FailureEvent for non-zero exit codes
+    failure = None
     if data.exit_code is not None and data.exit_code != 0:
         failure = FailureEvent(
             source_name=data.source_name,
@@ -87,11 +88,6 @@ async def create_sync_log(
             details=f"rsync exited with code {data.exit_code}",
         )
         session.add(failure)
-        session.commit()
-        session.refresh(failure)
-
-        # Dispatch webhook notifications
-        await dispatch_webhooks(session, failure)
 
     # Update monitor's last_sync_at if a monitor exists for this source
     monitor = session.exec(
@@ -102,7 +98,15 @@ async def create_sync_log(
     if monitor:
         monitor.last_sync_at = sync_log.end_time
         session.add(monitor)
+
+    # Single commit for failure event + monitor update
+    if failure or monitor:
         session.commit()
+
+    # Dispatch webhook notifications after commit (failure must be persisted)
+    if failure:
+        session.refresh(failure)
+        await dispatch_webhooks(session, failure)
 
     logger.info(
         "Sync log created",
