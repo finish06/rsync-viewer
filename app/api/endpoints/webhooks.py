@@ -197,12 +197,7 @@ async def test_webhook(
 
     # Build test payload based on webhook type
     if webhook.webhook_type == "discord":
-        opts_row = session.exec(
-            select(WebhookOptions).where(
-                WebhookOptions.webhook_endpoint_id == webhook_id
-            )
-        ).first()
-        opts = opts_row.options if opts_row else {}
+        opts = _get_options_dict(session, webhook_id) or {}
         color = opts.get("color", 16711680)
         username = opts.get("username", "Rsync Viewer")
 
