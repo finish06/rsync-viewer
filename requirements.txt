@@ -10,6 +10,9 @@ alembic>=1.13.0
 # Templating
 jinja2>=3.1.0
 
+# Form parsing
+python-multipart>=0.0.6
+
 # Settings
 pydantic-settings>=2.0.0
 
