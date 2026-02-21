@@ -1,23 +1,22 @@
 # Away Mode Log
 
-**Started:** 2026-02-19 ~23:00 CST
-**Expected Return:** 2026-02-20 ~03:00 CST
+**Started:** 2026-02-21
+**Expected Return:** ~4 hours
 **Duration:** 4 hours
 
 ## Work Plan
-1. Commit pending changelog/config changes
-2. Spec error handling feature (specs/error-handling.md)
-3. Spec structured logging feature (specs/structured-logging.md)
-4. Plan error handling implementation
-5. Plan structured logging implementation
-6. Implement error handling via TDD cycle
-7. Implement structured logging via TDD cycle
-8. Open PRs, update M1 progress
+1. Update failure-detection spec to "Complete", update M2 milestone hill chart
+2. Commit uncommitted files (webhook spec, config updates, learnings)
+3. Create implementation plan for webhook service
+4. TDD cycle: RED — write failing tests for webhook service
+5. TDD cycle: GREEN — implement webhook service to pass tests
+6. TDD cycle: REFACTOR + VERIFY — quality gates
+7. Commit webhook service on feature branch, push
 
 ## Queued for Human Return
-1. Merge error handling and structured logging PRs
-2. Decide on M1 completion / alpha promotion
-3. Decide on M2 (Notifications) scope
+1. Merge webhook service PR to main
+2. Spec interviews for Home Assistant and Discord integrations
+3. Production deployment decisions
 
 ## Progress Log
 | Time | Task | Status | Notes |
