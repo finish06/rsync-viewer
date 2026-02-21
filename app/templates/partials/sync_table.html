@@ -8,6 +8,7 @@
             <th>Duration</th>
             <th>Total Size</th>
             <th>Transferred</th>
+            <th>Avg Rate</th>
             <th>Files</th>
             <th>Actions</th>
         </tr>
@@ -24,6 +25,7 @@
             <td>{{ (sync.end_time - sync.start_time) | format_duration }}</td>
             <td>{{ sync.total_size_bytes | format_bytes }}</td>
             <td>{{ sync.bytes_received | format_bytes }}</td>
+            <td>{{ sync | format_rate }}</td>
             <td>{{ sync.file_count or 0 }}</td>
             <td>
                 <button class="btn btn-small"

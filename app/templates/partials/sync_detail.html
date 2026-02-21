@@ -37,6 +37,10 @@
                     <span>{{ sync.transfer_speed | format_bytes }}/sec</span>
                 </div>
                 <div class="detail-item">
+                    <label>Avg Rate:</label>
+                    <span>{{ sync | format_rate }}</span>
+                </div>
+                <div class="detail-item">
                     <label>Speedup Ratio:</label>
                     <span>{{ "{:,.2f}".format(sync.speedup_ratio or 0) }}</span>
                 </div>

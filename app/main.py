@@ -154,8 +154,28 @@ def format_duration(delta: timedelta) -> str:
     return " ".join(parts)
 
 
+def format_rate(sync) -> str:
+    """Format average transfer rate from a sync log object."""
+    if sync.is_dry_run:
+        return "-"
+    if sync.bytes_received is None:
+        return "-"
+    if not sync.start_time or not sync.end_time:
+        return "-"
+    duration_seconds = (sync.end_time - sync.start_time).total_seconds()
+    if duration_seconds <= 0:
+        return "-"
+    rate = sync.bytes_received / duration_seconds
+    for unit in ["B/s", "KB/s", "MB/s", "GB/s", "TB/s"]:
+        if abs(rate) < 1024.0:
+            return f"{rate:.2f} {unit}"
+        rate /= 1024.0
+    return f"{rate:.2f} PB/s"
+
+
 templates.env.filters["format_bytes"] = format_bytes
 templates.env.filters["format_duration"] = format_duration
+templates.env.filters["format_rate"] = format_rate
 
 
 # Include API router
