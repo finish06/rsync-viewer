@@ -12,11 +12,13 @@ from sqlmodel import SQLModel, Session, select, func
 
 from app.config import get_settings
 from app.database import engine, get_session
-from app.api.endpoints import sync_logs
+from app.api.endpoints import sync_logs, monitors, failures
 from app.errors import make_error_response, INTERNAL_ERROR, VALIDATION_ERROR
 from app.logging_config import setup_logging
 from app.middleware import RequestLoggingMiddleware
 from app.models.sync_log import SyncLog
+from app.models.monitor import SyncSourceMonitor  # noqa: F401 — ensure table creation
+from app.models.failure_event import FailureEvent  # noqa: F401 — ensure table creation
 
 
 settings = get_settings()
@@ -178,8 +180,10 @@ templates.env.filters["format_duration"] = format_duration
 templates.env.filters["format_rate"] = format_rate
 
 
-# Include API router
+# Include API routers
 app.include_router(sync_logs.router, prefix="/api/v1")
+app.include_router(monitors.router, prefix="/api/v1")
+app.include_router(failures.router, prefix="/api/v1")
 
 
 @app.get("/")
