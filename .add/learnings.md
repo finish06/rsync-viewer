@@ -28,6 +28,7 @@
 
 - 2026-02-19: Chose HTMX over React/Vue for frontend because the app is primarily server-rendered with small dynamic updates — HTMX keeps the stack simple for a homelab project.
 - 2026-02-19: Chose SQLModel over raw SQLAlchemy for ORM because it provides Pydantic integration out of the box, reducing boilerplate for FastAPI request/response handling.
+- 2026-02-20: Jinja2 filters taking full model objects (e.g., format_rate(sync)) keeps templates clean and consolidates edge-case logic. Apply this pattern for future computed display values.
 
 ## What Worked
 <!-- Patterns, approaches, tools that proved effective -->
@@ -41,6 +42,13 @@
 ## Agent Checkpoints
 <!-- Automatic entries from verification, TDD cycles, deploys, away sessions -->
 <!-- These are processed and archived during /add:retro -->
+
+### Cycle 1 Complete (2026-02-20)
+- **Features:** Date Range Quick Select, Average Transfer Rate
+- **Duration:** 1 day
+- **Tests:** 132 passing, 92% coverage
+- **Outcome:** Both features specced, planned, implemented, tested, committed, and pushed
+- **Learning:** Reviewer caught JS duplication in quick-select — extracting shared functions early saves rework. format_rate filter mirrors format_bytes, confirming the Jinja2 filter approach scales well.
 
 ## Profile Update Candidates
 <!-- Cross-project patterns flagged for promotion to ~/.claude/add/profile.md -->

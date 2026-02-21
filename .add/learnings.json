@@ -1,0 +1,33 @@
+{
+  "$schema": "https://github.com/MountainUnicorn/add/learnings.schema.json",
+  "version": "1.0.0",
+  "project": "rsync-viewer",
+  "entries": [
+    {
+      "id": "L-001",
+      "title": "Cycle 1 complete: 2 dashboard features in 1 day",
+      "body": "Cycle 1 delivered Date Range Quick Select and Average Transfer Rate. Both followed spec→plan→implement→test flow. 132 tests passing, 92% coverage. Reviewer caught JS duplication in quick-select — extracting shared functions early saves rework. format_rate filter pattern mirrors format_bytes, confirming the Jinja2 filter approach scales well.",
+      "scope": "project",
+      "stack": ["python", "fastapi"],
+      "category": "process",
+      "severity": "medium",
+      "source": "rsync-viewer",
+      "date": "2026-02-20",
+      "classified_by": "agent",
+      "checkpoint_type": "retro"
+    },
+    {
+      "id": "L-002",
+      "title": "Jinja2 filters taking full model objects keeps templates clean",
+      "body": "format_rate(sync) accessing sync.bytes_received, sync.start_time, sync.end_time, sync.is_dry_run internally is cleaner than passing individual args. Template usage stays simple: {{ sync | format_rate }}. Apply this pattern for future computed display values.",
+      "scope": "project",
+      "stack": ["python", "fastapi"],
+      "category": "architecture",
+      "severity": "low",
+      "source": "rsync-viewer",
+      "date": "2026-02-20",
+      "classified_by": "agent",
+      "checkpoint_type": "retro"
+    }
+  ]
+}

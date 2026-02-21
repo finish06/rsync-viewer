@@ -7,8 +7,12 @@ and this project adheres to [Conventional Commits](https://www.conventionalcommi
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-02-20
+
 ### Added
 
+- Add average transfer rate column and detail field
+- Add date range quick select to dashboard
 - Add structured JSON logging with request tracking
 - Add structured error handling with error codes
 

@@ -1,10 +1,11 @@
 # M1 — Foundation
 
 **Goal:** Establish CI/CD pipeline, improve test coverage, adopt conventional commits, stabilize existing features
-**Status:** IN_PROGRESS
+**Status:** COMPLETE
 **Appetite:** 1-2 weeks
 **Target Maturity:** poc → alpha
 **Started:** 2026-02-19
+**Completed:** 2026-02-20
 
 ## Success Criteria
 
@@ -18,12 +19,12 @@
 ## Hill Chart
 
 ```
-CI Pipeline         ████████████████████████████████████  DONE — merged, running on PRs
-Error Handling      ████████████████████████████████████  DONE — structured errors with codes
-Structured Logging  ████████████████████████████████████  DONE — JSON logging with request tracking
-Dark Mode           ████████████████████████████████████  DONE — light/dark/system toggle
-Date Range Select   ████████████████████████████████████  DONE — quick select + custom date + load all
-Average Xfer Rate   ██████████████████████████████████░░  VERIFIED — implemented, tests pass, needs commit
+CI Pipeline         ████████████████████████████████████  DONE
+Error Handling      ████████████████████████████████████  DONE
+Structured Logging  ████████████████████████████████████  DONE
+Dark Mode           ████████████████████████████████████  DONE
+Date Range Select   ████████████████████████████████████  DONE
+Average Xfer Rate   ████████████████████████████████████  DONE
 ```
 
 ## Features
@@ -35,14 +36,14 @@ Average Xfer Rate   ████████████████████
 | Structured Logging | specs/structured-logging.md | DONE | JSON logs, request tracking, log levels |
 | Dark Mode | specs/dark-mode.md | DONE | Light/dark/system theme toggle |
 | Date Range Quick Select | specs/date-range-quick-select.md | DONE | 7d/30d/max/custom + load all |
-| Average Transfer Rate | specs/average-transfer-rate.md | VERIFIED | format_rate filter, table + modal |
+| Average Transfer Rate | specs/average-transfer-rate.md | DONE | format_rate filter, table + modal |
 
 ## Cycles
 
 | Cycle | Features | Status | Notes |
 |-------|----------|--------|-------|
 | Pre-ADD | CI Pipeline, Error Handling, Structured Logging, Dark Mode | COMPLETE | Implemented before formal cycle tracking |
-| cycle-1 | Date Range Quick Select, Average Transfer Rate | IN_PROGRESS | First tracked cycle |
+| cycle-1 | Date Range Quick Select, Average Transfer Rate | COMPLETE | Both features specced, planned, implemented, tested, committed |
 
 ## Risk Assessment
 
@@ -53,4 +54,6 @@ Average Xfer Rate   ████████████████████
 
 ## Retrospective
 
-_To be filled at milestone completion._
+Milestone M1 completed in 2 days. All 6 features implemented with full spec-driven workflow.
+Key wins: 92% test coverage, 132 tests, conventional commits adopted, CI pipeline running.
+All success criteria met — project ready for maturity promotion assessment.
