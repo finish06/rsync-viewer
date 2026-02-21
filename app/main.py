@@ -21,6 +21,7 @@ from app.models.monitor import SyncSourceMonitor  # noqa: F401 — ensure table 
 from app.models.failure_event import FailureEvent  # noqa: F401 — ensure table creation
 from app.models.webhook import WebhookEndpoint  # noqa: F401 — ensure table creation
 from app.models.notification_log import NotificationLog  # noqa: F401 — ensure table creation
+from app.models.webhook_options import WebhookOptions  # noqa: F401 — ensure table creation
 
 
 settings = get_settings()
