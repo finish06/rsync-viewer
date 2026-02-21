@@ -24,6 +24,7 @@ class SyncLog(SyncLogBase, table=True):
     speedup_ratio: Optional[float] = None
     file_count: Optional[int] = None
     file_list: Optional[list[str]] = Field(default=None, sa_column=Column(JSONB))
+    exit_code: Optional[int] = None
     status: str = Field(default="completed", max_length=20)
     is_dry_run: bool = Field(default=False)
     created_at: datetime = Field(default_factory=datetime.utcnow)

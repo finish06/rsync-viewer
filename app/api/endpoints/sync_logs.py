@@ -8,6 +8,8 @@ from sqlmodel import select, func
 
 from app.api.deps import SessionDep, ApiKeyDep
 from app.models.sync_log import SyncLog
+from app.models.failure_event import FailureEvent
+from app.models.monitor import SyncSourceMonitor
 from app.schemas.sync_log import (
     SyncLogCreate,
     SyncLogRead,
@@ -18,6 +20,7 @@ from app.schemas.sync_log import (
     ErrorResponse,
 )
 from app.services.rsync_parser import RsyncParser
+from app.services.webhook_dispatcher import dispatch_webhooks
 
 logger = logging.getLogger(__name__)
 
@@ -68,11 +71,38 @@ async def create_sync_log(
         file_count=parsed.file_count,
         file_list=parsed.file_list if parsed.file_list else None,
         is_dry_run=parsed.is_dry_run,
+        exit_code=data.exit_code,
     )
 
     session.add(sync_log)
     session.commit()
     session.refresh(sync_log)
+
+    # Create FailureEvent for non-zero exit codes
+    if data.exit_code is not None and data.exit_code != 0:
+        failure = FailureEvent(
+            source_name=data.source_name,
+            failure_type="exit_code",
+            sync_log_id=sync_log.id,
+            details=f"rsync exited with code {data.exit_code}",
+        )
+        session.add(failure)
+        session.commit()
+        session.refresh(failure)
+
+        # Dispatch webhook notifications
+        await dispatch_webhooks(session, failure)
+
+    # Update monitor's last_sync_at if a monitor exists for this source
+    monitor = session.exec(
+        select(SyncSourceMonitor).where(
+            SyncSourceMonitor.source_name == data.source_name
+        )
+    ).first()
+    if monitor:
+        monitor.last_sync_at = sync_log.end_time
+        session.add(monitor)
+        session.commit()
 
     logger.info(
         "Sync log created",

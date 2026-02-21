@@ -29,6 +29,11 @@ class SyncLogCreate(BaseModel):
             "sending incremental file list\nfile1.txt\nsent 1.23K bytes received 45 bytes 850.00 bytes/sec\ntotal size is 5.67M speedup is 4,444.88"
         ],
     )
+    exit_code: Optional[int] = Field(
+        default=None,
+        description="Rsync process exit code (0=success, non-zero=failure)",
+        examples=[0],
+    )
 
 
 class SyncLogRead(BaseModel):
@@ -51,6 +56,9 @@ class SyncLogRead(BaseModel):
         None, description="Transfer speed in bytes/sec"
     )
     file_count: Optional[int] = Field(None, description="Number of files transferred")
+    exit_code: Optional[int] = Field(
+        None, description="Rsync process exit code"
+    )
     status: str = Field(..., description="Sync status (completed, failed, etc.)")
     is_dry_run: bool = Field(
         False, description="Whether this was a dry run (no actual transfer)"

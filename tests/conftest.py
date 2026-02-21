@@ -13,6 +13,10 @@ from app.database import get_session
 from app.api.deps import verify_api_key
 from app.main import app
 from app.models.sync_log import SyncLog
+from app.models.monitor import SyncSourceMonitor  # noqa: F401 — ensure table creation
+from app.models.failure_event import FailureEvent  # noqa: F401 — ensure table creation
+from app.models.webhook import WebhookEndpoint  # noqa: F401 — ensure table creation
+from app.models.notification_log import NotificationLog  # noqa: F401 — ensure table creation
 
 
 # Get database URL from environment or use default test database

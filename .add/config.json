@@ -8,10 +8,10 @@
     "author": "finish06"
   },
   "maturity": {
-    "level": "poc",
-    "promoted_from": null,
-    "promoted_date": null,
-    "next_promotion_criteria": "CI/CD pipeline, webhook notifications for failed syncs, 80% test coverage, conventional commits adopted"
+    "level": "alpha",
+    "promoted_from": "poc",
+    "promoted_date": "2026-02-20",
+    "next_promotion_criteria": "Full specs for all features, TDD adopted on all paths, 80%+ coverage sustained, error handling complete, 30+ days stability"
   },
   "architecture": {
     "languages": [
@@ -143,8 +143,8 @@
     "lastVersionTag": null
   },
   "planning": {
-    "current_milestone": "M1-foundation",
-    "current_cycle": "cycle-1",
+    "current_milestone": "M2-notifications",
+    "current_cycle": null,
     "wip_limit": 1,
     "parallel_agents": 1,
     "cycle_history": []
