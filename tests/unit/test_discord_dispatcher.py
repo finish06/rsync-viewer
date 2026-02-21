@@ -7,10 +7,9 @@ from unittest.mock import AsyncMock, patch
 from uuid import uuid4
 
 import pytest
-from sqlmodel import Session, select
+from sqlmodel import Session
 
 from app.models.failure_event import FailureEvent
-from app.models.notification_log import NotificationLog
 from app.models.webhook import WebhookEndpoint
 from app.models.webhook_options import WebhookOptions
 from app.services.webhook_dispatcher import dispatch_webhooks

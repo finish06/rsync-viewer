@@ -7,9 +7,8 @@ from unittest.mock import AsyncMock, patch
 from uuid import uuid4
 
 import pytest
-from sqlmodel import Session, select
+from sqlmodel import select
 
-from app.models.webhook import WebhookEndpoint
 from app.models.webhook_options import WebhookOptions
 
 
