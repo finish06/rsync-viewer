@@ -2,6 +2,13 @@
 
 {% block content %}
 <div class="dashboard">
+    <section class="quick-select">
+        <button class="quick-select-btn active" data-range="7d" onclick="selectRange('7d', this)">Last 7 Days</button>
+        <button class="quick-select-btn" data-range="30d" onclick="selectRange('30d', this)">Last 30 Days</button>
+        <button class="quick-select-btn" data-range="max" onclick="selectRange('max', this)">Max</button>
+        <button class="quick-select-btn" data-range="custom" onclick="selectRange('custom', this)">Custom</button>
+    </section>
+
     <section class="filters">
         <form id="filter-form" hx-trigger="submit">
             <div class="filter-group">
@@ -14,12 +21,12 @@
                 </select>
             </div>
 
-            <div class="filter-group">
+            <div class="filter-group date-filter" style="display: none;">
                 <label for="start_date">From:</label>
                 <input type="date" name="start_date" id="start_date">
             </div>
 
-            <div class="filter-group">
+            <div class="filter-group date-filter" style="display: none;">
                 <label for="end_date">To:</label>
                 <input type="date" name="end_date" id="end_date">
             </div>
@@ -48,17 +55,13 @@
     </section>
 
     <section class="charts-wrapper">
-        <div id="charts-container"
-             hx-get="/htmx/charts?show_dry_run=hide&hide_empty=hide"
-             hx-trigger="load">
+        <div id="charts-container">
             <div class="charts-loading">Loading charts...</div>
         </div>
     </section>
 
     <section class="sync-logs">
         <div id="sync-table"
-             hx-get="/htmx/sync-table?show_dry_run=hide&hide_empty=hide"
-             hx-trigger="load"
              hx-indicator="#loading">
             <div class="loading">Loading...</div>
         </div>
@@ -67,21 +70,78 @@
 </div>
 
 <script>
+var currentRange = '7d';
+
+function getFilterParams() {
+    var params = new URLSearchParams();
+    var source = document.getElementById('source_name').value;
+    if (source) params.set('source_name', source);
+    params.set('show_dry_run', document.getElementById('show_dry_run').value);
+    params.set('hide_empty', document.getElementById('hide_empty').value);
+    return params;
+}
+
+function applyDateRange(range, params) {
+    if (range === '7d' || range === '30d') {
+        var days = range === '7d' ? 7 : 30;
+        var now = new Date();
+        var start = new Date(now);
+        start.setDate(start.getDate() - days);
+        params.set('start_date', start.toISOString());
+        params.set('end_date', now.toISOString());
+    } else if (range === 'max') {
+        params.set('limit', '50');
+    } else if (range === 'custom') {
+        var startDate = document.getElementById('start_date').value;
+        var endDate = document.getElementById('end_date').value;
+        if (startDate) params.set('start_date', startDate);
+        if (endDate) params.set('end_date', endDate);
+    }
+}
+
+function fetchDashboard(params) {
+    htmx.ajax('GET', '/htmx/charts?' + params.toString(), '#charts-container');
+    htmx.ajax('GET', '/htmx/sync-table?' + params.toString(), '#sync-table');
+}
+
+function selectRange(range, btn) {
+    currentRange = range;
+
+    // Update active button
+    var buttons = document.querySelectorAll('.quick-select-btn');
+    buttons.forEach(function(b) { b.classList.remove('active'); });
+    if (btn) btn.classList.add('active');
+    else {
+        var target = document.querySelector('[data-range="' + range + '"]');
+        if (target) target.classList.add('active');
+    }
+
+    // Show/hide date pickers
+    var dateFilters = document.querySelectorAll('.date-filter');
+    dateFilters.forEach(function(el) {
+        el.style.display = (range === 'custom') ? '' : 'none';
+    });
+
+    var params = getFilterParams();
+    applyDateRange(range, params);
+    fetchDashboard(params);
+}
+
 document.getElementById('filter-form').addEventListener('submit', function(e) {
     e.preventDefault();
-    const formData = new FormData(this);
-    const params = new URLSearchParams(formData).toString();
-
-    // Update both charts and table
-    htmx.ajax('GET', '/htmx/charts?' + params, '#charts-container');
-    htmx.ajax('GET', '/htmx/sync-table?' + params, '#sync-table');
+    var params = getFilterParams();
+    applyDateRange(currentRange, params);
+    fetchDashboard(params);
 });
 
 function resetFilters() {
     document.getElementById('filter-form').reset();
-    const defaultParams = 'show_dry_run=hide&hide_empty=hide';
-    htmx.ajax('GET', '/htmx/charts?' + defaultParams, '#charts-container');
-    htmx.ajax('GET', '/htmx/sync-table?' + defaultParams, '#sync-table');
+    selectRange('7d');
 }
+
+// Default: load with Last 7 Days on page load
+document.addEventListener('DOMContentLoaded', function() {
+    selectRange('7d');
+});
 </script>
 {% endblock %}

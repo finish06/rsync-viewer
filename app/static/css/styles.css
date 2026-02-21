@@ -79,6 +79,47 @@ main {
     padding: 2rem;
 }
 
+/* Quick Select */
+.quick-select {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.quick-select-btn {
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 9999px;
+    background-color: var(--card-bg);
+    color: var(--text-color);
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.quick-select-btn:hover {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
+.quick-select-btn.active {
+    background-color: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+/* Load All */
+.load-all-container {
+    display: flex;
+    justify-content: center;
+    margin-top: 1rem;
+}
+
+.load-all-btn {
+    padding: 0.5rem 1.5rem;
+}
+
 /* Filters */
 .filters {
     background-color: var(--card-bg);

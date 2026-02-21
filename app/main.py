@@ -199,6 +199,7 @@ async def htmx_sync_table(
     hide_empty: str = Query("hide"),
     offset: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
+    load_all: bool = Query(False),
 ):
     """HTMX partial: sync logs table"""
 
@@ -231,9 +232,12 @@ async def htmx_sync_table(
     total = session.exec(count_statement).one()
 
     # Apply pagination and ordering
-    statement = (
-        statement.order_by(SyncLog.start_time.desc()).offset(offset).limit(limit)
-    )
+    if load_all:
+        statement = statement.order_by(SyncLog.start_time.desc())
+    else:
+        statement = (
+            statement.order_by(SyncLog.start_time.desc()).offset(offset).limit(limit)
+        )
     syncs = session.exec(statement).all()
 
     # Get sources for filter
@@ -249,6 +253,7 @@ async def htmx_sync_table(
             "total": total,
             "offset": offset,
             "limit": limit,
+            "load_all": load_all,
             "sources": sources,
             "selected_source": source_name,
             "start_date": start_date or "",

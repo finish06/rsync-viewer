@@ -39,7 +39,7 @@
 </table>
 
 <div class="pagination">
-    {% if offset > 0 %}
+    {% if offset > 0 and not load_all %}
     <button class="btn btn-secondary"
             hx-get="/htmx/sync-table?offset={{ offset - limit }}&limit={{ limit }}{% if selected_source %}&source_name={{ selected_source }}{% endif %}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}&show_dry_run={{ show_dry_run }}&hide_empty={{ hide_empty }}"
             hx-target="#sync-table">
@@ -51,7 +51,7 @@
         Showing {{ offset + 1 }} - {{ offset + syncs|length }} of {{ total }}
     </span>
 
-    {% if offset + limit < total %}
+    {% if not load_all and offset + limit < total %}
     <button class="btn btn-secondary"
             hx-get="/htmx/sync-table?offset={{ offset + limit }}&limit={{ limit }}{% if selected_source %}&source_name={{ selected_source }}{% endif %}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}&show_dry_run={{ show_dry_run }}&hide_empty={{ hide_empty }}"
             hx-target="#sync-table">
@@ -59,6 +59,16 @@
     </button>
     {% endif %}
 </div>
+
+{% if not load_all and syncs|length < total %}
+<div class="load-all-container">
+    <button class="btn btn-secondary load-all-btn"
+            hx-get="/htmx/sync-table?load_all=true{% if selected_source %}&source_name={{ selected_source }}{% endif %}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}&show_dry_run={{ show_dry_run }}&hide_empty={{ hide_empty }}"
+            hx-target="#sync-table">
+        Load All ({{ total - syncs|length }} remaining)
+    </button>
+</div>
+{% endif %}
 {% else %}
 <div class="empty-state">
     <p>No sync logs found.</p>
