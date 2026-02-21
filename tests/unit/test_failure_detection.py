@@ -105,3 +105,37 @@ async def test_ac011_no_exit_code_treated_as_success(
         headers={"X-API-Key": "test-api-key"},
     )
     assert len(failures_response.json()) == 0
+
+
+# --- Sync log updates monitor last_sync_at ---
+
+
+@pytest.mark.anyio
+async def test_sync_log_updates_monitor_last_sync_at(
+    client: AsyncClient, sample_sync_log_data
+):
+    """Submitting a sync log should update the matching monitor's last_sync_at."""
+    # Create a monitor for the same source
+    await client.post(
+        "/api/v1/monitors",
+        json={
+            "source_name": sample_sync_log_data["source_name"],
+            "expected_interval_hours": 24,
+        },
+        headers={"X-API-Key": "test-api-key"},
+    )
+
+    response = await client.post(
+        "/api/v1/sync-logs",
+        json=sample_sync_log_data,
+        headers={"X-API-Key": "test-api-key"},
+    )
+    assert response.status_code == 201
+
+    monitors_response = await client.get(
+        "/api/v1/monitors",
+        headers={"X-API-Key": "test-api-key"},
+    )
+    monitors = monitors_response.json()
+    assert len(monitors) == 1
+    assert monitors[0]["last_sync_at"] is not None
