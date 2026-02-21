@@ -3,7 +3,9 @@ from datetime import datetime, timedelta
 from typing import Optional
 from uuid import UUID
 
-from fastapi import FastAPI, Request, Query, Depends
+from fastapi import FastAPI, HTTPException, Request, Query, Depends
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlmodel import SQLModel, Session, select, func
@@ -11,6 +13,7 @@ from sqlmodel import SQLModel, Session, select, func
 from app.config import get_settings
 from app.database import engine, get_session
 from app.api.endpoints import sync_logs
+from app.errors import make_error_response, INTERNAL_ERROR, VALIDATION_ERROR
 from app.models.sync_log import SyncLog
 
 
@@ -48,6 +51,67 @@ Protected endpoints require an API key passed via the `X-API-Key` header.
         },
     ],
 )
+
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    """Wrap HTTPExceptions in structured error format."""
+    # Map detail messages to error codes
+    detail = str(exc.detail)
+    if "API key required" in detail:
+        error_code = "API_KEY_REQUIRED"
+    elif "Invalid or inactive API key" in detail:
+        error_code = "API_KEY_INVALID"
+    elif "not found" in detail.lower():
+        error_code = "RESOURCE_NOT_FOUND"
+    else:
+        error_code = "BAD_REQUEST"
+
+    return JSONResponse(
+        status_code=exc.status_code,
+        content=make_error_response(
+            error_code=error_code,
+            message=detail,
+            path=str(request.url.path),
+            detail=detail,
+        ),
+    )
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    """Wrap validation errors in structured error format."""
+    return JSONResponse(
+        status_code=422,
+        content=make_error_response(
+            error_code=VALIDATION_ERROR,
+            message="Request validation failed",
+            path=str(request.url.path),
+            detail="One or more fields failed validation",
+            validation_errors=[
+                {
+                    "loc": list(err.get("loc", [])),
+                    "msg": err.get("msg", ""),
+                    "type": err.get("type", ""),
+                }
+                for err in exc.errors()
+            ],
+        ),
+    )
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """Catch all unhandled exceptions — no stack traces leaked."""
+    return JSONResponse(
+        status_code=500,
+        content=make_error_response(
+            error_code=INTERNAL_ERROR,
+            message="An internal server error occurred",
+            path=str(request.url.path),
+        ),
+    )
+
 
 # Mount static files
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
@@ -107,6 +171,17 @@ async def index(request: Request, session: Session = Depends(get_session)):
     )
 
 
+def _parse_date(value: str) -> datetime:
+    """Parse an ISO format date string, raising HTTPException on failure."""
+    try:
+        return datetime.fromisoformat(value)
+    except (ValueError, TypeError):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid date format: {value}",
+        )
+
+
 @app.get("/htmx/sync-table")
 async def htmx_sync_table(
     request: Request,
@@ -127,13 +202,9 @@ async def htmx_sync_table(
     if source_name:
         statement = statement.where(SyncLog.source_name == source_name)
     if start_date:
-        statement = statement.where(
-            SyncLog.start_time >= datetime.fromisoformat(start_date)
-        )
+        statement = statement.where(SyncLog.start_time >= _parse_date(start_date))
     if end_date:
-        statement = statement.where(
-            SyncLog.start_time <= datetime.fromisoformat(end_date)
-        )
+        statement = statement.where(SyncLog.start_time <= _parse_date(end_date))
 
     # Filter dry runs
     if show_dry_run == "hide":
@@ -200,13 +271,9 @@ async def htmx_charts(
     if source_name:
         statement = statement.where(SyncLog.source_name == source_name)
     if start_date:
-        statement = statement.where(
-            SyncLog.start_time >= datetime.fromisoformat(start_date)
-        )
+        statement = statement.where(SyncLog.start_time >= _parse_date(start_date))
     if end_date:
-        statement = statement.where(
-            SyncLog.start_time <= datetime.fromisoformat(end_date)
-        )
+        statement = statement.where(SyncLog.start_time <= _parse_date(end_date))
 
     # Filter dry runs
     if show_dry_run == "hide":
