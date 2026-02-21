@@ -20,6 +20,7 @@ from app.schemas.sync_log import (
     ErrorResponse,
 )
 from app.services.rsync_parser import RsyncParser
+from app.services.webhook_dispatcher import dispatch_webhooks
 
 logger = logging.getLogger(__name__)
 
@@ -87,6 +88,10 @@ async def create_sync_log(
         )
         session.add(failure)
         session.commit()
+        session.refresh(failure)
+
+        # Dispatch webhook notifications
+        await dispatch_webhooks(session, failure)
 
     # Update monitor's last_sync_at if a monitor exists for this source
     monitor = session.exec(
