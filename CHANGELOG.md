@@ -7,6 +7,25 @@ and this project adheres to [Conventional Commits](https://www.conventionalcommi
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-02-22
+
+### Added
+
+- Add notification history dashboard with HTMX tab, filters, and pagination
+- Add API key debounce spec and tests (10 tests verifying existing implementation)
+- Add notification history spec and implementation plan
+
+### Fixed
+
+- Resolve all mypy type errors across codebase (21 errors fixed)
+- Fix ruff lint error (unused variable) and format 15 files
+
+### Documentation
+
+- Mark M2 (Notifications) milestone as COMPLETE (6/6 criteria met)
+- Mark M5 (API Performance) milestone as COMPLETE (5/5 criteria met)
+- Update PRD roadmap — M1, M2, M5 complete; maturity promoted to Alpha
+
 ## [1.3.0] - 2026-02-22
 
 ### Added
