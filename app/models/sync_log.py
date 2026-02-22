@@ -26,7 +26,7 @@ class SyncLog(SyncLogBase, table=True):
     file_list: Optional[list[str]] = Field(default=None, sa_column=Column(JSONB))
     exit_code: Optional[int] = None
     status: str = Field(default="completed", max_length=20)
-    is_dry_run: bool = Field(default=False)
+    is_dry_run: bool = Field(default=False, index=True)
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 

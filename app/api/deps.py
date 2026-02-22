@@ -1,6 +1,6 @@
 import hashlib
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Annotated, Optional
 
 from fastapi import Depends, HTTPException, Header, status
@@ -39,7 +39,7 @@ async def verify_api_key(
     key_hash = hash_api_key(x_api_key)
 
     statement = select(ApiKey).where(
-        ApiKey.key_hash == key_hash, ApiKey.is_active == True
+        ApiKey.key_hash == key_hash, ApiKey.is_active.is_(True)
     )
     api_key = session.exec(statement).first()
 
@@ -50,10 +50,15 @@ async def verify_api_key(
             detail="Invalid or inactive API key",
         )
 
-    # Update last_used_at
-    api_key.last_used_at = datetime.utcnow()
-    session.add(api_key)
-    session.commit()
+    # Debounce last_used_at — only write if stale by 5+ minutes
+    now = datetime.utcnow()
+    if (
+        api_key.last_used_at is None
+        or now - api_key.last_used_at > timedelta(minutes=5)
+    ):
+        api_key.last_used_at = now
+        session.add(api_key)
+        session.commit()
 
     return api_key
 

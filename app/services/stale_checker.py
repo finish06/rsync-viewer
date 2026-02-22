@@ -29,6 +29,15 @@ def check_stale_sources(session: Session) -> list[FailureEvent]:
     new_events: list[FailureEvent] = []
     now = datetime.utcnow()
 
+    # Batch-load all existing stale events to avoid N+1 queries per monitor
+    existing_stale = session.exec(
+        select(FailureEvent).where(FailureEvent.failure_type == "stale")
+    ).all()
+    # Index by source_name for O(1) lookup
+    stale_by_source: dict[str, list[FailureEvent]] = {}
+    for ev in existing_stale:
+        stale_by_source.setdefault(ev.source_name, []).append(ev)
+
     for monitor in monitors:
         # Skip monitors that have never synced
         if monitor.last_sync_at is None:
@@ -42,13 +51,10 @@ def check_stale_sources(session: Session) -> list[FailureEvent]:
             continue  # Not stale yet
 
         # Check for existing stale event since last sync to avoid duplicates
-        existing = session.exec(
-            select(FailureEvent).where(
-                FailureEvent.source_name == monitor.source_name,
-                FailureEvent.failure_type == "stale",
-                FailureEvent.detected_at >= monitor.last_sync_at,
-            )
-        ).first()
+        existing = any(
+            ev.detected_at >= monitor.last_sync_at
+            for ev in stale_by_source.get(monitor.source_name, [])
+        )
 
         if existing:
             continue  # Already flagged
@@ -65,8 +71,6 @@ def check_stale_sources(session: Session) -> list[FailureEvent]:
             ),
         )
         session.add(event)
-        session.commit()
-        session.refresh(event)
         new_events.append(event)
 
         logger.info(
@@ -76,5 +80,11 @@ def check_stale_sources(session: Session) -> list[FailureEvent]:
                 "hours_overdue": round(hours_overdue, 1),
             },
         )
+
+    # Single commit for all new events instead of one per event
+    if new_events:
+        session.commit()
+        for event in new_events:
+            session.refresh(event)
 
     return new_events
