@@ -163,7 +163,7 @@ async def list_sync_logs(
 
     # Apply pagination and ordering
     statement = (
-        statement.order_by(SyncLog.start_time.desc()).offset(offset).limit(limit)
+        statement.order_by(SyncLog.start_time.desc()).offset(offset).limit(limit)  # type: ignore[attr-defined]
     )
     sync_logs = session.exec(statement).all()
 
@@ -191,7 +191,7 @@ async def list_sources(session: SessionDep):
     """
     statement = select(SyncLog.source_name).distinct().order_by(SyncLog.source_name)
     sources = session.exec(statement).all()
-    return SourceListResponse(sources=sources)
+    return SourceListResponse(sources=list(sources))
 
 
 @router.get(

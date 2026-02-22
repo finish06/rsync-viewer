@@ -58,7 +58,7 @@ async def list_webhooks(session: SessionDep, api_key: ApiKeyDep):
     if webhook_ids:
         all_opts = session.exec(
             select(WebhookOptions).where(
-                WebhookOptions.webhook_endpoint_id.in_(webhook_ids)
+                WebhookOptions.webhook_endpoint_id.in_(webhook_ids)  # type: ignore[attr-defined]
             )
         ).all()
         options_map = {opt.webhook_endpoint_id: opt.options for opt in all_opts}

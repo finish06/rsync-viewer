@@ -43,6 +43,6 @@ async def list_failures(
     if notified is not None:
         statement = statement.where(FailureEvent.notified == notified)
 
-    statement = statement.order_by(FailureEvent.detected_at.desc())
+    statement = statement.order_by(FailureEvent.detected_at.desc())  # type: ignore[attr-defined]
     events = session.exec(statement).all()
     return events

@@ -131,7 +131,7 @@ async def dispatch_webhooks(session: Session, event: FailureEvent) -> None:
     Sets event.notified=True if at least one endpoint succeeds.
     """
     webhooks = session.exec(
-        select(WebhookEndpoint).where(WebhookEndpoint.enabled.is_(True))
+        select(WebhookEndpoint).where(WebhookEndpoint.enabled.is_(True))  # type: ignore[attr-defined]
     ).all()
 
     if not webhooks:
@@ -149,7 +149,7 @@ async def dispatch_webhooks(session: Session, event: FailureEvent) -> None:
     if discord_webhook_ids:
         all_opts = session.exec(
             select(WebhookOptions).where(
-                WebhookOptions.webhook_endpoint_id.in_(discord_webhook_ids)
+                WebhookOptions.webhook_endpoint_id.in_(discord_webhook_ids)  # type: ignore[attr-defined]
             )
         ).all()
         options_map = {opt.webhook_endpoint_id: opt.options for opt in all_opts}

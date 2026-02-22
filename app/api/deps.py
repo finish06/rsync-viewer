@@ -39,7 +39,7 @@ async def verify_api_key(
     key_hash = hash_api_key(x_api_key)
 
     statement = select(ApiKey).where(
-        ApiKey.key_hash == key_hash, ApiKey.is_active.is_(True)
+        ApiKey.key_hash == key_hash, ApiKey.is_active.is_(True)  # type: ignore[attr-defined]
     )
     api_key = session.exec(statement).first()
 

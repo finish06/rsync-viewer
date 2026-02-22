@@ -23,7 +23,7 @@ def check_stale_sources(session: Session) -> list[FailureEvent]:
     Returns a list of newly created FailureEvent objects.
     """
     monitors = session.exec(
-        select(SyncSourceMonitor).where(SyncSourceMonitor.enabled.is_(True))
+        select(SyncSourceMonitor).where(SyncSourceMonitor.enabled.is_(True))  # type: ignore[attr-defined]
     ).all()
 
     new_events: list[FailureEvent] = []

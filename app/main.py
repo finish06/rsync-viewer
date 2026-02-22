@@ -157,7 +157,7 @@ def format_bytes(value: Optional[int]) -> str:
     for unit in ["B", "KB", "MB", "GB", "TB", "PB"]:
         if abs(value) < 1024.0:
             return f"{value:.2f} {unit}"
-        value /= 1024.0
+        value = int(value / 1024.0)
     return f"{value:.2f} PB"
 
 
@@ -261,13 +261,13 @@ async def htmx_sync_table(
 
     # Filter dry runs
     if show_dry_run == "hide":
-        statement = statement.where(SyncLog.is_dry_run.is_(False))
+        statement = statement.where(SyncLog.is_dry_run.is_(False))  # type: ignore[attr-defined]
     elif show_dry_run == "only":
-        statement = statement.where(SyncLog.is_dry_run.is_(True))
+        statement = statement.where(SyncLog.is_dry_run.is_(True))  # type: ignore[attr-defined]
 
     # Filter empty runs (runs with zero files transferred)
     if hide_empty == "hide":
-        statement = statement.where(SyncLog.file_count > 0)
+        statement = statement.where(SyncLog.file_count > 0)  # type: ignore[operator]
     elif hide_empty == "only":
         statement = statement.where(
             (SyncLog.file_count == 0) | (SyncLog.file_count == None)  # noqa: E711
@@ -279,10 +279,10 @@ async def htmx_sync_table(
 
     # Apply pagination and ordering
     if load_all:
-        statement = statement.order_by(SyncLog.start_time.desc())
+        statement = statement.order_by(SyncLog.start_time.desc())  # type: ignore[attr-defined]
     else:
         statement = (
-            statement.order_by(SyncLog.start_time.desc()).offset(offset).limit(limit)
+            statement.order_by(SyncLog.start_time.desc()).offset(offset).limit(limit)  # type: ignore[attr-defined]
         )
     syncs = session.exec(statement).all()
 
@@ -334,27 +334,27 @@ async def htmx_charts(
 
     # Filter dry runs
     if show_dry_run == "hide":
-        statement = statement.where(SyncLog.is_dry_run.is_(False))
+        statement = statement.where(SyncLog.is_dry_run.is_(False))  # type: ignore[attr-defined]
     elif show_dry_run == "only":
-        statement = statement.where(SyncLog.is_dry_run.is_(True))
+        statement = statement.where(SyncLog.is_dry_run.is_(True))  # type: ignore[attr-defined]
 
     # Filter empty runs
     if hide_empty == "hide":
-        statement = statement.where(SyncLog.file_count > 0)
+        statement = statement.where(SyncLog.file_count > 0)  # type: ignore[operator]
     elif hide_empty == "only":
         statement = statement.where(
             (SyncLog.file_count == 0) | (SyncLog.file_count == None)  # noqa: E711
         )
 
     # Get recent syncs (limit 50, ordered by time ascending for charts)
-    statement = statement.order_by(SyncLog.start_time.desc()).limit(50)
+    statement = statement.order_by(SyncLog.start_time.desc()).limit(50)  # type: ignore[attr-defined]
     syncs = session.exec(statement).all()
 
     # Reverse to show oldest first in charts (left to right)
     syncs = list(reversed(syncs))
 
     # Prepare chart data
-    chart_data = {
+    chart_data: dict[str, list] = {
         "labels": [],
         "durations": [],
         "duration_labels": [],
@@ -439,15 +439,15 @@ async def htmx_notifications(
 
     # For webhook_name and source_name filters, we need to join related tables
     if webhook_name:
-        statement = statement.join(
+        statement = statement.join(  # type: ignore[arg-type]
             WebhookEndpoint,
-            NotificationLog.webhook_endpoint_id == WebhookEndpoint.id,
+            NotificationLog.webhook_endpoint_id == WebhookEndpoint.id,  # type: ignore[arg-type]
         ).where(WebhookEndpoint.name == webhook_name)
 
     if source_name:
-        statement = statement.join(
+        statement = statement.join(  # type: ignore[arg-type]
             FailureEvent,
-            NotificationLog.failure_event_id == FailureEvent.id,
+            NotificationLog.failure_event_id == FailureEvent.id,  # type: ignore[arg-type]
         ).where(FailureEvent.source_name == source_name)
 
     # Get total count
@@ -456,7 +456,7 @@ async def htmx_notifications(
 
     # Apply ordering and pagination
     statement = (
-        statement.order_by(NotificationLog.created_at.desc())
+        statement.order_by(NotificationLog.created_at.desc())  # type: ignore[attr-defined]
         .offset(offset)
         .limit(limit)
     )
@@ -469,14 +469,14 @@ async def htmx_notifications(
     webhooks_map: dict = {}
     if webhook_ids:
         wh_list = session.exec(
-            select(WebhookEndpoint).where(WebhookEndpoint.id.in_(webhook_ids))
+            select(WebhookEndpoint).where(WebhookEndpoint.id.in_(webhook_ids))  # type: ignore[attr-defined]
         ).all()
         webhooks_map = {wh.id: wh for wh in wh_list}
 
     events_map: dict = {}
     if failure_event_ids:
         fe_list = session.exec(
-            select(FailureEvent).where(FailureEvent.id.in_(failure_event_ids))
+            select(FailureEvent).where(FailureEvent.id.in_(failure_event_ids))  # type: ignore[attr-defined]
         ).all()
         events_map = {fe.id: fe for fe in fe_list}
 
@@ -529,7 +529,7 @@ async def htmx_webhooks_list(request: Request, session: Session = Depends(get_se
     if webhook_ids:
         all_opts = session.exec(
             select(WebhookOptions).where(
-                WebhookOptions.webhook_endpoint_id.in_(webhook_ids)
+                WebhookOptions.webhook_endpoint_id.in_(webhook_ids)  # type: ignore[attr-defined]
             )
         ).all()
         options_map = {opt.webhook_endpoint_id: opt.options for opt in all_opts}
