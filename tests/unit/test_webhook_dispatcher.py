@@ -163,7 +163,9 @@ async def test_ac004_retries_on_failure(
         mock_client.post = AsyncMock(return_value=mock_response)
         mock_client_class.return_value = mock_client
 
-        with patch("app.services.webhook_dispatcher.asyncio.sleep", new_callable=AsyncMock):
+        with patch(
+            "app.services.webhook_dispatcher.asyncio.sleep", new_callable=AsyncMock
+        ):
             await dispatch_webhooks(db_session, event)
 
         # Should have been called 3 times (initial + 2 retries)
@@ -174,9 +176,7 @@ async def test_ac004_retries_on_failure(
 
 
 @pytest.mark.anyio
-async def test_ac005_delivery_logged(
-    db_session, create_webhook, create_failure_event
-):
+async def test_ac005_delivery_logged(db_session, create_webhook, create_failure_event):
     """Each delivery attempt is logged in NotificationLog."""
     webhook = create_webhook()
     event = create_failure_event()
@@ -196,9 +196,7 @@ async def test_ac005_delivery_logged(
         await dispatch_webhooks(db_session, event)
 
     logs = db_session.exec(
-        select(NotificationLog).where(
-            NotificationLog.failure_event_id == event.id
-        )
+        select(NotificationLog).where(NotificationLog.failure_event_id == event.id)
     ).all()
     assert len(logs) == 1
     assert logs[0].status == "success"
@@ -227,7 +225,9 @@ async def test_ac005_failed_attempts_all_logged(
         mock_client.post = AsyncMock(return_value=mock_response)
         mock_client_class.return_value = mock_client
 
-        with patch("app.services.webhook_dispatcher.asyncio.sleep", new_callable=AsyncMock):
+        with patch(
+            "app.services.webhook_dispatcher.asyncio.sleep", new_callable=AsyncMock
+        ):
             await dispatch_webhooks(db_session, event)
 
     logs = db_session.exec(
@@ -265,7 +265,9 @@ async def test_ac006_auto_disable_after_10_consecutive_failures(
         mock_client.post = AsyncMock(return_value=mock_response)
         mock_client_class.return_value = mock_client
 
-        with patch("app.services.webhook_dispatcher.asyncio.sleep", new_callable=AsyncMock):
+        with patch(
+            "app.services.webhook_dispatcher.asyncio.sleep", new_callable=AsyncMock
+        ):
             await dispatch_webhooks(db_session, event)
 
     db_session.refresh(webhook)
@@ -349,7 +351,9 @@ async def test_ac009_failure_event_not_notified_on_all_failures(
         mock_client.post = AsyncMock(return_value=mock_response)
         mock_client_class.return_value = mock_client
 
-        with patch("app.services.webhook_dispatcher.asyncio.sleep", new_callable=AsyncMock):
+        with patch(
+            "app.services.webhook_dispatcher.asyncio.sleep", new_callable=AsyncMock
+        ):
             await dispatch_webhooks(db_session, event)
 
     db_session.refresh(event)
@@ -384,9 +388,7 @@ async def test_ac010_dispatch_is_called_inline(
 
     # Verify it completed — notification log exists
     logs = db_session.exec(
-        select(NotificationLog).where(
-            NotificationLog.failure_event_id == event.id
-        )
+        select(NotificationLog).where(NotificationLog.failure_event_id == event.id)
     ).all()
     assert len(logs) == 1
 
@@ -453,9 +455,7 @@ async def test_ac008_custom_headers_sent(
     db_session, create_webhook, create_failure_event
 ):
     """Custom headers are included in the webhook POST request."""
-    create_webhook(
-        headers={"Authorization": "Bearer token123", "X-Custom": "value"}
-    )
+    create_webhook(headers={"Authorization": "Bearer token123", "X-Custom": "value"})
     event = create_failure_event()
 
     captured_headers = {}

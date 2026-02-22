@@ -52,9 +52,8 @@ async def verify_api_key(
 
     # Debounce last_used_at — only write if stale by 5+ minutes
     now = datetime.utcnow()
-    if (
-        api_key.last_used_at is None
-        or now - api_key.last_used_at > timedelta(minutes=5)
+    if api_key.last_used_at is None or now - api_key.last_used_at > timedelta(
+        minutes=5
     ):
         api_key.last_used_at = now
         session.add(api_key)

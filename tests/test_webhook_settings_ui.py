@@ -72,7 +72,9 @@ class TestWebhookList:
 
     async def test_ac007_webhook_list_shows_entries(self, client, create_webhook):
         """Webhook list displays configured webhooks."""
-        wh = create_webhook(name="Discord Alert", url="https://discord.com/api/webhooks/123/abc")
+        create_webhook(
+            name="Discord Alert", url="https://discord.com/api/webhooks/123/abc"
+        )
         response = await client.get("/htmx/webhooks")
         assert response.status_code == 200
         html = response.text
@@ -93,7 +95,9 @@ class TestWebhookList:
         html = response.text
         assert "5" in html
 
-    async def test_ac007_webhook_list_shows_enabled_toggle(self, client, create_webhook):
+    async def test_ac007_webhook_list_shows_enabled_toggle(
+        self, client, create_webhook
+    ):
         """Webhook list has enable/disable toggle for each webhook."""
         create_webhook(name="Toggle Test")
         response = await client.get("/htmx/webhooks")
@@ -173,7 +177,9 @@ class TestWebhookCreate:
         )
         assert response.status_code == 200
         html = response.text
-        assert "discord" in html.lower() and ("require" in html.lower() or "matching" in html.lower())
+        assert "discord" in html.lower() and (
+            "require" in html.lower() or "matching" in html.lower()
+        )
 
     async def test_ac007_create_discord_webhook_with_options(self, client, db_session):
         """Creating a Discord webhook saves Discord-specific options."""
@@ -197,6 +203,7 @@ class TestWebhookCreate:
 
         # Verify options were saved
         from sqlmodel import select
+
         wh = db_session.exec(
             select(WebhookEndpoint).where(WebhookEndpoint.name == "Discord Test")
         ).first()
@@ -226,7 +233,9 @@ class TestWebhookEdit:
         response = await client.get(f"/htmx/webhooks/{uuid4()}/edit")
         assert response.status_code == 404
 
-    async def test_ac007_update_webhook_success(self, client, create_webhook, db_session):
+    async def test_ac007_update_webhook_success(
+        self, client, create_webhook, db_session
+    ):
         """PUT /htmx/webhooks/{id} updates the webhook."""
         wh = create_webhook(name="Old Name")
         response = await client.put(
@@ -266,7 +275,9 @@ class TestWebhookDelete:
 class TestWebhookToggle:
     """AC-007: Enable/disable toggle via HTMX."""
 
-    async def test_ac007_toggle_disables_webhook(self, client, create_webhook, db_session):
+    async def test_ac007_toggle_disables_webhook(
+        self, client, create_webhook, db_session
+    ):
         """POST /htmx/webhooks/{id}/toggle disables an enabled webhook."""
         wh = create_webhook(name="Toggle Off", enabled=True)
         response = await client.post(f"/htmx/webhooks/{wh.id}/toggle")
@@ -275,7 +286,9 @@ class TestWebhookToggle:
         db_session.refresh(wh)
         assert wh.enabled is False
 
-    async def test_ac007_toggle_enables_webhook(self, client, create_webhook, db_session):
+    async def test_ac007_toggle_enables_webhook(
+        self, client, create_webhook, db_session
+    ):
         """POST /htmx/webhooks/{id}/toggle enables a disabled webhook."""
         wh = create_webhook(name="Toggle On", enabled=False)
         response = await client.post(f"/htmx/webhooks/{wh.id}/toggle")

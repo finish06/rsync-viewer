@@ -63,10 +63,7 @@ async def list_webhooks(session: SessionDep, api_key: ApiKeyDep):
         ).all()
         options_map = {opt.webhook_endpoint_id: opt.options for opt in all_opts}
 
-    return [
-        _webhook_to_read(wh, options_map.get(wh.id))
-        for wh in webhooks
-    ]
+    return [_webhook_to_read(wh, options_map.get(wh.id)) for wh in webhooks]
 
 
 @router.post(
@@ -75,9 +72,7 @@ async def list_webhooks(session: SessionDep, api_key: ApiKeyDep):
     status_code=status.HTTP_201_CREATED,
     summary="Create a webhook endpoint",
 )
-async def create_webhook(
-    data: WebhookCreate, session: SessionDep, api_key: ApiKeyDep
-):
+async def create_webhook(data: WebhookCreate, session: SessionDep, api_key: ApiKeyDep):
     """Create a new webhook endpoint for failure notifications."""
     webhook = WebhookEndpoint(
         name=data.name,
@@ -173,9 +168,7 @@ async def update_webhook(
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete a webhook endpoint",
 )
-async def delete_webhook(
-    webhook_id: UUID, session: SessionDep, api_key: ApiKeyDep
-):
+async def delete_webhook(webhook_id: UUID, session: SessionDep, api_key: ApiKeyDep):
     """Delete a webhook endpoint."""
     webhook = session.get(WebhookEndpoint, webhook_id)
     if not webhook:
@@ -195,9 +188,7 @@ async def delete_webhook(
     "/{webhook_id}/test",
     summary="Send a test notification",
 )
-async def test_webhook(
-    webhook_id: UUID, session: SessionDep, api_key: ApiKeyDep
-):
+async def test_webhook(webhook_id: UUID, session: SessionDep, api_key: ApiKeyDep):
     """Send a test notification to a webhook endpoint."""
     webhook = session.get(WebhookEndpoint, webhook_id)
     if not webhook:

@@ -164,7 +164,9 @@ class TestNotificationList:
         html = response.text
         assert "3" in html
 
-    async def test_ac009_sorted_newest_first(self, client, db_session, create_webhook, create_failure_event):
+    async def test_ac009_sorted_newest_first(
+        self, client, db_session, create_webhook, create_failure_event
+    ):
         """List is sorted by created_at descending."""
         wh = create_webhook(name="Sort Test")
         fe = create_failure_event(source_name="sort-src")
@@ -205,7 +207,9 @@ class TestNotificationFilters:
     async def test_ac004_filter_by_status(self, client, create_notification):
         """Filter by status shows only matching entries."""
         create_notification(status="success", webhook_name="WH Success")
-        create_notification(status="failed", webhook_name="WH Failed", http_status_code=500)
+        create_notification(
+            status="failed", webhook_name="WH Failed", http_status_code=500
+        )
 
         response = await client.get("/htmx/notifications?status=failed")
         html = response.text

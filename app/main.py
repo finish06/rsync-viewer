@@ -77,6 +77,7 @@ Protected endpoints require an API key passed via the `X-API-Key` header.
     ],
 )
 
+
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException):
     """Wrap HTTPExceptions in structured error format."""
@@ -516,9 +517,7 @@ async def settings_page(request: Request):
 
 
 @app.get("/htmx/webhooks")
-async def htmx_webhooks_list(
-    request: Request, session: Session = Depends(get_session)
-):
+async def htmx_webhooks_list(request: Request, session: Session = Depends(get_session)):
     """HTMX partial: webhook list table."""
     webhooks_list = session.exec(
         select(WebhookEndpoint).order_by(WebhookEndpoint.name)
@@ -591,7 +590,13 @@ async def htmx_webhook_create(
     if errors:
         return templates.TemplateResponse(
             "partials/webhook_form.html",
-            {"request": request, "webhook": None, "options": None, "errors": errors, "form": form},
+            {
+                "request": request,
+                "webhook": None,
+                "options": None,
+                "errors": errors,
+                "form": form,
+            },
         )
 
     source_filters = (
@@ -620,7 +625,8 @@ async def htmx_webhook_create(
             color_int = 16711749
         opts: dict[str, object] = {
             "color": color_int,
-            "username": _form_str(form, "discord_username", "Rsync Viewer").strip() or "Rsync Viewer",
+            "username": _form_str(form, "discord_username", "Rsync Viewer").strip()
+            or "Rsync Viewer",
         }
         avatar_url_val = _form_str(form, "discord_avatar_url").strip()
         if avatar_url_val:
@@ -652,9 +658,7 @@ async def htmx_webhook_edit_form(
         return HTMLResponse("<p>Webhook not found.</p>", status_code=404)
 
     opts_row = session.exec(
-        select(WebhookOptions).where(
-            WebhookOptions.webhook_endpoint_id == webhook_id
-        )
+        select(WebhookOptions).where(WebhookOptions.webhook_endpoint_id == webhook_id)
     ).first()
     options = opts_row.options if opts_row else None
 
@@ -743,7 +747,8 @@ async def htmx_webhook_update(
             color_int = 16711749
         opts: dict[str, object] = {
             "color": color_int,
-            "username": _form_str(form, "discord_username", "Rsync Viewer").strip() or "Rsync Viewer",
+            "username": _form_str(form, "discord_username", "Rsync Viewer").strip()
+            or "Rsync Viewer",
         }
         avatar_url_val = _form_str(form, "discord_avatar_url").strip()
         if avatar_url_val:

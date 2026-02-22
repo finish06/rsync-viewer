@@ -56,9 +56,7 @@ class SyncLogRead(BaseModel):
         None, description="Transfer speed in bytes/sec"
     )
     file_count: Optional[int] = Field(None, description="Number of files transferred")
-    exit_code: Optional[int] = Field(
-        None, description="Rsync process exit code"
-    )
+    exit_code: Optional[int] = Field(None, description="Rsync process exit code")
     status: str = Field(..., description="Sync status (completed, failed, etc.)")
     is_dry_run: bool = Field(
         False, description="Whether this was a dry run (no actual transfer)"
