@@ -260,16 +260,16 @@ async def htmx_sync_table(
 
     # Filter dry runs
     if show_dry_run == "hide":
-        statement = statement.where(SyncLog.is_dry_run == False)
+        statement = statement.where(SyncLog.is_dry_run.is_(False))
     elif show_dry_run == "only":
-        statement = statement.where(SyncLog.is_dry_run == True)
+        statement = statement.where(SyncLog.is_dry_run.is_(True))
 
     # Filter empty runs (runs with zero files transferred)
     if hide_empty == "hide":
         statement = statement.where(SyncLog.file_count > 0)
     elif hide_empty == "only":
         statement = statement.where(
-            (SyncLog.file_count == 0) | (SyncLog.file_count == None)
+            (SyncLog.file_count == 0) | (SyncLog.file_count == None)  # noqa: E711
         )
 
     # Get total count
@@ -333,16 +333,16 @@ async def htmx_charts(
 
     # Filter dry runs
     if show_dry_run == "hide":
-        statement = statement.where(SyncLog.is_dry_run == False)
+        statement = statement.where(SyncLog.is_dry_run.is_(False))
     elif show_dry_run == "only":
-        statement = statement.where(SyncLog.is_dry_run == True)
+        statement = statement.where(SyncLog.is_dry_run.is_(True))
 
     # Filter empty runs
     if hide_empty == "hide":
         statement = statement.where(SyncLog.file_count > 0)
     elif hide_empty == "only":
         statement = statement.where(
-            (SyncLog.file_count == 0) | (SyncLog.file_count == None)
+            (SyncLog.file_count == 0) | (SyncLog.file_count == None)  # noqa: E711
         )
 
     # Get recent syncs (limit 50, ordered by time ascending for charts)
@@ -520,8 +520,7 @@ async def htmx_webhook_create(
         enabled=enabled,
     )
     session.add(webhook)
-    session.commit()
-    session.refresh(webhook)
+    session.flush()  # Assigns webhook.id without committing
 
     # Create options for Discord webhooks
     if webhook_type == "discord":
@@ -543,7 +542,8 @@ async def htmx_webhook_create(
 
         wh_opts = WebhookOptions(webhook_endpoint_id=webhook.id, options=opts)
         session.add(wh_opts)
-        session.commit()
+
+    session.commit()
 
     logger.info("Webhook created via UI", extra={"webhook_name": name})
 
@@ -644,7 +644,6 @@ async def htmx_webhook_update(
     webhook.enabled = enabled
     webhook.updated_at = datetime.utcnow()
     session.add(webhook)
-    session.commit()
 
     # Update or create Discord options
     if webhook_type == "discord":
@@ -676,7 +675,6 @@ async def htmx_webhook_update(
         else:
             new_opts = WebhookOptions(webhook_endpoint_id=webhook_id, options=opts)
             session.add(new_opts)
-        session.commit()
     else:
         # Remove options if switching away from Discord
         existing_opts = session.exec(
@@ -686,7 +684,8 @@ async def htmx_webhook_update(
         ).first()
         if existing_opts:
             session.delete(existing_opts)
-            session.commit()
+
+    session.commit()
 
     logger.info("Webhook updated via UI", extra={"webhook_id": str(webhook_id)})
 
