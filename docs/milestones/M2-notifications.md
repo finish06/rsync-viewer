@@ -1,7 +1,7 @@
 # M2 — Notifications
 
 **Goal:** Alert users when syncs fail via webhooks, with Discord support and a settings UI for managing endpoints
-**Status:** IN_PROGRESS
+**Status:** COMPLETE
 **Appetite:** 1 week
 **Target Maturity:** alpha
 **Started:** 2026-02-21
@@ -14,7 +14,7 @@
 - [x] Discord webhook integration tested and working (PR #6)
 - [x] Sync source frequency configuration (24h, 7d, 14d, custom) manageable via dashboard
 - [x] Webhook settings UI at `/settings` for add/edit/delete/enable/disable endpoints (PR #8)
-- [ ] Notification history viewable in dashboard (timestamp, source, reason, delivery status)
+- [x] Notification history viewable in dashboard (timestamp, source, reason, delivery status) (PR #9)
 
 ## Hill Chart
 
@@ -23,7 +23,7 @@ Failure Detection    ███████████████████�
 Webhook Service      ████████████████████████████████████  DONE
 Discord Integration  ██████████████████████████████████░░  VERIFIED (PR #6)
 Webhook Settings UI  ██████████████████████████████████░░  VERIFIED (PR #8)
-Notification History ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  SHAPED
+Notification History ██████████████████████████████████░░  VERIFIED (PR #9)
 ```
 
 ## Features
@@ -34,7 +34,7 @@ Notification History ░░░░░░░░░░░░░░░░░░░�
 | Webhook Notification Service | specs/webhook-service.md | DONE | Backend complete, retry + auto-disable + notification log |
 | Discord Integration | specs/discord-integration.md | VERIFIED | 26 tests, embeds + source filters + rate limiting, PR #6 |
 | Webhook Settings UI | specs/webhook-service.md (AC-007) | VERIFIED | 21 tests, full CRUD + toggle + test button, PR #8 |
-| Notification History | — | SHAPED | Dashboard view of delivery history from notification_log table |
+| Notification History | specs/notification-history.md | VERIFIED | 17 tests, HTMX dashboard tab + filters + pagination, PR #9 |
 
 ## Dependencies
 
@@ -59,7 +59,7 @@ Notification History ░░░░░░░░░░░░░░░░░░░�
 | cycle-1 | Failure Detection | COMPLETE | 31 tests, 94% coverage, all ACs passing |
 | cycle-2 | Webhook Service (backend) | COMPLETE | Retry, auto-disable, notification log, optimized queries |
 | cycle-3 | Discord Integration | COMPLETE | 26 tests, PR #6, embeds + source filters + rate limiting |
-| cycle-4 | Webhook Settings UI, Notification History | PLANNED | HTMX UI for managing webhooks + delivery history view |
+| cycle-4 | Webhook Settings UI, Notification History | COMPLETE | Settings UI (21 tests, PR #8), Notification History (17 tests, PR #9) |
 
 ## Retrospective
 
