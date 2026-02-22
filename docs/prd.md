@@ -88,10 +88,11 @@ Production deployment is to a self-hosted homelab server. No staging environment
 
 | Milestone | Goal | Target Maturity | Status | Success Criteria |
 |-----------|------|-----------------|--------|------------------|
-| M1: Foundation | Stabilize existing features, add CI/CD | poc → alpha | NOW | CI pipeline, 80% coverage, conventional commits |
-| M2: Notifications | Webhook alerts for failed syncs | alpha | NEXT | HA/Discord webhooks working, < 60s latency |
+| M1: Foundation | Stabilize existing features, add CI/CD | poc → alpha | COMPLETE | CI pipeline, 80% coverage, conventional commits |
+| M2: Notifications | Webhook alerts for failed syncs | alpha | IN_PROGRESS | HA/Discord webhooks working, < 60s latency |
 | M3: Reliability | Error handling, logging, security hardening | alpha → beta | LATER | Structured logging, input validation, rate limiting |
-| M4: Analytics | Enhanced visualizations and metrics | beta | LATER | Per-source dashboards, trend analysis |
+| M4: Analytics & Integrations | Visualizations, dashboards, Home Assistant | beta | PLANNED | Per-source dashboards, trend analysis, HA webhooks |
+| M5: API Performance | Debounce API key `last_used_at` writes | alpha | PLANNED | Configurable debounce, zero regression, fewer DB writes |
 
 ### Milestone Detail
 

@@ -1,34 +1,35 @@
 # Away Mode Log
 
-**Started:** 2026-02-21
-**Expected Return:** ~4 hours
-**Duration:** 4 hours
+**Started:** 2026-02-21 (session 2)
+**Expected Return:** ~2 hours
+**Duration:** 2 hours
 
 ## Work Plan
-1. Update failure-detection spec to "Complete", update M2 milestone hill chart
-2. Commit uncommitted files (webhook spec, config updates, learnings)
-3. Create implementation plan for webhook service
-4. TDD cycle: RED — write failing tests for webhook service
-5. TDD cycle: GREEN — implement webhook service to pass tests
-6. TDD cycle: REFACTOR + VERIFY — quality gates
-7. Commit webhook service on feature branch, push
+1. Commit optimization pass 2 changes, push, create PR
+2. Create webhook.enabled index on production database
+3. Write webhook settings UI tests (AC-007) — verify existing implementation
+4. (If time) Start notification history spec/plan
 
 ## Queued for Human Return
-1. Merge webhook service PR to main
-2. Spec interviews for Home Assistant and Discord integrations
-3. Production deployment decisions
+1. Merge PR #7 (optimization pass 2)
+2. Merge PR #8 (webhook settings UI tests)
+3. Notification history spec interview — no spec exists yet
+4. Production deployment decisions
 
 ## Progress Log
 | Time | Task | Status | Notes |
 |------|------|--------|-------|
-| T+0:05 | 1. Update milestone & spec status | Complete | Failure Detection → DONE, Webhook Service → SPECCED |
-| T+0:10 | 2. Commit uncommitted files | Complete | Webhook spec, config, learnings committed (8f4595d) |
-| T+0:30 | 3. Create webhook service plan | Complete | 5-phase plan at docs/plans/webhook-service-plan.md |
-| T+1:00 | 4. TDD RED phase | Complete | 27 tests written, 24 failing as expected (a927844) |
-| T+2:00 | 5. TDD GREEN phase | Complete | All 27 webhook tests pass, 190 total (0b7531e) |
-| T+2:15 | 6. REFACTOR + VERIFY | Complete | Lint clean, 93% coverage, all gates pass (6ce59a7) |
-| T+2:20 | 7. Push + PR | Complete | PR #5 created on feature/webhook-service |
+| T+0:05 | 1. Commit & push optimization pass 2 | Complete | PR #7 created on feature/optimization-pass-2 |
+| T+0:10 | 2. Create production index | Complete | webhook.enabled index created via dockerized psql |
+| T+0:45 | 3. Write webhook settings UI tests | Complete | 21 tests in test_webhook_settings_ui.py, all passing |
+| T+0:50 | 3b. Run full test suite | Complete | 237 tests pass, no regressions |
+| T+0:55 | 3c. Push & create PR | Complete | PR #8 created on feature/webhook-settings-ui |
+| T+1:00 | 3d. Update M2 milestone | Complete | Webhook Settings UI → VERIFIED |
 
 ## Summary
-All 7 planned tasks completed in ~2.5 hours. 27 new tests, 190 total passing, 93% coverage.
-PR #5 ready for review at https://github.com/finish06/rsync-viewer/pull/5.
+All core tasks completed in ~1 hour. 21 new tests for webhook settings UI, 237 total passing.
+- PR #7: optimization pass 2 (webhook.enabled index, is_dry_run lint, consolidated DB commits)
+- PR #8: webhook settings UI tests (21 tests covering AC-007)
+- M2 milestone: 5/6 success criteria met, only Notification History remains
+
+Notification History is queued for human return — no spec exists yet, needs interview.

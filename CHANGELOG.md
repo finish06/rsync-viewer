@@ -7,19 +7,28 @@ and this project adheres to [Conventional Commits](https://www.conventionalcommi
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-02-22
+
 ### Added
 
-- Implement webhook notification service
 - Add failure detection with exit code tracking and stale sync monitoring
+- Add webhook notification service with retry logic and auto-disable
+- Add Discord integration with rich embeds, source filters, and rate limiting
+- Add webhook settings UI with HTMX CRUD (add/edit/delete/toggle/test)
+- Add webhook settings UI tests (21 tests covering AC-007)
+- Add monitor last_sync_at update integration test
 
 ### Changed
 
-- Fix lint warnings in webhook dispatcher tests
+- Debounce API key writes, fix stale checker N+1 queries, add database indexes
+- Add webhook.enabled index and reduce DB commits in HTMX handlers
+- Fix N+1 queries and reduce excessive DB commits in Discord integration
+- Clean up Discord integration code and remove unused imports
 
-### Documentation
+### Fixed
 
-- Add webhook service spec and update M2 milestone progress
-- Update changelog for v1.2.0 and complete M1 cycle
+- Add python-multipart dependency for form parsing
+- Log unhandled exceptions in global error handler
 
 ## [1.2.0] - 2026-02-20
 
