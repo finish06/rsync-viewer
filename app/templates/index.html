@@ -2,75 +2,108 @@
 
 {% block content %}
 <div class="dashboard">
-    <section class="quick-select">
-        <button class="quick-select-btn active" data-range="7d" onclick="selectRange('7d', this)">Last 7 Days</button>
-        <button class="quick-select-btn" data-range="30d" onclick="selectRange('30d', this)">Last 30 Days</button>
-        <button class="quick-select-btn" data-range="max" onclick="selectRange('max', this)">Max</button>
-        <button class="quick-select-btn" data-range="custom" onclick="selectRange('custom', this)">Custom</button>
-    </section>
+    <div class="dashboard-tabs">
+        <button class="dashboard-tab active" data-tab="syncs" onclick="switchTab('syncs', this)">Sync Logs</button>
+        <button class="dashboard-tab" data-tab="notifications" onclick="switchTab('notifications', this)">Notifications</button>
+    </div>
 
-    <section class="filters">
-        <form id="filter-form" hx-trigger="submit">
-            <div class="filter-group">
-                <label for="source_name">Source:</label>
-                <select name="source_name" id="source_name">
-                    <option value="">All Sources</option>
-                    {% for source in sources %}
-                    <option value="{{ source }}">{{ source }}</option>
-                    {% endfor %}
-                </select>
+    <div id="syncs-tab" class="tab-content">
+        <section class="quick-select">
+            <button class="quick-select-btn active" data-range="7d" onclick="selectRange('7d', this)">Last 7 Days</button>
+            <button class="quick-select-btn" data-range="30d" onclick="selectRange('30d', this)">Last 30 Days</button>
+            <button class="quick-select-btn" data-range="max" onclick="selectRange('max', this)">Max</button>
+            <button class="quick-select-btn" data-range="custom" onclick="selectRange('custom', this)">Custom</button>
+        </section>
+
+        <section class="filters">
+            <form id="filter-form" hx-trigger="submit">
+                <div class="filter-group">
+                    <label for="source_name">Source:</label>
+                    <select name="source_name" id="source_name">
+                        <option value="">All Sources</option>
+                        {% for source in sources %}
+                        <option value="{{ source }}">{{ source }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="filter-group date-filter" style="display: none;">
+                    <label for="start_date">From:</label>
+                    <input type="date" name="start_date" id="start_date">
+                </div>
+
+                <div class="filter-group date-filter" style="display: none;">
+                    <label for="end_date">To:</label>
+                    <input type="date" name="end_date" id="end_date">
+                </div>
+
+                <div class="filter-group">
+                    <label for="show_dry_run">Dry Runs:</label>
+                    <select name="show_dry_run" id="show_dry_run">
+                        <option value="hide" selected>Hide</option>
+                        <option value="show">Show</option>
+                        <option value="only">Only Dry Runs</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label for="hide_empty">Empty Runs:</label>
+                    <select name="hide_empty" id="hide_empty">
+                        <option value="hide" selected>Hide</option>
+                        <option value="show">Show</option>
+                        <option value="only">Only Empty</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Filter</button>
+                <button type="button" class="btn btn-secondary" onclick="resetFilters()">Reset</button>
+            </form>
+        </section>
+
+        <section class="charts-wrapper">
+            <div id="charts-container">
+                <div class="charts-loading">Loading charts...</div>
             </div>
+        </section>
 
-            <div class="filter-group date-filter" style="display: none;">
-                <label for="start_date">From:</label>
-                <input type="date" name="start_date" id="start_date">
+        <section class="sync-logs">
+            <div id="sync-table"
+                 hx-indicator="#loading">
+                <div class="loading">Loading...</div>
             </div>
+            <div id="loading" class="htmx-indicator">Loading...</div>
+        </section>
+    </div>
 
-            <div class="filter-group date-filter" style="display: none;">
-                <label for="end_date">To:</label>
-                <input type="date" name="end_date" id="end_date">
-            </div>
-
-            <div class="filter-group">
-                <label for="show_dry_run">Dry Runs:</label>
-                <select name="show_dry_run" id="show_dry_run">
-                    <option value="hide" selected>Hide</option>
-                    <option value="show">Show</option>
-                    <option value="only">Only Dry Runs</option>
-                </select>
-            </div>
-
-            <div class="filter-group">
-                <label for="hide_empty">Empty Runs:</label>
-                <select name="hide_empty" id="hide_empty">
-                    <option value="hide" selected>Hide</option>
-                    <option value="show">Show</option>
-                    <option value="only">Only Empty</option>
-                </select>
-            </div>
-
-            <button type="submit" class="btn btn-primary">Filter</button>
-            <button type="button" class="btn btn-secondary" onclick="resetFilters()">Reset</button>
-        </form>
-    </section>
-
-    <section class="charts-wrapper">
-        <div id="charts-container">
-            <div class="charts-loading">Loading charts...</div>
+    <div id="notifications-tab" class="tab-content" style="display: none;">
+        <div id="notifications-container"
+             hx-indicator="#notif-loading">
+            <div class="loading">Loading notifications...</div>
         </div>
-    </section>
-
-    <section class="sync-logs">
-        <div id="sync-table"
-             hx-indicator="#loading">
-            <div class="loading">Loading...</div>
-        </div>
-        <div id="loading" class="htmx-indicator">Loading...</div>
-    </section>
+        <div id="notif-loading" class="htmx-indicator">Loading...</div>
+    </div>
 </div>
 
 <script>
 var currentRange = '7d';
+var notificationsLoaded = false;
+
+function switchTab(tab, btn) {
+    // Update active tab button
+    var tabs = document.querySelectorAll('.dashboard-tab');
+    tabs.forEach(function(t) { t.classList.remove('active'); });
+    if (btn) btn.classList.add('active');
+
+    // Show/hide tab content
+    document.getElementById('syncs-tab').style.display = (tab === 'syncs') ? '' : 'none';
+    document.getElementById('notifications-tab').style.display = (tab === 'notifications') ? '' : 'none';
+
+    // Load notifications on first view
+    if (tab === 'notifications' && !notificationsLoaded) {
+        htmx.ajax('GET', '/htmx/notifications', '#notifications-container');
+        notificationsLoaded = true;
+    }
+}
 
 function getFilterParams() {
     var params = new URLSearchParams();

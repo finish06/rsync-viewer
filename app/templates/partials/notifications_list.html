@@ -1,0 +1,120 @@
+<!-- Notification Filters -->
+<div class="notification-filters">
+    <form class="notification-filter-form" hx-get="/htmx/notifications" hx-target="#notifications-container" hx-swap="innerHTML">
+        <div class="filter-group">
+            <label for="notif-status">Status:</label>
+            <select name="status" id="notif-status">
+                <option value="">All</option>
+                <option value="success" {% if selected_status == 'success' %}selected{% endif %}>Success</option>
+                <option value="failed" {% if selected_status == 'failed' %}selected{% endif %}>Failed</option>
+                <option value="skipped" {% if selected_status == 'skipped' %}selected{% endif %}>Skipped</option>
+            </select>
+        </div>
+
+        <div class="filter-group">
+            <label for="notif-webhook">Webhook:</label>
+            <select name="webhook_name" id="notif-webhook">
+                <option value="">All Webhooks</option>
+                {% for name in webhook_names %}
+                <option value="{{ name }}" {% if selected_webhook_name == name %}selected{% endif %}>{{ name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="filter-group">
+            <label for="notif-source">Source:</label>
+            <select name="source_name" id="notif-source">
+                <option value="">All Sources</option>
+                {% for name in source_names %}
+                <option value="{{ name }}" {% if selected_source_name == name %}selected{% endif %}>{{ name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Filter</button>
+    </form>
+</div>
+
+{% if notifications %}
+<table class="sync-table notification-table">
+    <thead>
+        <tr>
+            <th>Webhook</th>
+            <th>Source</th>
+            <th>Type</th>
+            <th>Status</th>
+            <th>HTTP Code</th>
+            <th>Attempt</th>
+            <th>Error</th>
+            <th>Timestamp</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for notif in notifications %}
+        <tr>
+            <td>
+                {% if notif.webhook_endpoint_id in webhooks_map %}
+                    {{ webhooks_map[notif.webhook_endpoint_id].name }}
+                {% else %}
+                    <span class="text-muted">[deleted]</span>
+                {% endif %}
+            </td>
+            <td>
+                {% if notif.failure_event_id in events_map %}
+                    <span class="source-badge">{{ events_map[notif.failure_event_id].source_name }}</span>
+                {% else %}
+                    <span class="text-muted">-</span>
+                {% endif %}
+            </td>
+            <td>
+                {% if notif.failure_event_id in events_map %}
+                    {{ events_map[notif.failure_event_id].failure_type }}
+                {% else %}
+                    -
+                {% endif %}
+            </td>
+            <td>
+                <span class="notification-status-badge status-{{ notif.status }}">{{ notif.status }}</span>
+            </td>
+            <td>{{ notif.http_status_code or '-' }}</td>
+            <td>{{ notif.attempt_number }}</td>
+            <td>
+                {% if notif.error_message %}
+                    <span class="error-message" title="{{ notif.error_message }}">{{ notif.error_message[:80] }}{% if notif.error_message|length > 80 %}...{% endif %}</span>
+                {% else %}
+                    -
+                {% endif %}
+            </td>
+            <td>{{ notif.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<div class="pagination">
+    {% if offset > 0 %}
+    <button class="btn btn-secondary"
+            hx-get="/htmx/notifications?offset={{ offset - limit }}&limit={{ limit }}{% if selected_status %}&status={{ selected_status }}{% endif %}{% if selected_webhook_name %}&webhook_name={{ selected_webhook_name }}{% endif %}{% if selected_source_name %}&source_name={{ selected_source_name }}{% endif %}"
+            hx-target="#notifications-container">
+        Previous
+    </button>
+    {% endif %}
+
+    <span class="pagination-info">
+        Showing {{ offset + 1 }} - {{ offset + notifications|length }} of {{ total }}
+    </span>
+
+    {% if offset + limit < total %}
+    <button class="btn btn-secondary"
+            hx-get="/htmx/notifications?offset={{ offset + limit }}&limit={{ limit }}{% if selected_status %}&status={{ selected_status }}{% endif %}{% if selected_webhook_name %}&webhook_name={{ selected_webhook_name }}{% endif %}{% if selected_source_name %}&source_name={{ selected_source_name }}{% endif %}"
+            hx-target="#notifications-container">
+        Next
+    </button>
+    {% endif %}
+</div>
+{% else %}
+<div class="empty-state">
+    <p>No notifications found.</p>
+    <p class="hint">Notifications appear here when webhook deliveries occur for failure events.</p>
+</div>
+{% endif %}
