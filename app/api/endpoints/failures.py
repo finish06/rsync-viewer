@@ -23,8 +23,12 @@ async def list_failures(
     session: SessionDep,
     api_key: ApiKeyDep,
     source_name: Optional[str] = Query(None, description="Filter by source name"),
-    failure_type: Optional[str] = Query(None, description="Filter by failure type (exit_code or stale)"),
-    since: Optional[datetime] = Query(None, description="Only failures after this time (ISO 8601)"),
+    failure_type: Optional[str] = Query(
+        None, description="Filter by failure type (exit_code or stale)"
+    ),
+    since: Optional[datetime] = Query(
+        None, description="Only failures after this time (ISO 8601)"
+    ),
     notified: Optional[bool] = Query(None, description="Filter by notification status"),
 ):
     """List failure events with optional filtering."""
@@ -39,6 +43,6 @@ async def list_failures(
     if notified is not None:
         statement = statement.where(FailureEvent.notified == notified)
 
-    statement = statement.order_by(FailureEvent.detected_at.desc())
+    statement = statement.order_by(FailureEvent.detected_at.desc())  # type: ignore[attr-defined]
     events = session.exec(statement).all()
     return events

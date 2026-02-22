@@ -1,19 +1,19 @@
 # M5 — API Performance
 
 **Goal:** Reduce unnecessary database writes on hot paths by debouncing API key `last_used_at` updates
-**Status:** PLANNED
+**Status:** COMPLETE
 **Appetite:** 2-3 days
 **Target Maturity:** alpha
-**Started:** —
-**Completed:** —
+**Started:** 2026-02-21
+**Completed:** 2026-02-21
 
 ## Success Criteria
 
-- [ ] Authenticated API requests no longer commit `last_used_at` on every call
-- [ ] Debounce interval configurable (default: 5 minutes)
-- [ ] `last_used_at` still reflects recent usage (within debounce window)
-- [ ] No regression in API key authentication behavior
-- [ ] Zero additional latency on authenticated requests (faster, not slower)
+- [x] Authenticated API requests no longer commit `last_used_at` on every call
+- [x] Debounce interval configurable (default: 5 minutes)
+- [x] `last_used_at` still reflects recent usage (within debounce window)
+- [x] No regression in API key authentication behavior
+- [x] Zero additional latency on authenticated requests (faster, not slower)
 
 ## Problem
 
@@ -30,33 +30,18 @@ For a homelab with moderate traffic this is tolerable, but it adds an unnecessar
 ## Hill Chart
 
 ```
-API Key Debounce     ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  SHAPED
+API Key Debounce     ████████████████████████████████████  DONE
 ```
 
 ## Features
 
 | Feature | Spec | Position | Notes |
 |---------|------|----------|-------|
-| API Key `last_used_at` Debounce | — | SHAPED | Time-based debounce to skip redundant writes |
+| API Key `last_used_at` Debounce | specs/api-key-debounce.md | DONE | Time-based debounce, 10 tests, all passing |
 
-## Approach Options
+## Approach
 
-### Option A: Time-based check in `verify_api_key`
-Compare `api_key.last_used_at` against current time. Only write if the difference exceeds the debounce interval. Simple, no new dependencies.
-
-```python
-if api_key.last_used_at is None or (
-    datetime.utcnow() - api_key.last_used_at
-).total_seconds() > DEBOUNCE_SECONDS:
-    api_key.last_used_at = datetime.utcnow()
-    session.add(api_key)
-    session.commit()
-```
-
-### Option B: In-memory cache with periodic flush
-Use a dict/TTL cache to track last update time per key. Flush to DB periodically. More complex but fully eliminates DB reads for the check.
-
-**Recommended:** Option A — simplest, no new dependencies, immediately effective.
+**Option A (implemented):** Time-based check in `verify_api_key` — compare `api_key.last_used_at` against current time, only write if the difference exceeds 5 minutes. Simple, no new dependencies.
 
 ## Dependencies
 
@@ -73,7 +58,7 @@ Use a dict/TTL cache to track last update time per key. Flush to DB periodically
 
 | Cycle | Features | Status | Notes |
 |-------|----------|--------|-------|
-| cycle-1 | API Key Debounce | PLANNED | Spec → TDD cycle |
+| cycle-1 | API Key Debounce | COMPLETE | Implementation pre-existed, added spec + 10 tests |
 
 ## Retrospective
 

@@ -319,11 +319,14 @@ async def test_ac005_discord_uses_username_and_avatar(
         url="https://discord.com/api/webhooks/123/abc",
         webhook_type="discord",
     )
-    create_webhook_options(webhook.id, {
-        "username": "Rsync Bot",
-        "avatar_url": "https://example.com/bot.png",
-        "footer": "Rsync Viewer Alerts",
-    })
+    create_webhook_options(
+        webhook.id,
+        {
+            "username": "Rsync Bot",
+            "avatar_url": "https://example.com/bot.png",
+            "footer": "Rsync Viewer Alerts",
+        },
+    )
     event = create_failure_event()
 
     captured_payload = {}

@@ -46,12 +46,18 @@ def _build_discord_payload(event: FailureEvent, options: dict | None) -> dict:
     embed = {
         "title": "Rsync Failure Detected",
         "color": color,
-        "url": f"/htmx/sync-detail/{event.sync_log_id}" if event.sync_log_id else "http://localhost:8000/",
+        "url": f"/htmx/sync-detail/{event.sync_log_id}"
+        if event.sync_log_id
+        else "http://localhost:8000/",
         "fields": [
             {"name": "Source", "value": event.source_name, "inline": True},
             {"name": "Failure Type", "value": event.failure_type, "inline": True},
             {"name": "Details", "value": event.details or "No details available"},
-            {"name": "Detected At", "value": event.detected_at.isoformat(), "inline": True},
+            {
+                "name": "Detected At",
+                "value": event.detected_at.isoformat(),
+                "inline": True,
+            },
         ],
     }
 
@@ -125,7 +131,7 @@ async def dispatch_webhooks(session: Session, event: FailureEvent) -> None:
     Sets event.notified=True if at least one endpoint succeeds.
     """
     webhooks = session.exec(
-        select(WebhookEndpoint).where(WebhookEndpoint.enabled.is_(True))
+        select(WebhookEndpoint).where(WebhookEndpoint.enabled.is_(True))  # type: ignore[attr-defined]
     ).all()
 
     if not webhooks:
@@ -135,14 +141,15 @@ async def dispatch_webhooks(session: Session, event: FailureEvent) -> None:
 
     # Batch load webhook options for all Discord webhooks to avoid N+1 queries
     discord_webhook_ids = [
-        wh.id for wh in webhooks
+        wh.id
+        for wh in webhooks
         if wh.webhook_type == "discord" and _should_deliver(wh, event)
     ]
     options_map: dict = {}
     if discord_webhook_ids:
         all_opts = session.exec(
             select(WebhookOptions).where(
-                WebhookOptions.webhook_endpoint_id.in_(discord_webhook_ids)
+                WebhookOptions.webhook_endpoint_id.in_(discord_webhook_ids)  # type: ignore[attr-defined]
             )
         ).all()
         options_map = {opt.webhook_endpoint_id: opt.options for opt in all_opts}
@@ -197,7 +204,10 @@ async def dispatch_webhooks(session: Session, event: FailureEvent) -> None:
                     logger.warning(
                         "Webhook auto-disabled after %d consecutive failures",
                         webhook.consecutive_failures,
-                        extra={"webhook_id": str(webhook.id), "webhook_name": webhook.name},
+                        extra={
+                            "webhook_id": str(webhook.id),
+                            "webhook_name": webhook.name,
+                        },
                     )
             session.add(webhook)
 

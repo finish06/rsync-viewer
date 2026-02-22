@@ -22,9 +22,9 @@ from app.logging_config import setup_logging
 from app.middleware import RequestLoggingMiddleware
 from app.models.sync_log import SyncLog
 from app.models.monitor import SyncSourceMonitor  # noqa: F401 — ensure table creation
-from app.models.failure_event import FailureEvent  # noqa: F401 — ensure table creation
+from app.models.failure_event import FailureEvent
 from app.models.webhook import WebhookEndpoint
-from app.models.notification_log import NotificationLog  # noqa: F401 — ensure table creation
+from app.models.notification_log import NotificationLog
 from app.models.webhook_options import WebhookOptions
 
 logger = logging.getLogger(__name__)
@@ -76,6 +76,7 @@ Protected endpoints require an API key passed via the `X-API-Key` header.
         },
     ],
 )
+
 
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException):
@@ -156,7 +157,7 @@ def format_bytes(value: Optional[int]) -> str:
     for unit in ["B", "KB", "MB", "GB", "TB", "PB"]:
         if abs(value) < 1024.0:
             return f"{value:.2f} {unit}"
-        value /= 1024.0
+        value = int(value / 1024.0)
     return f"{value:.2f} PB"
 
 
@@ -260,13 +261,13 @@ async def htmx_sync_table(
 
     # Filter dry runs
     if show_dry_run == "hide":
-        statement = statement.where(SyncLog.is_dry_run.is_(False))
+        statement = statement.where(SyncLog.is_dry_run.is_(False))  # type: ignore[attr-defined]
     elif show_dry_run == "only":
-        statement = statement.where(SyncLog.is_dry_run.is_(True))
+        statement = statement.where(SyncLog.is_dry_run.is_(True))  # type: ignore[attr-defined]
 
     # Filter empty runs (runs with zero files transferred)
     if hide_empty == "hide":
-        statement = statement.where(SyncLog.file_count > 0)
+        statement = statement.where(SyncLog.file_count > 0)  # type: ignore[operator]
     elif hide_empty == "only":
         statement = statement.where(
             (SyncLog.file_count == 0) | (SyncLog.file_count == None)  # noqa: E711
@@ -278,10 +279,10 @@ async def htmx_sync_table(
 
     # Apply pagination and ordering
     if load_all:
-        statement = statement.order_by(SyncLog.start_time.desc())
+        statement = statement.order_by(SyncLog.start_time.desc())  # type: ignore[attr-defined]
     else:
         statement = (
-            statement.order_by(SyncLog.start_time.desc()).offset(offset).limit(limit)
+            statement.order_by(SyncLog.start_time.desc()).offset(offset).limit(limit)  # type: ignore[attr-defined]
         )
     syncs = session.exec(statement).all()
 
@@ -333,27 +334,27 @@ async def htmx_charts(
 
     # Filter dry runs
     if show_dry_run == "hide":
-        statement = statement.where(SyncLog.is_dry_run.is_(False))
+        statement = statement.where(SyncLog.is_dry_run.is_(False))  # type: ignore[attr-defined]
     elif show_dry_run == "only":
-        statement = statement.where(SyncLog.is_dry_run.is_(True))
+        statement = statement.where(SyncLog.is_dry_run.is_(True))  # type: ignore[attr-defined]
 
     # Filter empty runs
     if hide_empty == "hide":
-        statement = statement.where(SyncLog.file_count > 0)
+        statement = statement.where(SyncLog.file_count > 0)  # type: ignore[operator]
     elif hide_empty == "only":
         statement = statement.where(
             (SyncLog.file_count == 0) | (SyncLog.file_count == None)  # noqa: E711
         )
 
     # Get recent syncs (limit 50, ordered by time ascending for charts)
-    statement = statement.order_by(SyncLog.start_time.desc()).limit(50)
+    statement = statement.order_by(SyncLog.start_time.desc()).limit(50)  # type: ignore[attr-defined]
     syncs = session.exec(statement).all()
 
     # Reverse to show oldest first in charts (left to right)
     syncs = list(reversed(syncs))
 
     # Prepare chart data
-    chart_data = {
+    chart_data: dict[str, list] = {
         "labels": [],
         "durations": [],
         "duration_labels": [],
@@ -417,6 +418,95 @@ async def htmx_sync_detail(
     )
 
 
+@app.get("/htmx/notifications")
+async def htmx_notifications(
+    request: Request,
+    session: Session = Depends(get_session),
+    status: Optional[str] = Query(None),
+    webhook_name: Optional[str] = Query(None),
+    source_name: Optional[str] = Query(None),
+    offset: int = Query(0, ge=0),
+    limit: int = Query(20, ge=1, le=100),
+):
+    """HTMX partial: notification history list with filters and pagination."""
+
+    # Build base query
+    statement = select(NotificationLog)
+
+    # Apply filters
+    if status:
+        statement = statement.where(NotificationLog.status == status)
+
+    # For webhook_name and source_name filters, we need to join related tables
+    if webhook_name:
+        statement = statement.join(  # type: ignore[arg-type]
+            WebhookEndpoint,
+            NotificationLog.webhook_endpoint_id == WebhookEndpoint.id,  # type: ignore[arg-type]
+        ).where(WebhookEndpoint.name == webhook_name)
+
+    if source_name:
+        statement = statement.join(  # type: ignore[arg-type]
+            FailureEvent,
+            NotificationLog.failure_event_id == FailureEvent.id,  # type: ignore[arg-type]
+        ).where(FailureEvent.source_name == source_name)
+
+    # Get total count
+    count_statement = select(func.count()).select_from(statement.subquery())
+    total = session.exec(count_statement).one()
+
+    # Apply ordering and pagination
+    statement = (
+        statement.order_by(NotificationLog.created_at.desc())  # type: ignore[attr-defined]
+        .offset(offset)
+        .limit(limit)
+    )
+    notifications = session.exec(statement).all()
+
+    # Batch load related records to avoid N+1
+    webhook_ids = {n.webhook_endpoint_id for n in notifications}
+    failure_event_ids = {n.failure_event_id for n in notifications}
+
+    webhooks_map: dict = {}
+    if webhook_ids:
+        wh_list = session.exec(
+            select(WebhookEndpoint).where(WebhookEndpoint.id.in_(webhook_ids))  # type: ignore[attr-defined]
+        ).all()
+        webhooks_map = {wh.id: wh for wh in wh_list}
+
+    events_map: dict = {}
+    if failure_event_ids:
+        fe_list = session.exec(
+            select(FailureEvent).where(FailureEvent.id.in_(failure_event_ids))  # type: ignore[attr-defined]
+        ).all()
+        events_map = {fe.id: fe for fe in fe_list}
+
+    # Get unique webhook names and source names for filter dropdowns
+    all_webhook_names = session.exec(
+        select(WebhookEndpoint.name).distinct().order_by(WebhookEndpoint.name)
+    ).all()
+    all_source_names = session.exec(
+        select(FailureEvent.source_name).distinct().order_by(FailureEvent.source_name)
+    ).all()
+
+    return templates.TemplateResponse(
+        "partials/notifications_list.html",
+        {
+            "request": request,
+            "notifications": notifications,
+            "webhooks_map": webhooks_map,
+            "events_map": events_map,
+            "total": total,
+            "offset": offset,
+            "limit": limit,
+            "selected_status": status or "",
+            "selected_webhook_name": webhook_name or "",
+            "selected_source_name": source_name or "",
+            "webhook_names": all_webhook_names,
+            "source_names": all_source_names,
+        },
+    )
+
+
 @app.get("/settings")
 async def settings_page(request: Request):
     """Settings page"""
@@ -427,9 +517,7 @@ async def settings_page(request: Request):
 
 
 @app.get("/htmx/webhooks")
-async def htmx_webhooks_list(
-    request: Request, session: Session = Depends(get_session)
-):
+async def htmx_webhooks_list(request: Request, session: Session = Depends(get_session)):
     """HTMX partial: webhook list table."""
     webhooks_list = session.exec(
         select(WebhookEndpoint).order_by(WebhookEndpoint.name)
@@ -441,7 +529,7 @@ async def htmx_webhooks_list(
     if webhook_ids:
         all_opts = session.exec(
             select(WebhookOptions).where(
-                WebhookOptions.webhook_endpoint_id.in_(webhook_ids)
+                WebhookOptions.webhook_endpoint_id.in_(webhook_ids)  # type: ignore[attr-defined]
             )
         ).all()
         options_map = {opt.webhook_endpoint_id: opt.options for opt in all_opts}
@@ -502,7 +590,13 @@ async def htmx_webhook_create(
     if errors:
         return templates.TemplateResponse(
             "partials/webhook_form.html",
-            {"request": request, "webhook": None, "options": None, "errors": errors, "form": form},
+            {
+                "request": request,
+                "webhook": None,
+                "options": None,
+                "errors": errors,
+                "form": form,
+            },
         )
 
     source_filters = (
@@ -531,7 +625,8 @@ async def htmx_webhook_create(
             color_int = 16711749
         opts: dict[str, object] = {
             "color": color_int,
-            "username": _form_str(form, "discord_username", "Rsync Viewer").strip() or "Rsync Viewer",
+            "username": _form_str(form, "discord_username", "Rsync Viewer").strip()
+            or "Rsync Viewer",
         }
         avatar_url_val = _form_str(form, "discord_avatar_url").strip()
         if avatar_url_val:
@@ -563,9 +658,7 @@ async def htmx_webhook_edit_form(
         return HTMLResponse("<p>Webhook not found.</p>", status_code=404)
 
     opts_row = session.exec(
-        select(WebhookOptions).where(
-            WebhookOptions.webhook_endpoint_id == webhook_id
-        )
+        select(WebhookOptions).where(WebhookOptions.webhook_endpoint_id == webhook_id)
     ).first()
     options = opts_row.options if opts_row else None
 
@@ -654,7 +747,8 @@ async def htmx_webhook_update(
             color_int = 16711749
         opts: dict[str, object] = {
             "color": color_int,
-            "username": _form_str(form, "discord_username", "Rsync Viewer").strip() or "Rsync Viewer",
+            "username": _form_str(form, "discord_username", "Rsync Viewer").strip()
+            or "Rsync Viewer",
         }
         avatar_url_val = _form_str(form, "discord_avatar_url").strip()
         if avatar_url_val:

@@ -39,7 +39,7 @@ async def verify_api_key(
     key_hash = hash_api_key(x_api_key)
 
     statement = select(ApiKey).where(
-        ApiKey.key_hash == key_hash, ApiKey.is_active.is_(True)
+        ApiKey.key_hash == key_hash, ApiKey.is_active.is_(True)  # type: ignore[attr-defined]
     )
     api_key = session.exec(statement).first()
 
@@ -52,9 +52,8 @@ async def verify_api_key(
 
     # Debounce last_used_at — only write if stale by 5+ minutes
     now = datetime.utcnow()
-    if (
-        api_key.last_used_at is None
-        or now - api_key.last_used_at > timedelta(minutes=5)
+    if api_key.last_used_at is None or now - api_key.last_used_at > timedelta(
+        minutes=5
     ):
         api_key.last_used_at = now
         session.add(api_key)

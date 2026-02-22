@@ -132,9 +132,7 @@ async def test_ac013_delete_webhook_cascades_options(client, db_session):
     assert delete_resp.status_code == 204
 
     # Verify options are gone
-    options = db_session.exec(
-        select(WebhookOptions)
-    ).all()
+    options = db_session.exec(select(WebhookOptions)).all()
     # Filter in Python since session may have stale data
     remaining = [o for o in options if str(o.webhook_endpoint_id) == webhook_id]
     assert len(remaining) == 0

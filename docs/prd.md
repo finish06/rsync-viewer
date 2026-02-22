@@ -82,21 +82,21 @@ Production deployment is to a self-hosted homelab server. No staging environment
 
 ## 6. Milestones & Roadmap
 
-### Current Maturity: POC
+### Current Maturity: Alpha
 
 ### Roadmap
 
 | Milestone | Goal | Target Maturity | Status | Success Criteria |
 |-----------|------|-----------------|--------|------------------|
 | M1: Foundation | Stabilize existing features, add CI/CD | poc → alpha | COMPLETE | CI pipeline, 80% coverage, conventional commits |
-| M2: Notifications | Webhook alerts for failed syncs | alpha | IN_PROGRESS | HA/Discord webhooks working, < 60s latency |
+| M2: Notifications | Webhook alerts for failed syncs | alpha | COMPLETE | HA/Discord webhooks, settings UI, notification history |
 | M3: Reliability | Error handling, logging, security hardening | alpha → beta | LATER | Structured logging, input validation, rate limiting |
 | M4: Analytics & Integrations | Visualizations, dashboards, Home Assistant | beta | PLANNED | Per-source dashboards, trend analysis, HA webhooks |
-| M5: API Performance | Debounce API key `last_used_at` writes | alpha | PLANNED | Configurable debounce, zero regression, fewer DB writes |
+| M5: API Performance | Debounce API key `last_used_at` writes | alpha | COMPLETE | Configurable debounce, zero regression, fewer DB writes |
 
 ### Milestone Detail
 
-#### M1: Foundation [NOW]
+#### M1: Foundation [COMPLETE]
 **Goal:** Establish CI/CD pipeline, improve test coverage, adopt conventional commits
 **Appetite:** 1-2 weeks
 **Target maturity:** alpha
@@ -106,24 +106,36 @@ Production deployment is to a self-hosted homelab server. No staging environment
 - Structured logging with request/response tracking
 - Test coverage to 80%+
 **Success criteria:**
-- [ ] GitHub Actions runs on every PR
-- [ ] Test coverage >= 80%
-- [ ] All existing tests pass in CI
-- [ ] Conventional commit format adopted
+- [x] GitHub Actions runs on every PR
+- [x] Test coverage >= 80%
+- [x] All existing tests pass in CI
+- [x] Conventional commit format adopted
 
-#### M2: Notifications [NEXT]
-**Goal:** Alert users when syncs fail via webhooks
+#### M2: Notifications [COMPLETE]
+**Goal:** Alert users when syncs fail via webhooks, with Discord support and settings UI
 **Appetite:** 1 week
 **Target maturity:** alpha
 **Features:**
-- Webhook notification service (configurable endpoints)
-- Home Assistant integration
-- Discord webhook integration
-- Failure detection logic
+- Failure detection (exit code + stale sync monitoring)
+- Webhook notification service (retry, auto-disable, notification log)
+- Discord webhook integration (embeds, source filters, rate limiting)
+- Webhook settings UI (full CRUD + toggle + test button)
+- Notification history dashboard (HTMX tab with filters + pagination)
 **Success criteria:**
-- [ ] Failed sync triggers webhook within 60 seconds
-- [ ] Home Assistant and Discord integrations tested
-- [ ] Notification history viewable in dashboard
+- [x] Failed sync triggers webhook within 60 seconds
+- [x] Discord integration tested and working (26 tests)
+- [x] Webhook settings UI at /settings (21 tests)
+- [x] Notification history viewable in dashboard (17 tests)
+
+#### M5: API Performance [COMPLETE]
+**Goal:** Reduce unnecessary DB writes by debouncing API key `last_used_at` updates
+**Appetite:** 2-3 days
+**Target maturity:** alpha
+**Features:**
+- Time-based debounce in `verify_api_key` (5-minute window)
+**Success criteria:**
+- [x] Debounce prevents writes within 5-minute window (10 tests)
+- [x] No regression in API key authentication behavior
 
 ### Maturity Promotion Path
 

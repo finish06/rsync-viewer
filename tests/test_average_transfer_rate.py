@@ -33,28 +33,44 @@ class TestFormatRateFilter:
 
     def test_ac002_calculates_rate_from_bytes_and_duration(self):
         """AC-002: Rate = bytes_received / duration."""
-        sync = self._make_sync(bytes_received=1000, start_time=datetime(2026, 1, 1, 0, 0, 0), end_time=datetime(2026, 1, 1, 0, 0, 10))
+        sync = self._make_sync(
+            bytes_received=1000,
+            start_time=datetime(2026, 1, 1, 0, 0, 0),
+            end_time=datetime(2026, 1, 1, 0, 0, 10),
+        )
         result = format_rate(sync)
         # 1000 bytes / 10 seconds = 100 B/s
         assert result == "100.00 B/s"
 
     def test_ac003_auto_scales_to_kbs(self):
         """AC-003: Auto-scales to KB/s."""
-        sync = self._make_sync(bytes_received=10240, start_time=datetime(2026, 1, 1, 0, 0, 0), end_time=datetime(2026, 1, 1, 0, 0, 1))
+        sync = self._make_sync(
+            bytes_received=10240,
+            start_time=datetime(2026, 1, 1, 0, 0, 0),
+            end_time=datetime(2026, 1, 1, 0, 0, 1),
+        )
         result = format_rate(sync)
         assert result == "10.00 KB/s"
 
     def test_ac003_auto_scales_to_mbs(self):
         """AC-003: Auto-scales to MB/s."""
         # 10 MB in 1 second = 10 MB/s
-        sync = self._make_sync(bytes_received=10 * 1024 * 1024, start_time=datetime(2026, 1, 1, 0, 0, 0), end_time=datetime(2026, 1, 1, 0, 0, 1))
+        sync = self._make_sync(
+            bytes_received=10 * 1024 * 1024,
+            start_time=datetime(2026, 1, 1, 0, 0, 0),
+            end_time=datetime(2026, 1, 1, 0, 0, 1),
+        )
         result = format_rate(sync)
         assert result == "10.00 MB/s"
 
     def test_ac003_auto_scales_to_gbs(self):
         """AC-003: Auto-scales to GB/s."""
         # 2 GB in 1 second
-        sync = self._make_sync(bytes_received=2 * 1024 * 1024 * 1024, start_time=datetime(2026, 1, 1, 0, 0, 0), end_time=datetime(2026, 1, 1, 0, 0, 1))
+        sync = self._make_sync(
+            bytes_received=2 * 1024 * 1024 * 1024,
+            start_time=datetime(2026, 1, 1, 0, 0, 0),
+            end_time=datetime(2026, 1, 1, 0, 0, 1),
+        )
         result = format_rate(sync)
         assert result == "2.00 GB/s"
 

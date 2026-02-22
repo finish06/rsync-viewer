@@ -46,9 +46,7 @@ def create_failure_event(db_session: Session):
 
 
 @pytest.mark.anyio
-async def test_ac008_list_failures(
-    client: AsyncClient, create_failure_event
-):
+async def test_ac008_list_failures(client: AsyncClient, create_failure_event):
     """GET /api/v1/failures should return all failure events."""
     create_failure_event(source_name="server-a", failure_type="exit_code")
     create_failure_event(source_name="server-b", failure_type="stale")
@@ -63,9 +61,7 @@ async def test_ac008_list_failures(
 
 
 @pytest.mark.anyio
-async def test_ac008_filter_by_source_name(
-    client: AsyncClient, create_failure_event
-):
+async def test_ac008_filter_by_source_name(client: AsyncClient, create_failure_event):
     """GET /api/v1/failures?source_name=X should filter by source."""
     create_failure_event(source_name="server-a")
     create_failure_event(source_name="server-b")
@@ -80,9 +76,7 @@ async def test_ac008_filter_by_source_name(
 
 
 @pytest.mark.anyio
-async def test_ac008_filter_by_failure_type(
-    client: AsyncClient, create_failure_event
-):
+async def test_ac008_filter_by_failure_type(client: AsyncClient, create_failure_event):
     """GET /api/v1/failures?failure_type=stale should filter by type."""
     create_failure_event(failure_type="exit_code")
     create_failure_event(failure_type="stale")
@@ -97,9 +91,7 @@ async def test_ac008_filter_by_failure_type(
 
 
 @pytest.mark.anyio
-async def test_ac008_filter_by_notified(
-    client: AsyncClient, create_failure_event
-):
+async def test_ac008_filter_by_notified(client: AsyncClient, create_failure_event):
     """GET /api/v1/failures?notified=false should filter unnotified events."""
     create_failure_event(notified=False)
     create_failure_event(notified=True)
@@ -114,9 +106,7 @@ async def test_ac008_filter_by_notified(
 
 
 @pytest.mark.anyio
-async def test_ac008_filter_by_since(
-    client: AsyncClient, create_failure_event
-):
+async def test_ac008_filter_by_since(client: AsyncClient, create_failure_event):
     """GET /api/v1/failures?since=X should filter by detected_at."""
     old = datetime.utcnow() - timedelta(days=7)
     recent = datetime.utcnow() - timedelta(hours=1)

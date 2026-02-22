@@ -91,7 +91,9 @@ class TestDateRangeFiltering:
 class TestMaxRecordsLoadAll:
     """AC-004, AC-005: Max records with Load All functionality."""
 
-    async def test_ac004_load_all_param_returns_all_records(self, client, create_sync_log):
+    async def test_ac004_load_all_param_returns_all_records(
+        self, client, create_sync_log
+    ):
         """AC-004/AC-005: load_all=true bypasses pagination limit."""
         now = datetime.utcnow()
         # Create 25 logs

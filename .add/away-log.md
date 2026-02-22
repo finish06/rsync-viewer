@@ -1,35 +1,34 @@
 # Away Mode Log
 
-**Started:** 2026-02-21 (session 2)
-**Expected Return:** ~2 hours
-**Duration:** 2 hours
+**Started:** 2026-02-22 (session 3)
+**Expected Return:** ~12 hours
+**Duration:** 12 hours
 
 ## Work Plan
-1. Commit optimization pass 2 changes, push, create PR
-2. Create webhook.enabled index on production database
-3. Write webhook settings UI tests (AC-007) — verify existing implementation
-4. (If time) Start notification history spec/plan
+1. Notification History — spec, plan, TDD cycle (M2 last feature)
+2. M5: API Key Debounce — spec, TDD cycle
+3. CI Pipeline hardening — verify spec compliance, fix gaps
+4. Clean up stale branches
+5. Documentation polish — update milestones, PRD
 
 ## Queued for Human Return
-1. Merge PR #7 (optimization pass 2)
-2. Merge PR #8 (webhook settings UI tests)
-3. Notification history spec interview — no spec exists yet
-4. Production deployment decisions
+1. Production deployment of v1.4.0 (includes notification history + debounce tests)
+2. M4 specs (Analytics & Integrations) — needs interview
+3. Merge decisions on PRs created during away mode (PR #9 still open)
+4. M3 planning (Reliability milestone)
 
 ## Progress Log
 | Time | Task | Status | Notes |
 |------|------|--------|-------|
-| T+0:05 | 1. Commit & push optimization pass 2 | Complete | PR #7 created on feature/optimization-pass-2 |
-| T+0:10 | 2. Create production index | Complete | webhook.enabled index created via dockerized psql |
-| T+0:45 | 3. Write webhook settings UI tests | Complete | 21 tests in test_webhook_settings_ui.py, all passing |
-| T+0:50 | 3b. Run full test suite | Complete | 237 tests pass, no regressions |
-| T+0:55 | 3c. Push & create PR | Complete | PR #8 created on feature/webhook-settings-ui |
-| T+1:00 | 3d. Update M2 milestone | Complete | Webhook Settings UI → VERIFIED |
-
-## Summary
-All core tasks completed in ~1 hour. 21 new tests for webhook settings UI, 237 total passing.
-- PR #7: optimization pass 2 (webhook.enabled index, is_dry_run lint, consolidated DB commits)
-- PR #8: webhook settings UI tests (21 tests covering AC-007)
-- M2 milestone: 5/6 success criteria met, only Notification History remains
-
-Notification History is queued for human return — no spec exists yet, needs interview.
+| 1 | Notification History spec | Done | specs/notification-history.md — 10 ACs |
+| 2 | Notification History plan | Done | docs/plans/notification-history-plan.md |
+| 3 | Notification History RED | Done | 17 tests, all failing as expected |
+| 4 | Notification History GREEN | Done | HTMX route, template, tab, CSS — 17/17 tests pass |
+| 5 | Notification History PR | Done | PR #9 created, 254 total tests pass |
+| 6 | M2 milestone marked COMPLETE | Done | All 6/6 success criteria met |
+| 7 | M5 API Key Debounce spec | Done | specs/api-key-debounce.md — 5 ACs |
+| 8 | M5 Debounce tests | Done | 10 tests, all passing against existing impl |
+| 9 | M5 milestone marked COMPLETE | Done | All 5 success criteria met |
+| 10 | CI pipeline hardening | Done | Fixed ruff lint error + formatted 15 files |
+| 11 | Stale branch cleanup | Done | Deleted 5 merged branches (local + remote) |
+| 12 | Documentation polish | Done | Updated PRD roadmap (M1, M2, M5 → COMPLETE) |

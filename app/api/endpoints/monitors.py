@@ -32,9 +32,7 @@ async def list_monitors(session: SessionDep, api_key: ApiKeyDep):
     status_code=status.HTTP_201_CREATED,
     summary="Create a sync source monitor",
 )
-async def create_monitor(
-    data: MonitorCreate, session: SessionDep, api_key: ApiKeyDep
-):
+async def create_monitor(data: MonitorCreate, session: SessionDep, api_key: ApiKeyDep):
     """Create a new sync source monitor for staleness detection."""
     # Check for duplicate source_name
     existing = session.exec(
@@ -60,7 +58,10 @@ async def create_monitor(
 
     logger.info(
         "Monitor created",
-        extra={"source_name": data.source_name, "interval_hours": data.expected_interval_hours},
+        extra={
+            "source_name": data.source_name,
+            "interval_hours": data.expected_interval_hours,
+        },
     )
     return monitor
 
@@ -102,9 +103,7 @@ async def update_monitor(
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete a sync source monitor",
 )
-async def delete_monitor(
-    monitor_id: UUID, session: SessionDep, api_key: ApiKeyDep
-):
+async def delete_monitor(monitor_id: UUID, session: SessionDep, api_key: ApiKeyDep):
     """Delete a sync source monitor."""
     monitor = session.get(SyncSourceMonitor, monitor_id)
     if not monitor:
