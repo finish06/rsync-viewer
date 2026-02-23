@@ -23,8 +23,8 @@ As a homelab administrator with months of sync history, I want the dashboard and
 | AC-004 | Cursor pagination supports both forward and backward navigation | Must |
 | AC-005 | Connection pool size is configurable via environment variable with sensible defaults | Must |
 | AC-006 | No N+1 query patterns exist in the codebase | Must |
-| AC-007 | Redis caching is available for frequently accessed statistics (dashboard summary, source list) | Should |
-| AC-008 | Cache entries have configurable TTL and are invalidated when new sync data arrives | Should |
+| ~~AC-007~~ | ~~Redis caching for statistics~~ | ~~Should~~ | **Dropped** — benchmarks show <200ms without caching |
+| ~~AC-008~~ | ~~Cache TTL and invalidation~~ | ~~Should~~ | **Dropped** — depends on AC-007 |
 | AC-009 | File list data is lazily loaded (not included in list responses, only in detail responses) | Should |
 | AC-010 | Query timeout limits prevent runaway queries from blocking the connection pool | Should |
 

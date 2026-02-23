@@ -28,7 +28,6 @@ Cursor Pagination      ███████████████████
 Statistics API         ████████████████████████████████████  DONE ✅  (cycle-4, bcb8d52)
 Data Export            ████████████████████████████████████  DONE ✅  (cycle-4, bcb8d52)
 Dashboard Charts       ████████████████████████████████████  DONE ✅  (cycle-4, bcb8d52)
-Redis Caching          ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  SHAPED (deferred)
 ```
 
 ## Features
@@ -41,7 +40,6 @@ Redis Caching          ░░░░░░░░░░░░░░░░░░░
 | Database Indexing | specs/performance.md | DONE | B-tree + composite indexes on query-hot columns (cycle-3, c94c34e) |
 | Cursor Pagination | specs/performance.md | DONE | Keyset pagination with offset fallback (cycle-3, c94c34e) |
 | Query Optimization | specs/performance.md | DONE | N+1 elimination, lazy file lists, connection pool tuning (cycle-3, c94c34e) |
-| Redis Caching | specs/performance.md | SHAPED | Optional cache layer for statistics (deferred if not needed) |
 
 ## Dependencies
 
@@ -56,7 +54,6 @@ Redis Caching          ░░░░░░░░░░░░░░░░░░░
 3. Statistics API + Per-Source Stats (backend endpoints)
 4. Data Export (CSV/JSON endpoints, builds on stats queries)
 5. Dashboard Charts (frontend, consumes statistics API)
-6. Redis Caching (optional, add only if performance targets aren't met without it)
 
 ## Risk Assessment
 
@@ -64,7 +61,6 @@ Redis Caching          ░░░░░░░░░░░░░░░░░░░
 |------|-------------|--------|------------|
 | Chart performance with large datasets | Medium | Medium | Server-side aggregation, date range limits, pagination |
 | Cursor pagination breaks existing API consumers | Medium | Medium | Keep offset params as deprecated fallback during transition |
-| Redis adds infrastructure complexity | Low | Low | Redis is optional — app works without it |
 | Export of very large datasets causes timeout | Medium | Medium | Streaming response, enforce max limit, suggest date range |
 
 ## Cycles

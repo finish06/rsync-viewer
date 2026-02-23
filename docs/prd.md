@@ -187,13 +187,12 @@ M3 is the gate to beta promotion. M4 and M6 can partially overlap. M7 and M8 are
 - Database indexes on frequently queried columns
 - Cursor-based pagination (replaces offset pagination)
 - N+1 query elimination and connection pool tuning
-- Optional Redis caching for statistics
 **Success criteria:**
-- [ ] Statistics API returns aggregated data for custom date ranges
-- [ ] CSV/JSON export works with filters
-- [ ] Dashboard has interactive charts with date range selector
-- [ ] API responses < 200ms with 10,000+ records
-- [ ] Cursor pagination on sync logs endpoint
+- [x] Statistics API returns aggregated data for custom date ranges
+- [x] CSV/JSON export works with filters
+- [x] Dashboard has interactive charts with date range selector
+- [x] API responses < 200ms with 10,000+ records (benchmarked at 10,501 records)
+- [x] Cursor pagination on sync logs endpoint
 
 #### M6: Observability [NEXT]
 **Goal:** Prometheus metrics for monitoring, Grafana dashboards, comprehensive project docs
