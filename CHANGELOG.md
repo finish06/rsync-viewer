@@ -7,6 +7,15 @@ and this project adheres to [Conventional Commits](https://www.conventionalcommi
 
 ## [Unreleased]
 
+### Added
+
+- CI/CD: Docker image build and push to self-hosted registry with `beta` tag on merge to main
+- CI/CD: SHA-tagged images for traceability (`sha-<commit>`)
+
+### Changed
+
+- M3 Reliability milestone marked COMPLETE (Structured Logging, Error Handling, Security Hardening)
+
 ## [1.5.0] - 2026-02-23
 
 ### Added
