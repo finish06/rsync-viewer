@@ -15,17 +15,20 @@
 - [ ] Customizable date range selector for all analytics views
 - [ ] Per-source comparison view with side-by-side statistics
 - [ ] API response times under 200ms for list operations with 10,000+ records
-- [ ] Database indexes on all frequently queried columns
-- [ ] Cursor-based pagination on sync logs endpoint (replaces offset pagination)
-- [ ] No N+1 query patterns in codebase
+- [x] Database indexes on all frequently queried columns
+- [x] Cursor-based pagination on sync logs endpoint (replaces offset pagination)
+- [x] No N+1 query patterns in codebase
 
 ## Hill Chart
 
 ```
+Database Indexing      ████████████████████████████████████  DONE ✅  (cycle-3, c94c34e)
+Query Optimization     ████████████████████████████████████  DONE ✅  (cycle-3, c94c34e)
+Cursor Pagination      ████████████████████████████████████  DONE ✅  (cycle-3, c94c34e)
 Statistics API         ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  SHAPED
 Data Export            ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  SHAPED
 Dashboard Charts       ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  SHAPED
-Performance Tuning     ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  SHAPED
+Redis Caching          ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  SHAPED (deferred)
 ```
 
 ## Features
@@ -35,9 +38,9 @@ Performance Tuning     ░░░░░░░░░░░░░░░░░░░
 | Statistics & Trends | specs/analytics.md | SHAPED | Summary API, per-source stats, frequency trends |
 | Data Export | specs/analytics.md | SHAPED | CSV/JSON export with filters |
 | Dashboard Charts | specs/analytics.md | SHAPED | Chart.js visualizations, date range picker, source comparison |
-| Database Indexing | specs/performance.md | SHAPED | B-tree indexes on query-hot columns |
-| Cursor Pagination | specs/performance.md | SHAPED | Replace offset pagination, forward/backward support |
-| Query Optimization | specs/performance.md | SHAPED | N+1 elimination, lazy loading file lists, connection pool tuning |
+| Database Indexing | specs/performance.md | DONE | B-tree + composite indexes on query-hot columns (cycle-3, c94c34e) |
+| Cursor Pagination | specs/performance.md | DONE | Keyset pagination with offset fallback (cycle-3, c94c34e) |
+| Query Optimization | specs/performance.md | DONE | N+1 elimination, lazy file lists, connection pool tuning (cycle-3, c94c34e) |
 | Redis Caching | specs/performance.md | SHAPED | Optional cache layer for statistics (deferred if not needed) |
 
 ## Dependencies
@@ -68,7 +71,7 @@ Performance Tuning     ░░░░░░░░░░░░░░░░░░░
 
 | Cycle | Features | Status | Notes |
 |-------|----------|--------|-------|
-| cycle-3 | Database Indexing, Query Optimization, Cursor Pagination | PLANNED | Performance foundations — indexes, N+1 fixes, keyset pagination |
+| cycle-3 | Database Indexing, Query Optimization, Cursor Pagination | COMPLETE | Performance foundations — 25 new tests, 319 total pass. Commit c94c34e |
 | cycle-4 | Statistics API, Data Export, Dashboard Charts | — | User-facing analytics (planned after cycle-3) |
 
 ## Retrospective

@@ -106,6 +106,19 @@
       "date": "2026-02-23",
       "classified_by": "agent",
       "checkpoint_type": "verification-catch"
+    },
+    {
+      "id": "L-009",
+      "title": "Cycle 3 complete: M4 Performance Foundations — 3 features, 25 new tests",
+      "body": "Cycle 3 delivered Database Indexing (6 composite/individual indexes), Query Optimization (lazy file lists, connection pool config), and Cursor Pagination (keyset with offset fallback). 25 new tests, 319 total passing. Also ran deprecation cleanup (utc_now() helper replacing 61 datetime.utcnow() calls, Starlette TemplateResponse fix). Key insight: naive vs tz-aware datetime mismatch with PostgreSQL requires a centralized utc_now() helper returning naive UTC. Production indexes created manually with CREATE INDEX CONCURRENTLY.",
+      "scope": "project",
+      "stack": ["python", "fastapi"],
+      "category": "process",
+      "severity": "medium",
+      "source": "rsync-viewer",
+      "date": "2026-02-23",
+      "classified_by": "agent",
+      "checkpoint_type": "retro"
     }
   ]
 }
