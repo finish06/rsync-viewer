@@ -9,11 +9,11 @@
 
 ## Success Criteria
 
-- [ ] Statistics API returns daily/weekly/monthly summaries with per-source breakdowns
-- [ ] CSV and JSON export endpoints with date range and source filters
-- [ ] Interactive Chart.js charts on dashboard (duration, file count, bytes over time)
-- [ ] Customizable date range selector for all analytics views
-- [ ] Per-source comparison view with side-by-side statistics
+- [x] Statistics API returns daily/weekly/monthly summaries with per-source breakdowns
+- [x] CSV and JSON export endpoints with date range and source filters
+- [x] Interactive Chart.js charts on dashboard (duration, file count, bytes over time)
+- [x] Customizable date range selector for all analytics views
+- [x] Per-source comparison view with side-by-side statistics
 - [ ] API response times under 200ms for list operations with 10,000+ records
 - [x] Database indexes on all frequently queried columns
 - [x] Cursor-based pagination on sync logs endpoint (replaces offset pagination)
@@ -25,9 +25,9 @@
 Database Indexing      ████████████████████████████████████  DONE ✅  (cycle-3, c94c34e)
 Query Optimization     ████████████████████████████████████  DONE ✅  (cycle-3, c94c34e)
 Cursor Pagination      ████████████████████████████████████  DONE ✅  (cycle-3, c94c34e)
-Statistics API         ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  SHAPED
-Data Export            ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  SHAPED
-Dashboard Charts       ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  SHAPED
+Statistics API         ████████████████████████████████████  DONE ✅  (cycle-4, bcb8d52)
+Data Export            ████████████████████████████████████  DONE ✅  (cycle-4, bcb8d52)
+Dashboard Charts       ████████████████████████████████████  DONE ✅  (cycle-4, bcb8d52)
 Redis Caching          ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  SHAPED (deferred)
 ```
 
@@ -35,9 +35,9 @@ Redis Caching          ░░░░░░░░░░░░░░░░░░░
 
 | Feature | Spec | Position | Notes |
 |---------|------|----------|-------|
-| Statistics & Trends | specs/analytics.md | SHAPED | Summary API, per-source stats, frequency trends |
-| Data Export | specs/analytics.md | SHAPED | CSV/JSON export with filters |
-| Dashboard Charts | specs/analytics.md | SHAPED | Chart.js visualizations, date range picker, source comparison |
+| Statistics & Trends | specs/analytics.md | DONE | Summary API, per-source stats, frequency trends (cycle-4, bcb8d52) |
+| Data Export | specs/analytics.md | DONE | CSV/JSON export with streaming, filters, pagination (cycle-4, bcb8d52) |
+| Dashboard Charts | specs/analytics.md | DONE | Chart.js visualizations, date range picker, source comparison (cycle-4, bcb8d52) |
 | Database Indexing | specs/performance.md | DONE | B-tree + composite indexes on query-hot columns (cycle-3, c94c34e) |
 | Cursor Pagination | specs/performance.md | DONE | Keyset pagination with offset fallback (cycle-3, c94c34e) |
 | Query Optimization | specs/performance.md | DONE | N+1 elimination, lazy file lists, connection pool tuning (cycle-3, c94c34e) |
@@ -72,7 +72,7 @@ Redis Caching          ░░░░░░░░░░░░░░░░░░░
 | Cycle | Features | Status | Notes |
 |-------|----------|--------|-------|
 | cycle-3 | Database Indexing, Query Optimization, Cursor Pagination | COMPLETE | Performance foundations — 25 new tests, 319 total pass. Commit c94c34e |
-| cycle-4 | Statistics API, Data Export, Dashboard Charts | — | User-facing analytics (planned after cycle-3) |
+| cycle-4 | Statistics API, Data Export, Dashboard Charts | COMPLETE | 30 new tests, 349 total pass. All 10 analytics ACs covered. Commit bcb8d52 |
 
 ## Retrospective
 

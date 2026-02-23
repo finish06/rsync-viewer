@@ -17,11 +17,18 @@
 ## Queued for Human Return
 
 1. Review completed cycle-4 work and test results
-2. Decide if Redis caching is needed
-3. Decide on M4 milestone closure / cycle-5 scope
-4. Merge to main if satisfied
+2. Decide if Redis caching is needed (deferred feature)
+3. Decide on M4 milestone closure
+4. API response time benchmark with 10k+ records (AC not yet verified)
+5. Merge to main if satisfied
 
 ## Progress Log
 
 | Time | Task | Status | Notes |
 |------|------|--------|-------|
+| T+0 | Commit cycle-3 completion + cycle-4 plan | DONE | Commit e7c192d |
+| T+15 | RED: Write 30 failing tests for analytics | DONE | All 30 tests fail (404 — endpoints don't exist yet) |
+| T+45 | GREEN: Implement all 3 features | DONE | Statistics API, Data Export, Dashboard Charts. All 30 tests pass. |
+| T+50 | VERIFY: Full test suite + quality gates | DONE | 349 tests pass, ruff clean, mypy clean |
+| T+55 | Commit analytics implementation | DONE | Commit bcb8d52. 30 new tests, all 10 analytics ACs covered. |
+| T+60 | Update M4 milestone (8/9 success criteria met) | DONE | Hill chart updated, features/cycles tables updated |
