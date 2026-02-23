@@ -1,4 +1,5 @@
 from datetime import datetime
+from app.utils import utc_now
 from uuid import UUID, uuid4
 
 from sqlalchemy import ForeignKey
@@ -20,5 +21,5 @@ class WebhookOptions(SQLModel, table=True):
         )
     )
     options: dict = Field(default_factory=dict, sa_column=Column(JSONB, nullable=False))
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=utc_now)
+    updated_at: datetime = Field(default_factory=utc_now)

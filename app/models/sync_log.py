@@ -1,4 +1,5 @@
 from datetime import datetime
+from app.utils import utc_now
 from typing import Optional
 from uuid import UUID, uuid4
 from sqlmodel import Field, SQLModel, Column
@@ -32,7 +33,7 @@ class SyncLog(SyncLogBase, table=True):
     exit_code: Optional[int] = None
     status: str = Field(default="completed", max_length=20)
     is_dry_run: bool = Field(default=False, index=True)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=utc_now)
 
 
 class ApiKey(SQLModel, table=True):
@@ -44,6 +45,6 @@ class ApiKey(SQLModel, table=True):
     name: str = Field(max_length=100)
     source_names: Optional[list[str]] = Field(default=None, sa_column=Column(JSONB))
     is_active: bool = Field(default=True)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=utc_now)
     last_used_at: Optional[datetime] = None
     expires_at: Optional[datetime] = None

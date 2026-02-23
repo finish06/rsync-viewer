@@ -3,7 +3,8 @@
 Spec: specs/date-range-quick-select.md
 """
 
-from datetime import datetime, timedelta
+from datetime import timedelta
+from app.utils import utc_now
 
 import pytest
 
@@ -37,7 +38,7 @@ class TestDateRangeFiltering:
 
     async def test_ac002_seven_day_filter(self, client, create_sync_log):
         """AC-002: Last 7 Days shows only recent logs."""
-        now = datetime.utcnow()
+        now = utc_now()
         # Create a log from 3 days ago (should appear)
         create_sync_log(
             source_name="recent-log",
@@ -64,7 +65,7 @@ class TestDateRangeFiltering:
 
     async def test_ac003_thirty_day_filter(self, client, create_sync_log):
         """AC-003: Last 30 Days shows logs within 30 days."""
-        now = datetime.utcnow()
+        now = utc_now()
         create_sync_log(
             source_name="within-30d",
             start_time=now - timedelta(days=15),
@@ -95,7 +96,7 @@ class TestMaxRecordsLoadAll:
         self, client, create_sync_log
     ):
         """AC-004/AC-005: load_all=true bypasses pagination limit."""
-        now = datetime.utcnow()
+        now = utc_now()
         # Create 25 logs
         for i in range(25):
             create_sync_log(
@@ -121,7 +122,7 @@ class TestMaxRecordsLoadAll:
         self, client, create_sync_log
     ):
         """AC-004: Load All button appears when total > displayed count."""
-        now = datetime.utcnow()
+        now = utc_now()
         for i in range(25):
             create_sync_log(
                 source_name=f"src-{i}",
@@ -138,7 +139,7 @@ class TestMaxRecordsLoadAll:
         self, client, create_sync_log
     ):
         """AC-004: No Load All button when all records fit in one page."""
-        now = datetime.utcnow()
+        now = utc_now()
         for i in range(5):
             create_sync_log(
                 source_name=f"src-{i}",
@@ -157,7 +158,7 @@ class TestCombinedFilters:
 
     async def test_ac010_date_range_with_source_filter(self, client, create_sync_log):
         """AC-010: Date range + source filter work together."""
-        now = datetime.utcnow()
+        now = utc_now()
         create_sync_log(
             source_name="target-src",
             start_time=now - timedelta(days=5),

@@ -1,9 +1,10 @@
 """Application error codes and custom exceptions."""
 
-from datetime import datetime
 from typing import Optional
 
 from pydantic import BaseModel, Field
+
+from app.utils import utc_now
 
 
 # Error code constants
@@ -43,7 +44,7 @@ def make_error_response(
         error_code=error_code,
         message=message,
         detail=detail or message,
-        timestamp=datetime.utcnow().isoformat(),
+        timestamp=utc_now().isoformat(),
         path=path,
         validation_errors=validation_errors,
     ).model_dump()

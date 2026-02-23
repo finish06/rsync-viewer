@@ -1,6 +1,7 @@
 """Tests for security hardening (specs/security-hardening.md)."""
 
-from datetime import datetime, timedelta
+from datetime import timedelta
+from app.utils import utc_now
 from pathlib import Path
 
 import pytest
@@ -99,7 +100,7 @@ class TestApiKeyRotation:
         key = ApiKey(
             key_hash="$2b$12$fakehash",
             name="test-key",
-            expires_at=datetime.utcnow() + timedelta(hours=24),
+            expires_at=utc_now() + timedelta(hours=24),
         )
         assert key.expires_at is not None
 
@@ -150,7 +151,7 @@ class TestInputValidation:
 
     async def test_ac006_source_name_rejects_empty(self, client):
         """source_name rejects empty strings."""
-        now = datetime.utcnow()
+        now = utc_now()
         response = await client.post(
             "/api/v1/sync-logs",
             json={

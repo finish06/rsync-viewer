@@ -19,6 +19,7 @@ from app.models.failure_event import FailureEvent  # noqa: F401 — ensure table
 from app.models.webhook import WebhookEndpoint  # noqa: F401 — ensure table creation
 from app.models.notification_log import NotificationLog  # noqa: F401 — ensure table creation
 from app.models.webhook_options import WebhookOptions  # noqa: F401 — ensure table creation
+from app.utils import utc_now
 
 
 # Get database URL from environment or use default test database
@@ -167,7 +168,7 @@ connection timed out"""
 @pytest.fixture
 def sample_sync_log_data() -> dict:
     """Sample data for creating a sync log via API"""
-    now = datetime.utcnow()
+    now = utc_now()
     return {
         "source_name": "test-backup",
         "start_time": (now - timedelta(minutes=5)).isoformat(),
@@ -197,7 +198,7 @@ def create_sync_log(db_session: Session):
         file_list: list[str] = None,
         is_dry_run: bool = False,
     ) -> SyncLog:
-        now = datetime.utcnow()
+        now = utc_now()
         sync_log = SyncLog(
             id=uuid4(),
             source_name=source_name,

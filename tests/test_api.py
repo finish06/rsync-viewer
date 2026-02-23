@@ -1,4 +1,5 @@
-from datetime import datetime, timedelta
+from datetime import timedelta
+from app.utils import utc_now
 
 import pytest
 
@@ -46,7 +47,7 @@ class TestCreateSyncLog:
 
     async def test_create_sync_log_parses_dry_run(self, client):
         """Test that dry run flag is parsed from content"""
-        now = datetime.utcnow()
+        now = utc_now()
         data = {
             "source_name": "test",
             "start_time": (now - timedelta(minutes=1)).isoformat(),
@@ -127,7 +128,7 @@ class TestListSyncLogs:
 
     async def test_list_sync_logs_filter_by_date_range(self, client, create_sync_log):
         """Test filtering by date range"""
-        now = datetime.utcnow()
+        now = utc_now()
         old_date = now - timedelta(days=10)
         recent_date = now - timedelta(hours=1)
 

@@ -1,6 +1,7 @@
 """Tests for HTMX handler endpoints and dashboard pages."""
 
-from datetime import datetime, timedelta
+from datetime import timedelta
+from app.utils import utc_now
 
 import pytest
 
@@ -95,7 +96,7 @@ class TestHtmxSyncTable:
 
     async def test_sync_table_date_filter(self, client, create_sync_log):
         """Test filtering sync table by date range"""
-        now = datetime.utcnow()
+        now = utc_now()
         create_sync_log(
             source_name="recent",
             start_time=now - timedelta(hours=1),
@@ -137,7 +138,7 @@ class TestHtmxCharts:
 
     async def test_charts_with_data(self, client, create_sync_log):
         """Test charts partial renders with sync data"""
-        now = datetime.utcnow()
+        now = utc_now()
         create_sync_log(
             source_name="test-source",
             start_time=now - timedelta(minutes=5),
@@ -150,7 +151,7 @@ class TestHtmxCharts:
 
     async def test_charts_filter_by_source(self, client, create_sync_log):
         """Test charts filter by source"""
-        now = datetime.utcnow()
+        now = utc_now()
         create_sync_log(
             source_name="filtered-source",
             start_time=now - timedelta(minutes=5),
@@ -162,7 +163,7 @@ class TestHtmxCharts:
 
     async def test_charts_hide_dry_run(self, client, create_sync_log):
         """Test charts with dry run filter"""
-        now = datetime.utcnow()
+        now = utc_now()
         create_sync_log(
             source_name="real",
             start_time=now - timedelta(minutes=5),
@@ -175,7 +176,7 @@ class TestHtmxCharts:
 
     async def test_charts_show_only_dry_run(self, client, create_sync_log):
         """Test charts showing only dry runs"""
-        now = datetime.utcnow()
+        now = utc_now()
         create_sync_log(
             source_name="dry",
             start_time=now - timedelta(minutes=5),
@@ -188,7 +189,7 @@ class TestHtmxCharts:
 
     async def test_charts_hide_empty(self, client, create_sync_log):
         """Test charts hiding empty runs"""
-        now = datetime.utcnow()
+        now = utc_now()
         create_sync_log(
             source_name="has-files",
             start_time=now - timedelta(minutes=5),
@@ -200,7 +201,7 @@ class TestHtmxCharts:
 
     async def test_charts_show_only_empty(self, client, create_sync_log):
         """Test charts showing only empty runs"""
-        now = datetime.utcnow()
+        now = utc_now()
         create_sync_log(
             source_name="empty",
             start_time=now - timedelta(minutes=5),
@@ -212,7 +213,7 @@ class TestHtmxCharts:
 
     async def test_charts_with_missing_end_time(self, client, create_sync_log):
         """Test charts handle syncs without duration gracefully"""
-        now = datetime.utcnow()
+        now = utc_now()
         create_sync_log(
             source_name="no-duration",
             start_time=now - timedelta(minutes=5),

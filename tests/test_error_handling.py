@@ -1,6 +1,7 @@
 """Tests for comprehensive error handling (specs/error-handling.md)."""
 
-from datetime import datetime, timedelta
+from datetime import timedelta
+from app.utils import utc_now
 
 import pytest
 
@@ -128,7 +129,7 @@ class TestDateParameterValidation:
 
     async def test_ac006_valid_dates_still_work(self, client):
         """Valid date parameters still work correctly."""
-        now = datetime.utcnow()
+        now = utc_now()
         start = (now - timedelta(days=1)).isoformat()
         response = await client.get(f"/htmx/sync-table?start_date={start}")
         assert response.status_code == 200

@@ -1,4 +1,5 @@
 from datetime import datetime
+from app.utils import utc_now
 from typing import Optional
 from uuid import UUID, uuid4
 
@@ -17,4 +18,4 @@ class NotificationLog(SQLModel, table=True):
     http_status_code: Optional[int] = None
     error_message: Optional[str] = None
     attempt_number: int = Field(default=1)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=utc_now)

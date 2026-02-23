@@ -11,6 +11,7 @@ from httpx import AsyncClient
 from sqlmodel import Session
 
 from app.models.failure_event import FailureEvent
+from app.utils import utc_now
 
 
 @pytest.fixture
@@ -29,7 +30,7 @@ def create_failure_event(db_session: Session):
             id=uuid4(),
             source_name=source_name,
             failure_type=failure_type,
-            detected_at=detected_at or datetime.utcnow(),
+            detected_at=detected_at or utc_now(),
             sync_log_id=sync_log_id,
             notified=notified,
             details=details,
@@ -108,12 +109,12 @@ async def test_ac008_filter_by_notified(client: AsyncClient, create_failure_even
 @pytest.mark.anyio
 async def test_ac008_filter_by_since(client: AsyncClient, create_failure_event):
     """GET /api/v1/failures?since=X should filter by detected_at."""
-    old = datetime.utcnow() - timedelta(days=7)
-    recent = datetime.utcnow() - timedelta(hours=1)
+    old = utc_now() - timedelta(days=7)
+    recent = utc_now() - timedelta(hours=1)
     create_failure_event(detected_at=old, details="old event")
     create_failure_event(detected_at=recent, details="recent event")
 
-    since = (datetime.utcnow() - timedelta(days=1)).isoformat()
+    since = (utc_now() - timedelta(days=1)).isoformat()
     response = await client.get(
         f"/api/v1/failures?since={since}",
         headers={"X-API-Key": "test-api-key"},

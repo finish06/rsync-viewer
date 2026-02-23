@@ -1,5 +1,4 @@
 import logging
-from datetime import datetime
 from uuid import UUID
 
 import httpx
@@ -7,6 +6,7 @@ from fastapi import APIRouter, HTTPException, status
 from sqlmodel import select
 
 from app.api.deps import SessionDep, ApiKeyDep
+from app.utils import utc_now
 from app.models.webhook import WebhookEndpoint
 from app.models.webhook_options import WebhookOptions
 from app.schemas.webhook import WebhookCreate, WebhookUpdate, WebhookRead
@@ -131,7 +131,7 @@ async def update_webhook(
 
     for key, value in update_data.items():
         setattr(webhook, key, value)
-    webhook.updated_at = datetime.utcnow()
+    webhook.updated_at = utc_now()
 
     session.add(webhook)
     session.commit()
@@ -147,7 +147,7 @@ async def update_webhook(
 
         if existing_opts:
             existing_opts.options = options_data
-            existing_opts.updated_at = datetime.utcnow()
+            existing_opts.updated_at = utc_now()
             session.add(existing_opts)
         else:
             new_opts = WebhookOptions(

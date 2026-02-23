@@ -1,6 +1,7 @@
 """Tests for performance optimization (specs/performance.md)."""
 
-from datetime import datetime, timedelta
+from datetime import timedelta
+from app.utils import utc_now
 from pathlib import Path
 
 import pytest
@@ -188,7 +189,7 @@ class TestCursorPagination:
         for i in range(5):
             create_sync_log(
                 source_name=f"src-{i}",
-                start_time=datetime.utcnow() - timedelta(hours=i),
+                start_time=utc_now() - timedelta(hours=i),
             )
 
         response = await client.get("/api/v1/sync-logs?limit=2")
@@ -205,7 +206,7 @@ class TestCursorPagination:
         for i in range(5):
             log = create_sync_log(
                 source_name=f"src-{i}",
-                start_time=datetime.utcnow() - timedelta(hours=i),
+                start_time=utc_now() - timedelta(hours=i),
             )
             logs.append(log)
 
@@ -231,7 +232,7 @@ class TestCursorPagination:
         for i in range(5):
             create_sync_log(
                 source_name=f"src-{i}",
-                start_time=datetime.utcnow() - timedelta(hours=i),
+                start_time=utc_now() - timedelta(hours=i),
             )
 
         # Get first page, then second
@@ -260,7 +261,7 @@ class TestCursorPagination:
         for i in range(4):
             create_sync_log(
                 source_name="target-src",
-                start_time=datetime.utcnow() - timedelta(hours=i),
+                start_time=utc_now() - timedelta(hours=i),
             )
         create_sync_log(source_name="other-src")
 
@@ -287,7 +288,7 @@ class TestCursorPagination:
         for i in range(5):
             create_sync_log(
                 source_name=f"src-{i}",
-                start_time=datetime.utcnow() - timedelta(hours=i),
+                start_time=utc_now() - timedelta(hours=i),
             )
 
         response = await client.get("/api/v1/sync-logs?offset=2&limit=2")
@@ -302,7 +303,7 @@ class TestCursorPagination:
         for i in range(3):
             create_sync_log(
                 source_name=f"src-{i}",
-                start_time=datetime.utcnow() - timedelta(hours=i),
+                start_time=utc_now() - timedelta(hours=i),
             )
 
         response = await client.get("/api/v1/sync-logs?limit=10")

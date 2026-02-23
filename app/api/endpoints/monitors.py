@@ -1,11 +1,11 @@
 import logging
-from datetime import datetime
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, status
 from sqlmodel import select
 
 from app.api.deps import SessionDep, ApiKeyDep
+from app.utils import utc_now
 from app.models.monitor import SyncSourceMonitor
 from app.schemas.monitor import MonitorCreate, MonitorUpdate, MonitorRead
 
@@ -88,7 +88,7 @@ async def update_monitor(
     update_data = data.model_dump(exclude_unset=True)
     for key, value in update_data.items():
         setattr(monitor, key, value)
-    monitor.updated_at = datetime.utcnow()
+    monitor.updated_at = utc_now()
 
     session.add(monitor)
     session.commit()

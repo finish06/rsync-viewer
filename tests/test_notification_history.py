@@ -4,12 +4,13 @@ Spec: specs/notification-history.md
 """
 
 import pytest
-from datetime import datetime, timedelta
+from datetime import timedelta
 from uuid import uuid4
 
 from app.models.failure_event import FailureEvent
 from app.models.notification_log import NotificationLog
 from app.models.webhook import WebhookEndpoint
+from app.utils import utc_now
 
 pytestmark = pytest.mark.asyncio
 
@@ -43,7 +44,7 @@ def create_failure_event(db_session):
             id=uuid4(),
             source_name=source_name,
             failure_type=failure_type,
-            detected_at=kwargs.get("detected_at", datetime.utcnow()),
+            detected_at=kwargs.get("detected_at", utc_now()),
             notified=kwargs.get("notified", True),
             details=kwargs.get("details", "Exit code 1"),
         )
@@ -86,7 +87,7 @@ def create_notification(db_session, create_webhook, create_failure_event):
             http_status_code=http_status_code,
             error_message=error_message,
             attempt_number=attempt_number,
-            created_at=created_at or datetime.utcnow(),
+            created_at=created_at or utc_now(),
         )
         db_session.add(log)
         db_session.commit()
@@ -178,7 +179,7 @@ class TestNotificationList:
             status="success",
             http_status_code=200,
             attempt_number=1,
-            created_at=datetime.utcnow() - timedelta(hours=2),
+            created_at=utc_now() - timedelta(hours=2),
         )
         new = NotificationLog(
             id=uuid4(),
@@ -187,7 +188,7 @@ class TestNotificationList:
             status="failed",
             http_status_code=500,
             attempt_number=1,
-            created_at=datetime.utcnow(),
+            created_at=utc_now(),
         )
         db_session.add(old)
         db_session.add(new)
@@ -254,7 +255,7 @@ class TestNotificationPagination:
                 source_name=f"src-{i}" if fe is None else None,
                 webhook=wh,
                 failure_event=fe,
-                created_at=datetime.utcnow() - timedelta(minutes=i),
+                created_at=utc_now() - timedelta(minutes=i),
             )
             if wh is None:
                 wh = wh_created
@@ -274,7 +275,7 @@ class TestNotificationPagination:
             log, wh_created, fe_created = create_notification(
                 webhook=wh,
                 failure_event=fe,
-                created_at=datetime.utcnow() - timedelta(minutes=i),
+                created_at=utc_now() - timedelta(minutes=i),
             )
             if wh is None:
                 wh = wh_created

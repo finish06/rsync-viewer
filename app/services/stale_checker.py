@@ -1,7 +1,9 @@
 import logging
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 from sqlmodel import Session, select
+
+from app.utils import utc_now
 
 from app.models.failure_event import FailureEvent
 from app.models.monitor import SyncSourceMonitor
@@ -27,7 +29,7 @@ def check_stale_sources(session: Session) -> list[FailureEvent]:
     ).all()
 
     new_events: list[FailureEvent] = []
-    now = datetime.utcnow()
+    now = utc_now()
 
     # Batch-load all existing stale events to avoid N+1 queries per monitor
     existing_stale = session.exec(

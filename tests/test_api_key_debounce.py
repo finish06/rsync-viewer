@@ -4,7 +4,7 @@ Spec: specs/api-key-debounce.md
 """
 
 import pytest
-from datetime import datetime, timedelta
+from datetime import timedelta
 from uuid import uuid4
 
 from httpx import ASGITransport, AsyncClient
@@ -15,6 +15,7 @@ from app.config import get_settings
 from app.database import get_session
 from app.main import app
 from app.models.sync_log import ApiKey
+from app.utils import utc_now
 
 pytestmark = pytest.mark.asyncio
 
@@ -81,7 +82,7 @@ def real_auth_client(test_engine, db_session):
 @pytest.fixture
 def sample_sync_data():
     """Minimal valid sync log data for making authenticated requests."""
-    now = datetime.utcnow()
+    now = utc_now()
     return {
         "source_name": "debounce-test",
         "start_time": (now - timedelta(minutes=1)).isoformat(),
@@ -114,7 +115,7 @@ class TestDebounceFirstUse:
         self, real_auth_client, create_api_key, db_session, sample_sync_data
     ):
         """First use sets last_used_at to approximately now."""
-        before = datetime.utcnow()
+        before = utc_now()
         api_key = create_api_key(last_used_at=None)
 
         await real_auth_client.post(
@@ -122,7 +123,7 @@ class TestDebounceFirstUse:
             json=sample_sync_data,
             headers={"X-API-Key": TEST_RAW_KEY},
         )
-        after = datetime.utcnow()
+        after = utc_now()
 
         db_session.refresh(api_key)
         assert before <= api_key.last_used_at <= after
@@ -135,10 +136,10 @@ class TestDebounceStaleKey:
         self, real_auth_client, create_api_key, db_session, sample_sync_data
     ):
         """Key used 10 minutes ago gets its last_used_at updated."""
-        old_time = datetime.utcnow() - timedelta(minutes=10)
+        old_time = utc_now() - timedelta(minutes=10)
         api_key = create_api_key(last_used_at=old_time)
 
-        before = datetime.utcnow()
+        before = utc_now()
         response = await real_auth_client.post(
             "/api/v1/sync-logs",
             json=sample_sync_data,
@@ -154,7 +155,7 @@ class TestDebounceStaleKey:
         self, real_auth_client, create_api_key, db_session, sample_sync_data
     ):
         """Key used exactly 6 minutes ago (>5 min) gets updated."""
-        old_time = datetime.utcnow() - timedelta(minutes=6)
+        old_time = utc_now() - timedelta(minutes=6)
         api_key = create_api_key(last_used_at=old_time)
 
         await real_auth_client.post(
@@ -174,7 +175,7 @@ class TestDebounceFreshKey:
         self, real_auth_client, create_api_key, db_session, sample_sync_data
     ):
         """Key used 1 minute ago does NOT get last_used_at updated."""
-        recent_time = datetime.utcnow() - timedelta(minutes=1)
+        recent_time = utc_now() - timedelta(minutes=1)
         api_key = create_api_key(last_used_at=recent_time)
 
         response = await real_auth_client.post(
@@ -192,7 +193,7 @@ class TestDebounceFreshKey:
         self, real_auth_client, create_api_key, db_session, sample_sync_data
     ):
         """Key used 4 minutes ago (within window) is NOT updated."""
-        four_min_ago = datetime.utcnow() - timedelta(minutes=4)
+        four_min_ago = utc_now() - timedelta(minutes=4)
         api_key = create_api_key(last_used_at=four_min_ago)
 
         await real_auth_client.post(

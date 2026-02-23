@@ -1,4 +1,5 @@
 from datetime import datetime
+from app.utils import utc_now
 from typing import Optional
 from uuid import UUID, uuid4
 
@@ -14,5 +15,5 @@ class SyncSourceMonitor(SQLModel, table=True):
     grace_multiplier: float = Field(default=1.5)
     enabled: bool = Field(default=True)
     last_sync_at: Optional[datetime] = None
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=utc_now)
+    updated_at: datetime = Field(default_factory=utc_now)

@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime, timedelta
+from datetime import timedelta
 from typing import Annotated, Optional
 
 import bcrypt
@@ -9,6 +9,7 @@ from sqlmodel import Session, select
 from app.config import get_settings
 from app.database import get_session
 from app.models.sync_log import ApiKey
+from app.utils import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +51,7 @@ async def verify_api_key(
     matched_key: Optional[ApiKey] = None
     for api_key in api_keys:
         # Check expiration
-        if api_key.expires_at and api_key.expires_at < datetime.utcnow():
+        if api_key.expires_at and api_key.expires_at < utc_now():
             continue
         if verify_api_key_hash(x_api_key, api_key.key_hash):
             matched_key = api_key
@@ -64,7 +65,7 @@ async def verify_api_key(
         )
 
     # Debounce last_used_at — only write if stale by 5+ minutes
-    now = datetime.utcnow()
+    now = utc_now()
     if matched_key.last_used_at is None or now - matched_key.last_used_at > timedelta(
         minutes=5
     ):

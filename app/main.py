@@ -35,6 +35,7 @@ from app.models.failure_event import FailureEvent
 from app.models.webhook import WebhookEndpoint
 from app.models.notification_log import NotificationLog
 from app.models.webhook_options import WebhookOptions
+from app.utils import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -251,8 +252,9 @@ async def index(request: Request, session: Session = Depends(get_session)):
     ).all()
 
     return templates.TemplateResponse(
+        request,
         "index.html",
-        {"request": request, "sources": sources},
+        context={"sources": sources},
     )
 
 
@@ -325,9 +327,9 @@ async def htmx_sync_table(
     ).all()
 
     return templates.TemplateResponse(
+        request,
         "partials/sync_table.html",
-        {
-            "request": request,
+        context={
             "syncs": syncs,
             "total": total,
             "offset": offset,
@@ -423,9 +425,9 @@ async def htmx_charts(
         chart_data["bytes_labels"].append(format_bytes(bytes_val))
 
     return templates.TemplateResponse(
+        request,
         "partials/charts.html",
-        {
-            "request": request,
+        context={
             "chart_data": chart_data,
             "has_data": len(syncs) > 0,
         },
@@ -441,13 +443,14 @@ async def htmx_sync_detail(
 
     if not sync:
         return templates.TemplateResponse(
+            request,
             "partials/not_found.html",
-            {"request": request},
         )
 
     return templates.TemplateResponse(
+        request,
         "partials/sync_detail.html",
-        {"request": request, "sync": sync},
+        context={"sync": sync},
     )
 
 
@@ -522,9 +525,9 @@ async def htmx_notifications(
     ).all()
 
     return templates.TemplateResponse(
+        request,
         "partials/notifications_list.html",
-        {
-            "request": request,
+        context={
             "notifications": notifications,
             "webhooks_map": webhooks_map,
             "events_map": events_map,
@@ -544,8 +547,8 @@ async def htmx_notifications(
 async def settings_page(request: Request):
     """Settings page"""
     return templates.TemplateResponse(
+        request,
         "settings.html",
-        {"request": request},
     )
 
 
@@ -568,9 +571,9 @@ async def htmx_webhooks_list(request: Request, session: Session = Depends(get_se
         options_map = {opt.webhook_endpoint_id: opt.options for opt in all_opts}
 
     return templates.TemplateResponse(
+        request,
         "partials/webhooks_list.html",
-        {
-            "request": request,
+        context={
             "webhooks": webhooks_list,
             "options_map": options_map,
         },
@@ -581,8 +584,9 @@ async def htmx_webhooks_list(request: Request, session: Session = Depends(get_se
 async def htmx_webhook_add_form(request: Request):
     """HTMX partial: empty webhook add form."""
     return templates.TemplateResponse(
+        request,
         "partials/webhook_form.html",
-        {"request": request, "webhook": None, "options": None, "errors": {}},
+        context={"webhook": None, "options": None, "errors": {}},
     )
 
 
@@ -622,9 +626,9 @@ async def htmx_webhook_create(
 
     if errors:
         return templates.TemplateResponse(
+            request,
             "partials/webhook_form.html",
-            {
-                "request": request,
+            context={
                 "webhook": None,
                 "options": None,
                 "errors": errors,
@@ -696,8 +700,9 @@ async def htmx_webhook_edit_form(
     options = opts_row.options if opts_row else None
 
     return templates.TemplateResponse(
+        request,
         "partials/webhook_form.html",
-        {"request": request, "webhook": webhook, "options": options, "errors": {}},
+        context={"webhook": webhook, "options": options, "errors": {}},
     )
 
 
@@ -746,9 +751,9 @@ async def htmx_webhook_update(
             )
         ).first()
         return templates.TemplateResponse(
+            request,
             "partials/webhook_form.html",
-            {
-                "request": request,
+            context={
                 "webhook": webhook,
                 "options": opts_row.options if opts_row else None,
                 "errors": errors,
@@ -768,7 +773,7 @@ async def htmx_webhook_update(
     webhook.webhook_type = webhook_type
     webhook.source_filters = source_filters
     webhook.enabled = enabled
-    webhook.updated_at = datetime.utcnow()
+    webhook.updated_at = utc_now()
     session.add(webhook)
 
     # Update or create Discord options
@@ -797,7 +802,7 @@ async def htmx_webhook_update(
         ).first()
         if existing_opts:
             existing_opts.options = opts
-            existing_opts.updated_at = datetime.utcnow()
+            existing_opts.updated_at = utc_now()
             session.add(existing_opts)
         else:
             new_opts = WebhookOptions(webhook_endpoint_id=webhook_id, options=opts)
@@ -848,7 +853,7 @@ async def htmx_webhook_toggle(
         return HTMLResponse("<p>Webhook not found.</p>", status_code=404)
 
     webhook.enabled = not webhook.enabled
-    webhook.updated_at = datetime.utcnow()
+    webhook.updated_at = utc_now()
     session.add(webhook)
     session.commit()
 

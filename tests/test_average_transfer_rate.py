@@ -9,6 +9,7 @@ from types import SimpleNamespace
 import pytest
 
 from app.main import format_rate
+from app.utils import utc_now
 
 pytestmark = pytest.mark.asyncio
 
@@ -23,7 +24,7 @@ class TestFormatRateFilter:
         end_time=None,
         is_dry_run=False,
     ):
-        now = datetime.utcnow()
+        now = utc_now()
         return SimpleNamespace(
             bytes_received=bytes_received,
             start_time=start_time or (now - timedelta(seconds=10)),
@@ -81,7 +82,7 @@ class TestFormatRateFilter:
 
     def test_ac006_zero_duration_returns_dash(self):
         """AC-006: Returns '-' when duration is zero."""
-        now = datetime.utcnow()
+        now = utc_now()
         sync = self._make_sync(start_time=now, end_time=now)
         assert format_rate(sync) == "-"
 
@@ -120,7 +121,7 @@ class TestSyncTableAvgRateColumn:
 
     async def test_ac001_table_shows_calculated_rate(self, client, create_sync_log):
         """AC-001: Table shows calculated rate value."""
-        now = datetime.utcnow()
+        now = utc_now()
         create_sync_log(
             source_name="rate-calc",
             bytes_received=10240,
@@ -138,7 +139,7 @@ class TestDetailModalAvgRate:
 
     async def test_ac004_detail_modal_has_avg_rate(self, client, create_sync_log):
         """AC-004: Detail modal includes Avg Rate field."""
-        now = datetime.utcnow()
+        now = utc_now()
         log = create_sync_log(
             source_name="modal-rate",
             bytes_received=5120,

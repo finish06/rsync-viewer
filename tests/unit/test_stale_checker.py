@@ -10,6 +10,7 @@ from sqlmodel import Session
 
 from app.models.monitor import SyncSourceMonitor
 from app.services.stale_checker import check_stale_sources
+from app.utils import utc_now
 
 
 @pytest.fixture
@@ -50,7 +51,7 @@ def test_ac003_stale_source_detected(db_session, create_monitor):
         source_name="stale-server",
         expected_interval_hours=24,
         grace_multiplier=1.5,
-        last_sync_at=datetime.utcnow() - timedelta(hours=37),
+        last_sync_at=utc_now() - timedelta(hours=37),
     )
 
     events = check_stale_sources(db_session)
@@ -67,7 +68,7 @@ def test_ac003_source_within_grace_not_flagged(db_session, create_monitor):
         source_name="ok-server",
         expected_interval_hours=24,
         grace_multiplier=1.5,
-        last_sync_at=datetime.utcnow() - timedelta(hours=30),
+        last_sync_at=utc_now() - timedelta(hours=30),
     )
 
     events = check_stale_sources(db_session)
@@ -79,7 +80,7 @@ def test_ac003_recently_synced_not_flagged(db_session, create_monitor):
     create_monitor(
         source_name="recent-server",
         expected_interval_hours=24,
-        last_sync_at=datetime.utcnow() - timedelta(hours=1),
+        last_sync_at=utc_now() - timedelta(hours=1),
     )
 
     events = check_stale_sources(db_session)
@@ -94,7 +95,7 @@ def test_ac004_stale_creates_failure_event(db_session, create_monitor):
     create_monitor(
         source_name="stale-source",
         expected_interval_hours=24,
-        last_sync_at=datetime.utcnow() - timedelta(hours=37),
+        last_sync_at=utc_now() - timedelta(hours=37),
     )
 
     events = check_stale_sources(db_session)
@@ -112,7 +113,7 @@ def test_ac004_no_duplicate_stale_events(db_session, create_monitor):
     create_monitor(
         source_name="stale-once",
         expected_interval_hours=24,
-        last_sync_at=datetime.utcnow() - timedelta(hours=37),
+        last_sync_at=utc_now() - timedelta(hours=37),
     )
 
     events1 = check_stale_sources(db_session)
@@ -131,7 +132,7 @@ def test_ac009_disabled_monitor_not_checked(db_session, create_monitor):
         source_name="disabled-server",
         expected_interval_hours=24,
         enabled=False,
-        last_sync_at=datetime.utcnow() - timedelta(hours=100),
+        last_sync_at=utc_now() - timedelta(hours=100),
     )
 
     events = check_stale_sources(db_session)
@@ -160,7 +161,7 @@ def test_ac010_custom_grace_multiplier_in_check(db_session, create_monitor):
         source_name="generous-grace",
         expected_interval_hours=24,
         grace_multiplier=2.0,
-        last_sync_at=datetime.utcnow() - timedelta(hours=25),
+        last_sync_at=utc_now() - timedelta(hours=25),
     )
 
     events = check_stale_sources(db_session)
@@ -174,7 +175,7 @@ def test_ac010_tight_grace_multiplier_flags_sooner(db_session, create_monitor):
         source_name="tight-grace",
         expected_interval_hours=12,
         grace_multiplier=1.1,
-        last_sync_at=datetime.utcnow() - timedelta(hours=14),
+        last_sync_at=utc_now() - timedelta(hours=14),
     )
 
     events = check_stale_sources(db_session)
