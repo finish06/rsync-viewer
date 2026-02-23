@@ -9,6 +9,7 @@ class SyncLogCreate(BaseModel):
 
     source_name: str = Field(
         ...,
+        min_length=1,
         description="Identifier for the sync source (e.g., 'backup-server', 'media-sync')",
         examples=["backup-server"],
     )
@@ -24,6 +25,7 @@ class SyncLogCreate(BaseModel):
     )
     raw_content: str = Field(
         ...,
+        max_length=10_000_000,
         description="Raw rsync command output to be parsed",
         examples=[
             "sending incremental file list\nfile1.txt\nsent 1.23K bytes received 45 bytes 850.00 bytes/sec\ntotal size is 5.67M speedup is 4,444.88"

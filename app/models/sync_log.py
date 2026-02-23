@@ -34,9 +34,11 @@ class ApiKey(SQLModel, table=True):
     __tablename__ = "api_keys"
 
     id: UUID = Field(default_factory=uuid4, primary_key=True)
-    key_hash: str = Field(max_length=64, unique=True)
+    key_hash: str = Field(max_length=128, unique=True)
+    key_prefix: str = Field(default="", max_length=12)
     name: str = Field(max_length=100)
     source_names: Optional[list[str]] = Field(default=None, sa_column=Column(JSONB))
     is_active: bool = Field(default=True)
     created_at: datetime = Field(default_factory=datetime.utcnow)
     last_used_at: Optional[datetime] = None
+    expires_at: Optional[datetime] = None

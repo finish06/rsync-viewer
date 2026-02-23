@@ -12,6 +12,11 @@ class Settings(BaseSettings):
     default_api_key: str = "rsv_dev_key"
     log_level: str = "INFO"
     log_format: str = "json"
+    rate_limit_authenticated: str = "60/minute"
+    rate_limit_unauthenticated: str = "20/minute"
+    max_request_body_size: int = 10_485_760  # 10MB
+    hsts_enabled: bool = False
+    csp_report_only: bool = True
 
 
 @lru_cache

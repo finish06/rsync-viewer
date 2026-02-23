@@ -12,6 +12,10 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
+from slowapi.util import get_remote_address
 from sqlmodel import SQLModel, Session, select, func
 
 from app.config import get_settings
@@ -19,7 +23,12 @@ from app.database import engine, get_session
 from app.api.endpoints import sync_logs, monitors, failures, webhooks
 from app.errors import make_error_response, INTERNAL_ERROR, VALIDATION_ERROR
 from app.logging_config import setup_logging
-from app.middleware import RequestLoggingMiddleware
+from app.middleware import (
+    BodySizeLimitMiddleware,
+    CsrfMiddleware,
+    RequestLoggingMiddleware,
+    SecurityHeadersMiddleware,
+)
 from app.models.sync_log import SyncLog
 from app.models.monitor import SyncSourceMonitor  # noqa: F401 — ensure table creation
 from app.models.failure_event import FailureEvent
@@ -41,6 +50,21 @@ def _form_str(form: object, key: str, default: str = "") -> str:
 
 
 settings = get_settings()
+
+
+def _get_rate_limit_key(request: Request) -> str:
+    """Rate limit key: API key if present, else client IP."""
+    api_key = request.headers.get("X-API-Key")
+    if api_key:
+        return f"apikey:{api_key}"
+    return get_remote_address(request)
+
+
+limiter = Limiter(
+    key_func=_get_rate_limit_key,
+    default_limits=[settings.rate_limit_authenticated],
+    headers_enabled=True,
+)
 
 
 @asynccontextmanager
@@ -139,8 +163,17 @@ async def global_exception_handler(request: Request, exc: Exception):
     )
 
 
-# Add request logging middleware
+# Rate limiting
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # type: ignore[arg-type]
+
+# Middleware order: outermost runs first
+# SecurityHeaders → BodySizeLimit → RequestLogging → (rate limiting via slowapi)
 app.add_middleware(RequestLoggingMiddleware)
+app.add_middleware(CsrfMiddleware)
+app.add_middleware(SlowAPIMiddleware)
+app.add_middleware(BodySizeLimitMiddleware)
+app.add_middleware(SecurityHeadersMiddleware)
 
 # Mount static files
 app.mount("/static", StaticFiles(directory="app/static"), name="static")

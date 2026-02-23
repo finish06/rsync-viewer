@@ -1,8 +1,8 @@
-import hashlib
 import logging
 from datetime import datetime, timedelta
 from typing import Annotated, Optional
 
+import bcrypt
 from fastapi import Depends, HTTPException, Header, status
 from sqlmodel import Session, select
 
@@ -14,8 +14,13 @@ logger = logging.getLogger(__name__)
 
 
 def hash_api_key(key: str) -> str:
-    """Hash API key using SHA-256"""
-    return hashlib.sha256(key.encode()).hexdigest()
+    """Hash API key using bcrypt."""
+    return bcrypt.hashpw(key.encode(), bcrypt.gensalt()).decode()
+
+
+def verify_api_key_hash(key: str, hashed: str) -> bool:
+    """Verify an API key against its bcrypt hash."""
+    return bcrypt.checkpw(key.encode(), hashed.encode())
 
 
 async def verify_api_key(
@@ -36,14 +41,22 @@ async def verify_api_key(
     if settings.debug and x_api_key == settings.default_api_key:
         return None  # Allow dev key without DB lookup
 
-    key_hash = hash_api_key(x_api_key)
-
+    # Find all active keys and check with bcrypt
     statement = select(ApiKey).where(
-        ApiKey.key_hash == key_hash, ApiKey.is_active.is_(True)  # type: ignore[attr-defined]
+        ApiKey.is_active.is_(True)  # type: ignore[attr-defined]
     )
-    api_key = session.exec(statement).first()
+    api_keys = session.exec(statement).all()
 
-    if not api_key:
+    matched_key: Optional[ApiKey] = None
+    for api_key in api_keys:
+        # Check expiration
+        if api_key.expires_at and api_key.expires_at < datetime.utcnow():
+            continue
+        if verify_api_key_hash(x_api_key, api_key.key_hash):
+            matched_key = api_key
+            break
+
+    if not matched_key:
         logger.warning("Invalid or inactive API key", extra={"endpoint": "sync-logs"})
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -52,14 +65,14 @@ async def verify_api_key(
 
     # Debounce last_used_at — only write if stale by 5+ minutes
     now = datetime.utcnow()
-    if api_key.last_used_at is None or now - api_key.last_used_at > timedelta(
+    if matched_key.last_used_at is None or now - matched_key.last_used_at > timedelta(
         minutes=5
     ):
-        api_key.last_used_at = now
-        session.add(api_key)
+        matched_key.last_used_at = now
+        session.add(matched_key)
         session.commit()
 
-    return api_key
+    return matched_key
 
 
 SessionDep = Annotated[Session, Depends(get_session)]

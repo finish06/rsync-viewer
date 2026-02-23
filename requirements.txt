@@ -19,6 +19,10 @@ pydantic-settings>=2.0.0
 # Logging
 python-json-logger>=3.0.0
 
+# Security
+slowapi>=0.1.9
+bcrypt>=4.0.0
+
 # Utilities
 python-dotenv>=1.0.0
 

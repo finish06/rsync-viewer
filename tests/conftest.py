@@ -9,6 +9,7 @@ from httpx import ASGITransport, AsyncClient
 from sqlmodel import Session, SQLModel, create_engine
 
 from app.config import Settings, get_settings
+from app.csrf import generate_csrf_token
 from app.database import get_session
 from app.api.deps import verify_api_key
 from app.main import app
@@ -88,9 +89,13 @@ def client(test_engine, db_session) -> Generator[AsyncClient, None, None]:
     app.dependency_overrides[get_settings] = get_test_settings
     app.dependency_overrides[verify_api_key] = mock_verify_api_key
 
+    csrf_token = generate_csrf_token()
+
     yield AsyncClient(
         transport=ASGITransport(app=app),
         base_url="http://test",
+        headers={"X-CSRF-Token": csrf_token},
+        cookies={"csrf_token": csrf_token},
     )
 
     app.dependency_overrides.clear()
