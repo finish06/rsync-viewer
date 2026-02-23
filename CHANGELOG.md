@@ -14,7 +14,7 @@ and this project adheres to [Conventional Commits](https://www.conventionalcommi
 
 ### Fixed
 
-- Fix .env.example tests using relative path that fails in CI containers
+- Fix .env.example tests: mount file into test container and use absolute path
 - Fix ruff format issues in app/middleware.py and tests/test_security_hardening.py
 
 ### Changed

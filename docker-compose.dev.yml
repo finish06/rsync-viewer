@@ -30,3 +30,4 @@ services:
       - ./app:/app/app:ro
       - ./tests:/app/tests:ro
       - ./pytest.ini:/app/pytest.ini:ro
+      - ./.env.example:/app/.env.example:ro
