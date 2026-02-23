@@ -1,6 +1,6 @@
-# M4 — Analytics & Integrations
+# M4 — Analytics & Performance
 
-**Goal:** Enhanced visualizations, per-source dashboards, trend analysis, and Home Assistant webhook integration
+**Goal:** Add trend analysis, statistics aggregation, data export, and interactive dashboard charts — backed by database and query performance optimizations to handle large datasets
 **Status:** PLANNED
 **Appetite:** 2 weeks
 **Target Maturity:** beta
@@ -9,41 +9,60 @@
 
 ## Success Criteria
 
-- [ ] Per-source dashboard pages with dedicated stats and charts
-- [ ] Trend analysis — sync duration, file count, bytes transferred over time
-- [ ] Home Assistant webhook integration tested and working
-- [ ] HA webhook format compatible with HA automation triggers
-- [ ] Comparison views across sources (side-by-side or overlay charts)
+- [ ] Statistics API returns daily/weekly/monthly summaries with per-source breakdowns
+- [ ] CSV and JSON export endpoints with date range and source filters
+- [ ] Interactive Chart.js charts on dashboard (duration, file count, bytes over time)
+- [ ] Customizable date range selector for all analytics views
+- [ ] Per-source comparison view with side-by-side statistics
+- [ ] API response times under 200ms for list operations with 10,000+ records
+- [ ] Database indexes on all frequently queried columns
+- [ ] Cursor-based pagination on sync logs endpoint (replaces offset pagination)
+- [ ] No N+1 query patterns in codebase
 
 ## Hill Chart
 
 ```
-Per-Source Dashboards  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  SHAPED
-Trend Analysis         ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  SHAPED
-Home Assistant         ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  SHAPED
+Statistics API         ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  SHAPED
+Data Export            ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  SHAPED
+Dashboard Charts       ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  SHAPED
+Performance Tuning     ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  SHAPED
 ```
 
 ## Features
 
 | Feature | Spec | Position | Notes |
 |---------|------|----------|-------|
-| Per-Source Dashboards | — | SHAPED | Dedicated page per source with stats, recent syncs, charts |
-| Trend Analysis | — | SHAPED | Time-series charts for duration, file count, bytes |
-| Home Assistant Integration | — | SHAPED | HA webhook format, automation-compatible payloads (moved from M2) |
+| Statistics & Trends | specs/analytics.md | SHAPED | Summary API, per-source stats, frequency trends |
+| Data Export | specs/analytics.md | SHAPED | CSV/JSON export with filters |
+| Dashboard Charts | specs/analytics.md | SHAPED | Chart.js visualizations, date range picker, source comparison |
+| Database Indexing | specs/performance.md | SHAPED | B-tree indexes on query-hot columns |
+| Cursor Pagination | specs/performance.md | SHAPED | Replace offset pagination, forward/backward support |
+| Query Optimization | specs/performance.md | SHAPED | N+1 elimination, lazy loading file lists, connection pool tuning |
+| Redis Caching | specs/performance.md | SHAPED | Optional cache layer for statistics (deferred if not needed) |
 
 ## Dependencies
 
-- M2 must be complete (webhook backend + Discord integration provide the foundation for HA)
-- Existing sync log data provides the basis for analytics charts
-- Chart.js or similar already in use for basic charts — extend for trend analysis
+- M3 must be complete (error handling provides consistent error responses for new endpoints, logging enables performance monitoring)
+- Existing SyncLog model and data
+- Chart.js already in use for basic charts — extend for trend analysis
+
+## Recommended Implementation Order
+
+1. Database Indexing + Query Optimization (foundation — makes everything else faster)
+2. Cursor Pagination (API change, needed before analytics adds more list endpoints)
+3. Statistics API + Per-Source Stats (backend endpoints)
+4. Data Export (CSV/JSON endpoints, builds on stats queries)
+5. Dashboard Charts (frontend, consumes statistics API)
+6. Redis Caching (optional, add only if performance targets aren't met without it)
 
 ## Risk Assessment
 
 | Risk | Probability | Impact | Mitigation |
 |------|-------------|--------|------------|
-| HA webhook format changes between versions | Low | Medium | Test against current HA version, document format |
-| Chart performance with large datasets | Medium | Medium | Pagination, date range limits, server-side aggregation |
-| Per-source pages need design decisions | Medium | Low | Follow existing dashboard patterns, keep simple |
+| Chart performance with large datasets | Medium | Medium | Server-side aggregation, date range limits, pagination |
+| Cursor pagination breaks existing API consumers | Medium | Medium | Keep offset params as deprecated fallback during transition |
+| Redis adds infrastructure complexity | Low | Low | Redis is optional — app works without it |
+| Export of very large datasets causes timeout | Medium | Medium | Streaming response, enforce max limit, suggest date range |
 
 ## Cycles
 

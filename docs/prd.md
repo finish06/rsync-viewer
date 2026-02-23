@@ -1,6 +1,6 @@
 # Rsync Log Viewer — Product Requirements Document
 
-**Version:** 0.1.0
+**Version:** 0.2.0
 **Created:** 2026-02-19
 **Author:** finish06
 **Status:** Draft
@@ -38,13 +38,16 @@ Rsync Log Viewer solves this by providing a centralized web dashboard that colle
 - Docker Compose deployment for homelab
 - **Webhook notifications for failed syncs** (Home Assistant, Discord)
 
-### Out of Scope
+### Out of Scope (MVP)
 
-- Multi-user authentication and role-based access
-- Scheduled rsync execution (this tool monitors, not triggers)
-- Prometheus metrics export (future enhancement)
 - Mobile-native app
 - Cloud-hosted SaaS deployment
+
+### Future Scope (Post-MVP)
+
+- Multi-user authentication and role-based access (M8)
+- Scheduled rsync execution and sync management (M7)
+- Prometheus metrics export and Grafana dashboards (M6)
 
 ## 5. Architecture
 
@@ -90,9 +93,22 @@ Production deployment is to a self-hosted homelab server. No staging environment
 |-----------|------|-----------------|--------|------------------|
 | M1: Foundation | Stabilize existing features, add CI/CD | poc → alpha | COMPLETE | CI pipeline, 80% coverage, conventional commits |
 | M2: Notifications | Webhook alerts for failed syncs | alpha | COMPLETE | HA/Discord webhooks, settings UI, notification history |
-| M3: Reliability | Error handling, logging, security hardening | alpha → beta | LATER | Structured logging, input validation, rate limiting |
-| M4: Analytics & Integrations | Visualizations, dashboards, Home Assistant | beta | PLANNED | Per-source dashboards, trend analysis, HA webhooks |
+| M3: Reliability | Error handling, logging, security hardening | alpha → beta | NOW | Structured logging, input validation, rate limiting, key hashing |
+| M4: Analytics & Performance | Trend analysis, dashboards, query optimization | beta | NEXT | Statistics API, Chart.js charts, cursor pagination, DB indexes |
 | M5: API Performance | Debounce API key `last_used_at` writes | alpha | COMPLETE | Configurable debounce, zero regression, fewer DB writes |
+| M6: Observability | Prometheus metrics, Grafana dashboards, project docs | beta | NEXT | /metrics endpoint, Grafana templates, setup/architecture docs |
+| M7: Sync Management | On-demand sync triggering, cron scheduling, real-time progress | beta → ga | LATER | Run Now button, cron schedules, WebSocket progress, retry |
+| M8: Multi-User | User accounts, JWT auth, role-based access control | beta → ga | LATER | Registration/login, Admin/Operator/Viewer roles, per-user API keys |
+
+### Dependency Chain
+
+```
+M3 (Reliability) → M4 (Analytics & Performance) → M6 (Observability)
+                 ↘ M7 (Sync Management)
+                 ↘ M8 (Multi-User)
+```
+
+M3 is the gate to beta promotion. M4 and M6 can partially overlap. M7 and M8 are independent of each other but both require M3.
 
 ### Milestone Detail
 
@@ -137,13 +153,105 @@ Production deployment is to a self-hosted homelab server. No staging environment
 - [x] Debounce prevents writes within 5-minute window (10 tests)
 - [x] No regression in API key authentication behavior
 
+#### M3: Reliability [NOW]
+**Goal:** Harden the app with structured logging, error handling, and security best practices
+**Appetite:** 2 weeks
+**Target maturity:** alpha → beta
+**Specs:** structured-logging, error-handling, security-hardening
+**Features:**
+- Structured JSON logging with request IDs and sensitive data masking
+- Global exception handler with consistent error response format
+- Rate limiting per API key and per IP
+- API key hashing (salted bcrypt/argon2, no plaintext storage)
+- Security headers (CSP, X-Content-Type-Options, X-Frame-Options, HSTS)
+- Input validation with type checking and length limits
+**Success criteria:**
+- [ ] All API endpoints log requests/responses in structured JSON
+- [ ] All errors return consistent format, no stack traces in production
+- [ ] Rate limiting enforced (60/min authenticated, 20/min unauthenticated)
+- [ ] API keys hashed in DB, no plaintext
+- [ ] Security headers on all responses
+- [ ] No secrets in codebase
+
+#### M4: Analytics & Performance [NEXT]
+**Goal:** Trend analysis, statistics, data export, interactive charts — with DB optimizations
+**Appetite:** 2 weeks
+**Target maturity:** beta
+**Specs:** analytics, performance
+**Features:**
+- Statistics API (daily/weekly/monthly summaries, per-source breakdowns)
+- CSV and JSON data export with date range and source filters
+- Interactive Chart.js dashboards (duration, file count, bytes trends)
+- Database indexes on frequently queried columns
+- Cursor-based pagination (replaces offset pagination)
+- N+1 query elimination and connection pool tuning
+- Optional Redis caching for statistics
+**Success criteria:**
+- [ ] Statistics API returns aggregated data for custom date ranges
+- [ ] CSV/JSON export works with filters
+- [ ] Dashboard has interactive charts with date range selector
+- [ ] API responses < 200ms with 10,000+ records
+- [ ] Cursor pagination on sync logs endpoint
+
+#### M6: Observability [NEXT]
+**Goal:** Prometheus metrics for monitoring, Grafana dashboards, comprehensive project docs
+**Appetite:** 1 week
+**Target maturity:** beta
+**Specs:** metrics-export, documentation
+**Features:**
+- Prometheus /metrics endpoint (sync, API, and health metrics)
+- Grafana dashboard JSON templates
+- Configurable data retention with automatic cleanup
+- Setup guide, architecture docs, env var reference, troubleshooting guide
+**Success criteria:**
+- [ ] /metrics returns valid Prometheus format
+- [ ] Grafana dashboards visualize sync and API metrics
+- [ ] New developers can deploy using only documentation
+- [ ] All environment variables documented
+
+#### M7: Sync Management [LATER]
+**Goal:** Transform viewer into active sync management platform
+**Appetite:** 3 weeks
+**Target maturity:** beta → ga
+**Specs:** sync-scheduling
+**Features:**
+- Sync configuration CRUD (source, destination, flags, SSH key)
+- On-demand sync triggering with dry-run mode
+- Cron-based scheduling with builder UI
+- Real-time progress via WebSocket/SSE
+- Retry with exponential backoff, cancellation support
+**Success criteria:**
+- [ ] "Run Now" triggers sync and captures output as sync log
+- [ ] Cron schedules execute automatically
+- [ ] Real-time progress updates in UI
+- [ ] Failed syncs retry with backoff
+- [ ] No command injection vulnerabilities
+
+#### M8: Multi-User [LATER]
+**Goal:** Multi-user support with authentication and role-based access
+**Appetite:** 2 weeks
+**Target maturity:** beta → ga
+**Specs:** user-management
+**Features:**
+- User registration/login with password hashing
+- JWT access/refresh tokens
+- Role-based access (Admin, Operator, Viewer)
+- Per-user API keys with role-scoped permissions
+- Admin user management UI
+- Password reset via email
+**Success criteria:**
+- [ ] Users can register and log in securely
+- [ ] Roles correctly restrict access
+- [ ] Per-user API keys inherit role permissions
+- [ ] First registered user gets Admin role
+
 ### Maturity Promotion Path
 
-| From | To | Requirements |
-|------|-----|-------------|
-| poc | alpha | CI/CD pipeline, 80% coverage, PRD exists, webhook MVP |
-| alpha | beta | Full specs for all features, TDD adopted, error handling complete |
-| beta | ga | 30+ days stability, comprehensive monitoring, security hardened |
+| From | To | Gate Milestone | Requirements |
+|------|-----|----------------|-------------|
+| poc | alpha | M1 | CI/CD pipeline, 80% coverage, PRD exists, webhook MVP |
+| alpha | beta | M3 | Structured logging, error handling, security hardening, all specs written |
+| beta | ga | M7 + M8 | 30+ days stability, comprehensive monitoring, multi-user, sync management |
 
 ## 7. Key Features
 
@@ -177,3 +285,4 @@ Configurable webhook system that detects failed or anomalous syncs and sends ale
 | Date | Version | Author | Changes |
 |------|---------|--------|---------|
 | 2026-02-19 | 0.1.0 | finish06 | Initial draft from /add:init interview |
+| 2026-02-22 | 0.2.0 | finish06 | Full roadmap with M3-M8 milestones, specs for all features, TODO conversion |
