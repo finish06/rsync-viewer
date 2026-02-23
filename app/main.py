@@ -20,7 +20,7 @@ from sqlmodel import SQLModel, Session, select, func
 
 from app.config import get_settings
 from app.database import engine, get_session
-from app.api.endpoints import sync_logs, monitors, failures, webhooks
+from app.api.endpoints import sync_logs, monitors, failures, webhooks, analytics
 from app.errors import make_error_response, INTERNAL_ERROR, VALIDATION_ERROR
 from app.logging_config import setup_logging
 from app.middleware import (
@@ -240,6 +240,7 @@ app.include_router(sync_logs.router, prefix="/api/v1")
 app.include_router(monitors.router, prefix="/api/v1")
 app.include_router(failures.router, prefix="/api/v1")
 app.include_router(webhooks.router, prefix="/api/v1")
+app.include_router(analytics.router, prefix="/api/v1")
 
 
 @app.get("/")
@@ -254,6 +255,20 @@ async def index(request: Request, session: Session = Depends(get_session)):
     return templates.TemplateResponse(
         request,
         "index.html",
+        context={"sources": sources},
+    )
+
+
+@app.get("/analytics")
+async def analytics_page(request: Request, session: Session = Depends(get_session)):
+    """Analytics dashboard page with charts and export controls."""
+    sources = session.exec(
+        select(SyncLog.source_name).distinct().order_by(SyncLog.source_name)
+    ).all()
+
+    return templates.TemplateResponse(
+        request,
+        "analytics.html",
         context={"sources": sources},
     )
 
