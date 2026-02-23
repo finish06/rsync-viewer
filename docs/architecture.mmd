@@ -1,0 +1,154 @@
+---
+title: Rsync Log Viewer — Application Architecture
+---
+graph TB
+    %% ───────────────────────── External Actors ─────────────────────────
+    Client["🖥️ Rsync Script<br/>(POST raw output)"]
+    Browser["🌐 Browser<br/>(Dashboard + Settings)"]
+    WebhookDest["📡 Webhook Target<br/>(Discord / Generic)"]
+
+    %% ───────────────────────── Middleware Stack ─────────────────────────
+    subgraph MW["Middleware Stack (outermost → innermost)"]
+        direction TB
+        SecHeaders["SecurityHeadersMiddleware<br/>X-Content-Type-Options · X-Frame-Options<br/>CSP Report-Only · HSTS (opt-in)"]
+        BodyLimit["BodySizeLimitMiddleware<br/>Reject &gt; 10 MB → 413"]
+        RateLimit["SlowAPIMiddleware<br/>60/min auth · 20/min unauth<br/>X-RateLimit-* headers"]
+        CSRF["CsrfMiddleware<br/>Validates X-CSRF-Token on<br/>POST/PUT/DELETE /htmx/webhooks/*"]
+        ReqLog["RequestLoggingMiddleware<br/>UUID request_id · timing<br/>X-Request-ID header"]
+
+        SecHeaders --> BodyLimit --> RateLimit --> CSRF --> ReqLog
+    end
+
+    %% ───────────────────────── Route Layer ─────────────────────────
+    subgraph Routes["Route Handlers"]
+        direction TB
+
+        subgraph REST["REST API  /api/v1"]
+            SyncAPI["sync-logs<br/>POST / · GET / · GET /sources<br/>GET /{id}"]
+            MonAPI["monitors<br/>GET / · POST / · PUT /{id}<br/>DELETE /{id}"]
+            FailAPI["failures<br/>GET /"]
+            WhAPI["webhooks<br/>GET / · POST / · PUT /{id}<br/>DELETE /{id} · POST /{id}/test"]
+        end
+
+        subgraph HTMX["HTMX Partials"]
+            HTTable["GET /htmx/sync-table"]
+            HTCharts["GET /htmx/charts"]
+            HTDetail["GET /htmx/sync-detail/{id}"]
+            HTNotif["GET /htmx/notifications"]
+            HTWhList["GET /htmx/webhooks"]
+            HTWhForm["POST · PUT · DELETE<br/>/htmx/webhooks/{id}"]
+        end
+
+        subgraph Pages["Full Pages"]
+            Dashboard["GET / → index.html"]
+            Settings["GET /settings → settings.html"]
+        end
+
+        Health["GET /health"]
+    end
+
+    %% ───────────────────────── Auth ─────────────────────────
+    Auth["API Key Auth<br/>(bcrypt verify · expiry · debounced last_used)"]
+
+    %% ───────────────────────── Services ─────────────────────────
+    subgraph Services["Service Layer"]
+        Parser["RsyncParser<br/>regex extraction · unit conversion<br/>dry-run detection"]
+        Dispatcher["WebhookDispatcher<br/>source filtering · payload build<br/>retry 3× exp-backoff · auto-disable @ 10"]
+        StaleChk["StaleChecker<br/>deadline = last_sync + interval × grace<br/>creates FailureEvent(stale)"]
+    end
+
+    %% ───────────────────────── Database ─────────────────────────
+    subgraph DB["PostgreSQL 16"]
+        SyncLog["sync_logs<br/>id · source_name · start/end_time<br/>raw_content · parsed stats<br/>file_list (JSONB) · is_dry_run"]
+        FailEvent["failure_events<br/>id · source_name · failure_type<br/>sync_log_id (FK) · notified"]
+        Monitor["sync_source_monitors<br/>id · source_name (unique)<br/>expected_interval_hours<br/>grace_multiplier · last_sync_at"]
+        Webhook["webhook_endpoints<br/>id · name · url · webhook_type<br/>source_filters (JSONB)<br/>consecutive_failures · enabled"]
+        WhOpts["webhook_options<br/>webhook_endpoint_id (FK 1:1)<br/>options (JSONB: color, username …)"]
+        NotifLog["notification_logs<br/>failure_event_id (FK)<br/>webhook_endpoint_id (FK)<br/>status · http_status_code<br/>attempt_number"]
+        ApiKey["api_keys<br/>key_hash (bcrypt) · key_prefix<br/>source_names (JSONB)<br/>expires_at · is_active"]
+    end
+
+    %% ───────────────────────── Templates ─────────────────────────
+    subgraph Templates["Jinja2 Templates"]
+        Base["base.html<br/>nav · CSS · HTMX setup"]
+        Index["index.html<br/>filter controls · table · charts"]
+        SettingsT["settings.html<br/>webhook management"]
+        Partials["partials/<br/>sync_table · charts · sync_detail<br/>webhooks_list · webhook_form<br/>notifications_list"]
+    end
+
+    %% ───────────────────────── Connections ─────────────────────────
+
+    %% Inbound
+    Client -->|"X-API-Key + JSON body"| MW
+    Browser -->|"HTMX / page load"| MW
+
+    %% Middleware → Routes
+    MW --> Routes
+
+    %% Auth gate
+    SyncAPI -.->|"requires"| Auth
+    WhAPI -.->|"requires"| Auth
+    Auth -.-> ApiKey
+
+    %% Sync log creation flow
+    SyncAPI -->|"raw_content"| Parser
+    Parser -->|"ParsedRsyncOutput"| SyncLog
+    SyncAPI -->|"exit_code ≠ 0"| FailEvent
+    SyncAPI -->|"update last_sync_at"| Monitor
+    SyncAPI -->|"dispatch"| Dispatcher
+
+    %% Webhook dispatch flow
+    Dispatcher -->|"select enabled"| Webhook
+    Dispatcher -->|"load"| WhOpts
+    Dispatcher -->|"POST payload"| WebhookDest
+    Dispatcher -->|"log attempt"| NotifLog
+    Dispatcher -->|"set notified=true"| FailEvent
+
+    %% Stale checker
+    StaleChk -->|"read"| Monitor
+    StaleChk -->|"create"| FailEvent
+    StaleChk -->|"trigger"| Dispatcher
+
+    %% HTMX data flow
+    HTTable -->|"query"| SyncLog
+    HTCharts -->|"query"| SyncLog
+    HTDetail -->|"get"| SyncLog
+    HTNotif -->|"query + join"| NotifLog
+    HTWhList -->|"query"| Webhook
+    HTWhForm -->|"CRUD"| Webhook
+    MonAPI -->|"CRUD"| Monitor
+    FailAPI -->|"query"| FailEvent
+
+    %% Template rendering
+    Dashboard --> Base
+    Dashboard --> Index
+    Settings --> Base
+    Settings --> SettingsT
+    HTTable --> Partials
+    HTCharts --> Partials
+    HTDetail --> Partials
+    HTNotif --> Partials
+    HTWhList --> Partials
+    HTWhForm --> Partials
+
+    %% DB relationships
+    FailEvent -.->|"sync_log_id FK"| SyncLog
+    WhOpts -.->|"webhook_endpoint_id FK"| Webhook
+    NotifLog -.->|"failure_event_id FK"| FailEvent
+    NotifLog -.->|"webhook_endpoint_id FK"| Webhook
+
+    %% Styling
+    classDef actor fill:#4a9eff,stroke:#2a7de0,color:#fff
+    classDef middleware fill:#f59e0b,stroke:#d97706,color:#fff
+    classDef route fill:#10b981,stroke:#059669,color:#fff
+    classDef service fill:#8b5cf6,stroke:#7c3aed,color:#fff
+    classDef db fill:#ef4444,stroke:#dc2626,color:#fff
+    classDef template fill:#06b6d4,stroke:#0891b2,color:#fff
+
+    class Client,Browser,WebhookDest actor
+    class SecHeaders,BodyLimit,RateLimit,CSRF,ReqLog middleware
+    class SyncAPI,MonAPI,FailAPI,WhAPI,HTTable,HTCharts,HTDetail,HTNotif,HTWhList,HTWhForm,Dashboard,Settings,Health route
+    class Parser,Dispatcher,StaleChk service
+    class SyncLog,FailEvent,Monitor,Webhook,WhOpts,NotifLog,ApiKey db
+    class Base,Index,SettingsT,Partials template
+    class Auth service

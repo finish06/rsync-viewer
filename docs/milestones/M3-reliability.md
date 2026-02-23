@@ -1,7 +1,7 @@
 # M3 — Reliability
 
 **Goal:** Harden the application with structured logging, comprehensive error handling, and security best practices to prepare for beta maturity promotion
-**Status:** PLANNED
+**Status:** IN_PROGRESS
 **Appetite:** 2 weeks
 **Target Maturity:** alpha → beta
 **Started:** —
@@ -59,7 +59,7 @@ Security Hardening     ░░░░░░░░░░░░░░░░░░░
 
 | Cycle | Features | Status | Notes |
 |-------|----------|--------|-------|
-| — | — | — | Cycles to be planned when milestone starts |
+| cycle-2 | Structured Logging, Error Handling, Security Hardening | PLANNED | All 3 features SHAPED→VERIFIED, 1 week budget |
 
 ## Retrospective
 
