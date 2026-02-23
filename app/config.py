@@ -17,6 +17,10 @@ class Settings(BaseSettings):
     max_request_body_size: int = 10_485_760  # 10MB
     hsts_enabled: bool = False
     csp_report_only: bool = True
+    db_pool_size: int = 10
+    db_max_overflow: int = 20
+    db_pool_timeout: int = 30
+    query_timeout_seconds: int = 30
 
 
 @lru_cache

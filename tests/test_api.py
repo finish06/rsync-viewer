@@ -84,9 +84,7 @@ class TestListSyncLogs:
         assert response.status_code == 200
         data = response.json()
         assert data["items"] == []
-        assert data["total"] == 0
-        assert data["offset"] == 0
-        assert data["limit"] == 50
+        assert data["pagination"]["has_next"] is False
 
     async def test_list_sync_logs_with_data(self, client, create_sync_log):
         """Test listing sync logs returns created logs"""
@@ -97,7 +95,6 @@ class TestListSyncLogs:
 
         assert response.status_code == 200
         data = response.json()
-        assert data["total"] == 2
         assert len(data["items"]) == 2
 
     async def test_list_sync_logs_pagination(self, client, create_sync_log):
@@ -124,7 +121,7 @@ class TestListSyncLogs:
 
         assert response.status_code == 200
         data = response.json()
-        assert data["total"] == 2
+        assert len(data["items"]) == 2
         for item in data["items"]:
             assert item["source_name"] == "backup-server"
 
@@ -144,7 +141,7 @@ class TestListSyncLogs:
 
         assert response.status_code == 200
         data = response.json()
-        assert data["total"] == 1
+        assert len(data["items"]) == 1
 
 
 class TestGetSyncLog:

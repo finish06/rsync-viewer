@@ -2,11 +2,13 @@ from datetime import datetime
 from typing import Optional
 from uuid import UUID, uuid4
 
+from sqlalchemy import Index
 from sqlmodel import Field, SQLModel
 
 
 class NotificationLog(SQLModel, table=True):
     __tablename__ = "notification_logs"
+    __table_args__ = (Index("ix_notification_logs_created_at", "created_at"),)
 
     id: UUID = Field(default_factory=uuid4, primary_key=True)
     failure_event_id: UUID = Field(foreign_key="failure_events.id", index=True)

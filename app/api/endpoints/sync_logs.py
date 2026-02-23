@@ -1,3 +1,5 @@
+import base64
+import json
 import logging
 from datetime import datetime
 from typing import Optional
@@ -11,6 +13,7 @@ from app.models.sync_log import SyncLog
 from app.models.failure_event import FailureEvent
 from app.models.monitor import SyncSourceMonitor
 from app.schemas.sync_log import (
+    CursorPagination,
     SyncLogCreate,
     SyncLogRead,
     SyncLogDetail,
@@ -23,6 +26,25 @@ from app.services.rsync_parser import RsyncParser
 from app.services.webhook_dispatcher import dispatch_webhooks
 
 logger = logging.getLogger(__name__)
+
+
+def _encode_cursor(start_time: datetime, record_id: UUID) -> str:
+    """Encode a cursor from start_time and id."""
+    payload = {"t": start_time.isoformat(), "id": str(record_id)}
+    return base64.urlsafe_b64encode(json.dumps(payload).encode()).decode()
+
+
+def _decode_cursor(cursor: str) -> tuple[datetime, UUID]:
+    """Decode a cursor into (start_time, id). Raises HTTPException on invalid cursor."""
+    try:
+        payload = json.loads(base64.urlsafe_b64decode(cursor))
+        return datetime.fromisoformat(payload["t"]), UUID(payload["id"])
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid cursor value",
+        )
+
 
 router = APIRouter(prefix="/sync-logs", tags=["sync-logs"])
 
@@ -126,6 +148,7 @@ async def create_sync_log(
     summary="List sync logs",
     responses={
         200: {"description": "List of sync logs with pagination"},
+        400: {"model": ErrorResponse, "description": "Invalid cursor value"},
     },
 )
 async def list_sync_logs(
@@ -137,17 +160,36 @@ async def list_sync_logs(
     end_date: Optional[datetime] = Query(
         None, description="Filter syncs before this date (ISO 8601)"
     ),
-    offset: int = Query(0, ge=0, description="Number of records to skip"),
+    cursor: Optional[str] = Query(
+        None, description="Opaque cursor for keyset pagination"
+    ),
+    direction: Optional[str] = Query(
+        "forward",
+        description="Pagination direction: 'forward' (default) or 'backward'",
+    ),
+    offset: Optional[int] = Query(
+        None, ge=0, description="(Deprecated) Number of records to skip"
+    ),
     limit: int = Query(
-        50, ge=1, le=100, description="Maximum number of records to return"
+        20, ge=1, le=100, description="Maximum number of records to return"
     ),
 ):
     """
     List sync logs with optional filtering and pagination.
 
+    Supports cursor-based pagination (preferred) and offset pagination (deprecated).
     Results are ordered by start time (most recent first).
+
+    **Cursor pagination:** Use the `cursor` parameter from the `pagination.next_cursor`
+    or `pagination.prev_cursor` fields in the response. Set `direction=backward` to
+    page backwards.
+
+    **Offset pagination (deprecated):** Use the `offset` parameter for legacy clients.
     """
-    # Build query
+    # Determine pagination mode: cursor takes precedence, offset is fallback
+    use_offset = cursor is None and offset is not None
+
+    # Build base query with filters
     statement = select(SyncLog)
 
     if source_name:
@@ -157,21 +199,125 @@ async def list_sync_logs(
     if end_date:
         statement = statement.where(SyncLog.start_time <= end_date)
 
-    # Get total count
-    count_statement = select(func.count()).select_from(statement.subquery())
-    total = session.exec(count_statement).one()
+    if use_offset:
+        # Legacy offset pagination mode
+        count_statement = select(func.count()).select_from(statement.subquery())
+        total = session.exec(count_statement).one()
 
-    # Apply pagination and ordering
-    statement = (
-        statement.order_by(SyncLog.start_time.desc()).offset(offset).limit(limit)  # type: ignore[attr-defined]
-    )
-    sync_logs = session.exec(statement).all()
+        statement = (
+            statement.order_by(SyncLog.start_time.desc()).offset(offset).limit(limit)  # type: ignore[attr-defined]
+        )
+        sync_logs = session.exec(statement).all()
+
+        return PaginatedResponse(
+            items=[SyncLogList.model_validate(log) for log in sync_logs],
+            total=total,
+            offset=offset,
+            limit=limit,
+        )
+
+    # Cursor-based pagination mode
+    is_backward = direction == "backward"
+
+    if cursor:
+        cursor_time, cursor_id = _decode_cursor(cursor)
+        if is_backward:
+            # Going backward: get items NEWER than cursor (start_time > cursor)
+            statement = statement.where(
+                (SyncLog.start_time > cursor_time)  # type: ignore[operator]
+                | (
+                    (SyncLog.start_time == cursor_time)  # type: ignore[operator]
+                    & (SyncLog.id > cursor_id)  # type: ignore[operator]
+                )
+            )
+        else:
+            # Going forward: get items OLDER than cursor (start_time < cursor)
+            statement = statement.where(
+                (SyncLog.start_time < cursor_time)  # type: ignore[operator]
+                | (
+                    (SyncLog.start_time == cursor_time)  # type: ignore[operator]
+                    & (SyncLog.id < cursor_id)  # type: ignore[operator]
+                )
+            )
+
+    if is_backward:
+        # Fetch in ascending order then reverse for backward
+        statement = statement.order_by(
+            SyncLog.start_time.asc(),
+            SyncLog.id.asc(),  # type: ignore[attr-defined]
+        ).limit(limit + 1)
+    else:
+        statement = statement.order_by(
+            SyncLog.start_time.desc(),
+            SyncLog.id.desc(),  # type: ignore[attr-defined]
+        ).limit(limit + 1)
+
+    results = list(session.exec(statement).all())
+
+    # Check if there are more results beyond our page
+    has_more = len(results) > limit
+    if has_more:
+        results = results[:limit]
+
+    if is_backward:
+        results.reverse()
+
+    # Build cursors
+    next_cursor = None
+    prev_cursor = None
+    has_next = False
+    has_prev = False
+
+    if results:
+        if is_backward:
+            has_prev = has_more
+            # Check if there are items after the last result (has_next)
+            last = results[-1]
+            check_next = select(func.count()).select_from(
+                select(SyncLog.id)
+                .where(
+                    (SyncLog.start_time < last.start_time)  # type: ignore[operator]
+                    | (
+                        (SyncLog.start_time == last.start_time)  # type: ignore[operator]
+                        & (SyncLog.id < last.id)  # type: ignore[operator]
+                    )
+                )
+                .subquery()
+            )
+            # Apply original filters
+            if source_name:
+                check_next = select(func.count()).select_from(
+                    select(SyncLog.id)
+                    .where(SyncLog.source_name == source_name)
+                    .where(
+                        (SyncLog.start_time < last.start_time)  # type: ignore[operator]
+                        | (
+                            (SyncLog.start_time == last.start_time)  # type: ignore[operator]
+                            & (SyncLog.id < last.id)  # type: ignore[operator]
+                        )
+                    )
+                    .subquery()
+                )
+            has_next = session.exec(check_next).one() > 0
+        else:
+            has_next = has_more
+            # has_prev is true if we have a cursor (we came from somewhere)
+            has_prev = cursor is not None
+
+        first = results[0]
+        last = results[-1]
+        next_cursor = _encode_cursor(last.start_time, last.id) if has_next else None
+        prev_cursor = _encode_cursor(first.start_time, first.id) if has_prev else None
 
     return PaginatedResponse(
-        items=[SyncLogList.model_validate(log) for log in sync_logs],
-        total=total,
-        offset=offset,
-        limit=limit,
+        items=[SyncLogList.model_validate(log) for log in results],
+        pagination=CursorPagination(
+            next_cursor=next_cursor,
+            prev_cursor=prev_cursor,
+            has_next=has_next,
+            has_prev=has_prev,
+            limit=limit,
+        ),
     )
 
 

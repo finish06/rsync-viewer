@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Optional
 from uuid import UUID, uuid4
 from sqlmodel import Field, SQLModel, Column
-from sqlalchemy import BigInteger
+from sqlalchemy import BigInteger, Index
 from sqlalchemy.dialects.postgresql import JSONB
 
 
@@ -15,6 +15,11 @@ class SyncLogBase(SQLModel):
 
 class SyncLog(SyncLogBase, table=True):
     __tablename__ = "sync_logs"
+    __table_args__ = (
+        Index("ix_sync_logs_source_name_created_at", "source_name", "created_at"),
+        Index("ix_sync_logs_exit_code", "exit_code"),
+        Index("ix_sync_logs_created_at", "created_at"),
+    )
 
     id: UUID = Field(default_factory=uuid4, primary_key=True)
     total_size_bytes: Optional[int] = Field(default=None, sa_column=Column(BigInteger))

@@ -99,15 +99,44 @@ class SyncLogDetail(SyncLogRead):
     speedup_ratio: Optional[float] = Field(None, description="Rsync speedup ratio")
 
 
+class CursorPagination(BaseModel):
+    """Cursor-based pagination metadata"""
+
+    next_cursor: Optional[str] = Field(
+        None, description="Opaque cursor for the next page"
+    )
+    prev_cursor: Optional[str] = Field(
+        None, description="Opaque cursor for the previous page"
+    )
+    has_next: bool = Field(
+        ..., description="Whether more results exist after this page"
+    )
+    has_prev: bool = Field(False, description="Whether results exist before this page")
+    limit: int = Field(..., description="Page size limit")
+
+
 class PaginatedResponse(BaseModel):
-    """Paginated list of sync logs"""
+    """Paginated list of sync logs (supports cursor and offset modes)"""
 
     items: list[SyncLogList] = Field(..., description="List of sync log entries")
-    total: int = Field(
-        ..., description="Total number of matching records", examples=[42]
+    total: Optional[int] = Field(
+        default=None,
+        description="Total number of matching records (offset mode only)",
+        examples=[42],
     )
-    offset: int = Field(..., description="Current pagination offset", examples=[0])
-    limit: int = Field(..., description="Page size limit", examples=[50])
+    offset: Optional[int] = Field(
+        default=None,
+        description="Current pagination offset (offset mode only, deprecated)",
+        examples=[0],
+    )
+    limit: Optional[int] = Field(
+        default=None,
+        description="Page size limit (offset mode only, deprecated)",
+        examples=[50],
+    )
+    pagination: Optional[CursorPagination] = Field(
+        default=None, description="Cursor-based pagination metadata"
+    )
 
 
 class SourceListResponse(BaseModel):

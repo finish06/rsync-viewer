@@ -1,10 +1,10 @@
 # M4 — Analytics & Performance
 
 **Goal:** Add trend analysis, statistics aggregation, data export, and interactive dashboard charts — backed by database and query performance optimizations to handle large datasets
-**Status:** PLANNED
+**Status:** IN_PROGRESS
 **Appetite:** 2 weeks
 **Target Maturity:** beta
-**Started:** —
+**Started:** 2026-02-23
 **Completed:** —
 
 ## Success Criteria
@@ -68,7 +68,8 @@ Performance Tuning     ░░░░░░░░░░░░░░░░░░░
 
 | Cycle | Features | Status | Notes |
 |-------|----------|--------|-------|
-| — | — | — | Cycles to be planned when milestone starts |
+| cycle-3 | Database Indexing, Query Optimization, Cursor Pagination | PLANNED | Performance foundations — indexes, N+1 fixes, keyset pagination |
+| cycle-4 | Statistics API, Data Export, Dashboard Charts | — | User-facing analytics (planned after cycle-3) |
 
 ## Retrospective
 
