@@ -261,9 +261,7 @@ class TestAnalyticsAPI:
     def test_export_csv_returns_csv(self, page: Page):
         """GET /api/v1/analytics/export?format=csv returns CSV content."""
         # Use API request context since CSV triggers a download (Content-Disposition: attachment)
-        response = page.request.get(
-            f"{BASE_URL}/api/v1/analytics/export?format=csv"
-        )
+        response = page.request.get(f"{BASE_URL}/api/v1/analytics/export?format=csv")
         assert response.status == 200
         assert "text/csv" in response.headers.get("content-type", "")
 

@@ -301,9 +301,7 @@ class TestSourceStatsEndpoint:
 class TestFrequencyTrend:
     """AC-003: Sync frequency trend data as time series."""
 
-    async def test_ac003_summary_provides_frequency_data(
-        self, client, create_sync_log
-    ):
+    async def test_ac003_summary_provides_frequency_data(self, client, create_sync_log):
         """Daily summary data can be used as frequency time series (syncs per day)."""
         base = datetime(2026, 1, 15, 10, 0, 0)
         # 3 syncs on day 1, 1 sync on day 2
@@ -363,8 +361,12 @@ class TestExportEndpoint:
     async def test_ac004_csv_with_source_filter(self, client, create_sync_log):
         """CSV export filters by source name."""
         base = datetime(2026, 1, 15, 10, 0, 0)
-        create_sync_log(source_name="srv-a", start_time=base, end_time=base + timedelta(minutes=5))
-        create_sync_log(source_name="srv-b", start_time=base, end_time=base + timedelta(minutes=5))
+        create_sync_log(
+            source_name="srv-a", start_time=base, end_time=base + timedelta(minutes=5)
+        )
+        create_sync_log(
+            source_name="srv-b", start_time=base, end_time=base + timedelta(minutes=5)
+        )
 
         response = await client.get(
             "/api/v1/analytics/export",
@@ -378,8 +380,14 @@ class TestExportEndpoint:
         """CSV export filters by date range."""
         old = datetime(2026, 1, 1, 10, 0, 0)
         recent = datetime(2026, 2, 1, 10, 0, 0)
-        create_sync_log(source_name="srv-a", start_time=old, end_time=old + timedelta(minutes=5))
-        create_sync_log(source_name="srv-a", start_time=recent, end_time=recent + timedelta(minutes=5))
+        create_sync_log(
+            source_name="srv-a", start_time=old, end_time=old + timedelta(minutes=5)
+        )
+        create_sync_log(
+            source_name="srv-a",
+            start_time=recent,
+            end_time=recent + timedelta(minutes=5),
+        )
 
         response = await client.get(
             "/api/v1/analytics/export",
@@ -498,7 +506,9 @@ class TestDashboardAnalyticsRoute:
         """Analytics page includes per-source comparison section."""
         response = await client.get("/analytics")
         assert response.status_code == 200
-        assert "comparison" in response.text.lower() or "compare" in response.text.lower()
+        assert (
+            "comparison" in response.text.lower() or "compare" in response.text.lower()
+        )
 
     async def test_ac009_htmx_chart_data_endpoint(self, client, create_sync_log):
         """HTMX chart data partial returns chart-ready JSON."""

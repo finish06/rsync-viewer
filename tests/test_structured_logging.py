@@ -4,7 +4,6 @@ import json
 import logging
 
 
-
 class TestLoggingConfiguration:
     """AC-001, AC-002, AC-003, AC-012: Logging config and JSON formatter."""
 

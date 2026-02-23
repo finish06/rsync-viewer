@@ -4,7 +4,6 @@ from datetime import timedelta
 from app.utils import utc_now
 
 
-
 class TestIndexPage:
     """Test GET / dashboard page"""
 

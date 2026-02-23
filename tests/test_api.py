@@ -2,7 +2,6 @@ from datetime import timedelta
 from app.utils import utc_now
 
 
-
 class TestCreateSyncLog:
     """Test POST /api/v1/sync-logs endpoint"""
 

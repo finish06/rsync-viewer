@@ -4,7 +4,6 @@ Spec: specs/dark-mode.md
 """
 
 
-
 class TestSettingsPage:
     """Test GET /settings endpoint — AC-007, AC-008, AC-010"""
 

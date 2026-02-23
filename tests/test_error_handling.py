@@ -4,7 +4,6 @@ from datetime import timedelta
 from app.utils import utc_now
 
 
-
 class TestErrorResponseFormat:
     """AC-001: All API error responses return consistent JSON structure."""
 

@@ -7,7 +7,6 @@ from datetime import timedelta
 from app.utils import utc_now
 
 
-
 class TestQuickSelectButtons:
     """AC-001: Dashboard displays pill-style toggle buttons."""
 

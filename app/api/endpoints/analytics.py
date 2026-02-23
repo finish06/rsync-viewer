@@ -62,9 +62,9 @@ async def get_summary(
         select(  # type: ignore[call-overload]
             trunc.label("period_start"),
             func.count().label("total_syncs"),
-            func.sum(
-                case((col(SyncLog.exit_code) == 0, 1), else_=0)
-            ).label("successful_syncs"),
+            func.sum(case((col(SyncLog.exit_code) == 0, 1), else_=0)).label(
+                "successful_syncs"
+            ),
             func.sum(
                 case(
                     (
@@ -130,9 +130,9 @@ async def get_source_stats(
     statement = select(  # type: ignore[call-overload]
         SyncLog.source_name,
         func.count().label("total_syncs"),
-        func.sum(
-            case((col(SyncLog.exit_code) == 0, 1), else_=0)
-        ).label("successful_syncs"),
+        func.sum(case((col(SyncLog.exit_code) == 0, 1), else_=0)).label(
+            "successful_syncs"
+        ),
         func.avg(duration_expr).label("avg_duration"),
         func.avg(SyncLog.file_count).label("avg_files"),
         func.avg(SyncLog.bytes_received).label("avg_bytes"),
