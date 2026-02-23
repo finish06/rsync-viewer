@@ -91,7 +91,7 @@ Rsync Log Viewer API collects, parses, and provides access to rsync synchronizat
 
 Protected endpoints require an API key passed via the `X-API-Key` header.
     """,
-    version="1.1.0",
+    version="1.5.0",
     lifespan=lifespan,
     openapi_tags=[
         {

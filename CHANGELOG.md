@@ -7,6 +7,33 @@ and this project adheres to [Conventional Commits](https://www.conventionalcommi
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-02-23
+
+### Added
+
+- Rate limiting with slowapi (60/min auth, 20/min unauth) with X-RateLimit-* headers
+- Security headers middleware (X-Content-Type-Options, X-Frame-Options, CSP report-only)
+- Request body size limit middleware (10MB default, returns 413)
+- CSRF protection for HTMX form submissions (token-based validation)
+- API key hashing with bcrypt (replaces SHA-256)
+- API key rotation support (key_prefix, expires_at fields on ApiKey model)
+- Input validation: raw_content max_length (10MB), source_name min_length (1)
+- 30 security hardening tests covering all 12 acceptance criteria
+- Architecture mermaid diagram (docs/architecture.mmd)
+- Deprecation cleanup spec for future work
+
+### Changed
+
+- Upgrade venv from Python 3.9 to Python 3.13
+- ApiKey.key_hash max_length increased from 64 to 128 (bcrypt support)
+- Test client fixture now includes CSRF token cookie/header
+
+### Documentation
+
+- Add security hardening spec (specs/security-hardening.md)
+- Add deprecation cleanup spec (specs/deprecation-cleanup.md)
+- Define M3-M8 milestone specs and roadmap
+
 ## [1.4.0] - 2026-02-22
 
 ### Added
