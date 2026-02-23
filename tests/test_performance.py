@@ -4,12 +4,9 @@ from datetime import timedelta
 from app.utils import utc_now
 from pathlib import Path
 
-import pytest
 from sqlalchemy import inspect
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-
-pytestmark = pytest.mark.asyncio
 
 
 class TestDatabaseIndexing:

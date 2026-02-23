@@ -12,8 +12,6 @@ from app.models.notification_log import NotificationLog
 from app.models.webhook import WebhookEndpoint
 from app.utils import utc_now
 
-pytestmark = pytest.mark.asyncio
-
 
 @pytest.fixture
 def create_webhook(db_session):

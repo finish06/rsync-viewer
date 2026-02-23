@@ -17,8 +17,6 @@ from app.main import app
 from app.models.sync_log import ApiKey
 from app.utils import utc_now
 
-pytestmark = pytest.mark.asyncio
-
 # Raw test key — must hash to look up in DB
 TEST_RAW_KEY = "debounce-test-key-12345"
 

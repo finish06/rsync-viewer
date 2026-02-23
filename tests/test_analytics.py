@@ -4,8 +4,6 @@ from datetime import datetime, timedelta
 
 import pytest
 
-pytestmark = pytest.mark.asyncio
-
 
 class TestSummaryEndpoint:
     """AC-001: Statistics API returns daily/weekly/monthly summaries."""

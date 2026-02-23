@@ -9,8 +9,6 @@ from uuid import uuid4
 from app.models.webhook import WebhookEndpoint
 from app.models.webhook_options import WebhookOptions
 
-pytestmark = pytest.mark.asyncio
-
 
 @pytest.fixture
 def create_webhook(db_session):

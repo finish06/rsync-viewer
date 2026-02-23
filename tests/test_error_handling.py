@@ -3,9 +3,6 @@
 from datetime import timedelta
 from app.utils import utc_now
 
-import pytest
-
-pytestmark = pytest.mark.asyncio
 
 
 class TestErrorResponseFormat:

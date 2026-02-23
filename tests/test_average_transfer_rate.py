@@ -6,12 +6,9 @@ Spec: specs/average-transfer-rate.md
 from datetime import datetime, timedelta
 from types import SimpleNamespace
 
-import pytest
 
 from app.main import format_rate
 from app.utils import utc_now
-
-pytestmark = pytest.mark.asyncio
 
 
 class TestFormatRateFilter:

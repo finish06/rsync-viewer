@@ -3,9 +3,6 @@
 Spec: specs/dark-mode.md
 """
 
-import pytest
-
-pytestmark = pytest.mark.asyncio
 
 
 class TestSettingsPage:
