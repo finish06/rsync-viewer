@@ -1,8 +1,11 @@
 """Tests for security hardening (specs/security-hardening.md)."""
 
 from datetime import datetime, timedelta
+from pathlib import Path
 
 import pytest
+
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 pytestmark = pytest.mark.asyncio
 
@@ -237,20 +240,20 @@ class TestSecretsAudit:
 
     def test_ac010_env_example_has_rate_limit_vars(self):
         """`.env.example` documents rate limit environment variables."""
-        with open(".env.example") as f:
+        with open(PROJECT_ROOT / ".env.example") as f:
             content = f.read()
         assert "RATE_LIMIT_AUTHENTICATED" in content
         assert "RATE_LIMIT_UNAUTHENTICATED" in content
 
     def test_ac010_env_example_has_body_size_var(self):
         """`.env.example` documents MAX_REQUEST_BODY_SIZE."""
-        with open(".env.example") as f:
+        with open(PROJECT_ROOT / ".env.example") as f:
             content = f.read()
         assert "MAX_REQUEST_BODY_SIZE" in content
 
     def test_ac010_env_example_has_security_vars(self):
         """`.env.example` documents HSTS and CSP variables."""
-        with open(".env.example") as f:
+        with open(PROJECT_ROOT / ".env.example") as f:
             content = f.read()
         assert "HSTS_ENABLED" in content
         assert "CSP_REPORT_ONLY" in content
