@@ -101,7 +101,9 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"
 
-        csp = "default-src 'self'; script-src 'self' 'unsafe-inline'; connect-src 'self'"
+        csp = (
+            "default-src 'self'; script-src 'self' 'unsafe-inline'; connect-src 'self'"
+        )
         if settings.csp_report_only:
             response.headers["Content-Security-Policy-Report-Only"] = csp
         else:
@@ -145,11 +147,8 @@ class CsrfMiddleware(BaseHTTPMiddleware):
     """Validate CSRF tokens on state-changing form submissions."""
 
     async def dispatch(self, request: Request, call_next):
-        if (
-            request.method in CSRF_METHODS
-            and any(
-                request.url.path.startswith(p) for p in CSRF_PROTECTED_PREFIXES
-            )
+        if request.method in CSRF_METHODS and any(
+            request.url.path.startswith(p) for p in CSRF_PROTECTED_PREFIXES
         ):
             # Check for CSRF token in form data or header
             csrf_token = request.headers.get("X-CSRF-Token", "")

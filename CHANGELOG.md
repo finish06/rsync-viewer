@@ -12,6 +12,10 @@ and this project adheres to [Conventional Commits](https://www.conventionalcommi
 - CI/CD: Docker image build and push to self-hosted registry with `beta` tag on merge to main
 - CI/CD: SHA-tagged images for traceability (`sha-<commit>`)
 
+### Fixed
+
+- Fix ruff format issues in app/middleware.py and tests/test_security_hardening.py
+
 ### Changed
 
 - M3 Reliability milestone marked COMPLETE (Structured Logging, Error Handling, Security Hardening)

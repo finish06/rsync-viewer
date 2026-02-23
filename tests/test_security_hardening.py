@@ -178,8 +178,7 @@ class TestBodySizeLimit:
 
         # Check that some middleware handles body size
         middleware_classes = [
-            type(m).__name__
-            for m in getattr(app, "user_middleware", [])
+            type(m).__name__ for m in getattr(app, "user_middleware", [])
         ]
         # We use a middleware attribute or the middleware stack
         assert hasattr(app.state, "limiter") or any(
@@ -276,7 +275,9 @@ class TestCsrfProtection:
         assert validate_csrf_token(token, token) is True
         assert validate_csrf_token(token, "wrong-token") is False
 
-    async def test_ac011_form_post_without_csrf_rejected(self, client, test_engine, db_session):
+    async def test_ac011_form_post_without_csrf_rejected(
+        self, client, test_engine, db_session
+    ):
         """State-changing form POST without CSRF token is rejected."""
         from httpx import ASGITransport, AsyncClient
         from app.main import app
