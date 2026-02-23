@@ -1,26 +1,31 @@
 # Session Handoff
-**Written:** 2026-02-21
+**Written:** 2026-02-23
 
 ## In Progress
-- Nothing actively in progress — all away-plan tasks completed
+- Nothing actively in progress — M3 closure complete
 
 ## Completed This Session
-- Optimization pass 2: webhook.enabled index, is_dry_run lint fixes, consolidated DB commits → PR #7
-- Production index created for webhook_endpoints.enabled
-- 21 webhook settings UI tests written and passing → PR #8
-- M2 milestone updated: Webhook Settings UI → VERIFIED
-- Full test suite: 237 tests passing, no regressions
+- Security Hardening (M3 Phase 3) implemented: rate limiting, bcrypt, security headers, CSRF, input validation — 30 tests (v1.5.0)
+- Architecture diagram: docs/architecture.mmd
+- Deprecation cleanup spec: specs/deprecation-cleanup.md (deferred)
+- M3 milestone closed: all 3 features DONE, 8/8 success criteria met
+- Cycle-2 closed: all success criteria checked
+- PRD updated: M3 → COMPLETE
+- Learnings: L-006 (cycle retro), L-007 (slowapi), L-008 (CSRF fixtures)
+- Beta promotion assessment: 10/10 technical score, waiting on 30-day stability (eligible 2026-03-21)
 
 ## Decisions Made
-- Used `session.flush()` instead of intermediate `session.commit()` for webhook create/update handlers — reduces DB round-trips while still getting auto-generated IDs
-- Tested webhook UI endpoints directly via HTMX routes (not API), matching the existing pattern
+- Used slowapi with SlowAPIMiddleware + default_limits instead of per-route @limiter.limit decorators
+- CSRF protection scoped to /htmx/webhooks/* only (state-changing form POSTs)
+- CSP deployed in report-only mode (not enforcing)
+- Python venv upgraded from 3.9 → 3.13 for dict|None syntax support
+- Deprecation cleanup (datetime.utcnow → datetime.now(UTC)) deferred per user request
 
 ## Blockers
-- Notification History has no spec — needs human interview before implementation
+- Beta promotion requires 30 days of Alpha stability (eligible 2026-03-21)
 
 ## Next Steps
-1. Review and merge PR #7 (optimization pass 2)
-2. Review and merge PR #8 (webhook settings UI tests)
-3. Run `/add:spec` for notification history feature (last M2 item)
-4. After notification history, M2 milestone can be closed
-5. Consider M3 planning (stale checker scheduler integration)
+1. Commit M3 closure docs (milestone, cycle, PRD, learnings updates)
+2. Deprecation cleanup (specs/deprecation-cleanup.md) — when user is ready
+3. Plan M4 (Analytics & Performance) or M6 (Observability) — needs interview
+4. Schedule beta promotion assessment for 2026-03-21

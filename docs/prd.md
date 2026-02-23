@@ -93,7 +93,7 @@ Production deployment is to a self-hosted homelab server. No staging environment
 |-----------|------|-----------------|--------|------------------|
 | M1: Foundation | Stabilize existing features, add CI/CD | poc → alpha | COMPLETE | CI pipeline, 80% coverage, conventional commits |
 | M2: Notifications | Webhook alerts for failed syncs | alpha | COMPLETE | HA/Discord webhooks, settings UI, notification history |
-| M3: Reliability | Error handling, logging, security hardening | alpha → beta | NOW | Structured logging, input validation, rate limiting, key hashing |
+| M3: Reliability | Error handling, logging, security hardening | alpha → beta | COMPLETE | Structured logging, input validation, rate limiting, key hashing |
 | M4: Analytics & Performance | Trend analysis, dashboards, query optimization | beta | NEXT | Statistics API, Chart.js charts, cursor pagination, DB indexes |
 | M5: API Performance | Debounce API key `last_used_at` writes | alpha | COMPLETE | Configurable debounce, zero regression, fewer DB writes |
 | M6: Observability | Prometheus metrics, Grafana dashboards, project docs | beta | NEXT | /metrics endpoint, Grafana templates, setup/architecture docs |
@@ -153,25 +153,27 @@ M3 is the gate to beta promotion. M4 and M6 can partially overlap. M7 and M8 are
 - [x] Debounce prevents writes within 5-minute window (10 tests)
 - [x] No regression in API key authentication behavior
 
-#### M3: Reliability [NOW]
+#### M3: Reliability [COMPLETE]
 **Goal:** Harden the app with structured logging, error handling, and security best practices
 **Appetite:** 2 weeks
 **Target maturity:** alpha → beta
 **Specs:** structured-logging, error-handling, security-hardening
+**Completed:** 2026-02-23 (v1.2.0–v1.5.0)
 **Features:**
 - Structured JSON logging with request IDs and sensitive data masking
 - Global exception handler with consistent error response format
 - Rate limiting per API key and per IP
-- API key hashing (salted bcrypt/argon2, no plaintext storage)
+- API key hashing (salted bcrypt, no plaintext storage)
 - Security headers (CSP, X-Content-Type-Options, X-Frame-Options, HSTS)
 - Input validation with type checking and length limits
+- CSRF protection for HTMX form submissions
 **Success criteria:**
-- [ ] All API endpoints log requests/responses in structured JSON
-- [ ] All errors return consistent format, no stack traces in production
-- [ ] Rate limiting enforced (60/min authenticated, 20/min unauthenticated)
-- [ ] API keys hashed in DB, no plaintext
-- [ ] Security headers on all responses
-- [ ] No secrets in codebase
+- [x] All API endpoints log requests/responses in structured JSON
+- [x] All errors return consistent format, no stack traces in production
+- [x] Rate limiting enforced (60/min authenticated, 20/min unauthenticated)
+- [x] API keys hashed in DB, no plaintext
+- [x] Security headers on all responses
+- [x] No secrets in codebase
 
 #### M4: Analytics & Performance [NEXT]
 **Goal:** Trend analysis, statistics, data export, interactive charts — with DB optimizations

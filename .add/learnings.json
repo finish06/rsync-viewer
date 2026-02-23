@@ -67,6 +67,45 @@
       "date": "2026-02-21",
       "classified_by": "agent",
       "checkpoint_type": "post-tdd"
+    },
+    {
+      "id": "L-006",
+      "title": "Cycle 2 complete: M3 Reliability — 3 features, 57 new tests, 92% coverage",
+      "body": "Cycle 2 delivered Structured Logging (15 tests), Error Handling (12 tests), and Security Hardening (30 tests). All 34 ACs verified. Total suite: 294 tests at 92% coverage. Key learnings: slowapi requires headers_enabled=True explicitly; CSRF middleware must be accounted for in all test fixtures; Python 3.13 venv upgrade was needed for dict|None syntax. M3 is the beta promotion gate — all criteria met.",
+      "scope": "project",
+      "stack": ["python", "fastapi"],
+      "category": "process",
+      "severity": "medium",
+      "source": "rsync-viewer",
+      "date": "2026-02-23",
+      "classified_by": "agent",
+      "checkpoint_type": "retro"
+    },
+    {
+      "id": "L-007",
+      "title": "slowapi rate limiting: headers_enabled and middleware interaction",
+      "body": "slowapi defaults headers_enabled=False — set True in Limiter constructor for X-RateLimit-* headers. Using @limiter.limit() decorator with headers_enabled=True requires a Response parameter on the endpoint. SlowAPIMiddleware with default_limits is simpler — applies limits globally without per-route decorators. Don't mix both approaches.",
+      "scope": "workstation",
+      "stack": ["python", "fastapi"],
+      "category": "technical",
+      "severity": "high",
+      "source": "rsync-viewer",
+      "date": "2026-02-23",
+      "classified_by": "agent",
+      "checkpoint_type": "post-tdd"
+    },
+    {
+      "id": "L-008",
+      "title": "CSRF middleware breaks existing test fixtures — plan ahead",
+      "body": "Adding CSRF validation middleware retroactively requires updating ALL test client fixtures to include csrf_token cookie and X-CSRF-Token header. Tests that need to verify CSRF rejection must create a separate client without tokens. Always plan for test fixture impact when adding cross-cutting middleware.",
+      "scope": "workstation",
+      "stack": ["python", "fastapi"],
+      "category": "anti-pattern",
+      "severity": "high",
+      "source": "rsync-viewer",
+      "date": "2026-02-23",
+      "classified_by": "agent",
+      "checkpoint_type": "verification-catch"
     }
   ]
 }

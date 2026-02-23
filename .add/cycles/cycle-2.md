@@ -2,18 +2,18 @@
 
 **Milestone:** M3 — Reliability
 **Maturity:** alpha
-**Status:** PLANNED
-**Started:** TBD
-**Completed:** TBD
+**Status:** COMPLETE
+**Started:** 2026-02-22
+**Completed:** 2026-02-23
 **Duration Budget:** 1 week
 
 ## Work Items
 
 | Feature | Current Pos | Target Pos | Assigned | Est. Effort | Validation |
 |---------|-------------|-----------|----------|-------------|------------|
-| Structured Logging | SHAPED | VERIFIED | Agent-1 | ~2 days | AC-001–AC-012 passing, request_id in all responses |
-| Error Handling | SHAPED | VERIFIED | Agent-1 | ~2 days | AC-001–AC-010 passing, consistent error format on all endpoints |
-| Security Hardening | SHAPED | VERIFIED | Agent-1 | ~3 days | AC-001–AC-012 passing, rate limiting active, keys hashed, headers set |
+| Structured Logging | SHAPED | DONE | Agent-1 | ~2 days | AC-001–AC-012 passing, request_id in all responses |
+| Error Handling | SHAPED | DONE | Agent-1 | ~2 days | AC-001–AC-010 passing, consistent error format on all endpoints |
+| Security Hardening | SHAPED | DONE | Agent-1 | ~3 days | AC-001–AC-012 passing, rate limiting active, keys hashed, headers set |
 
 ## Dependencies & Serialization
 
@@ -93,14 +93,14 @@ TDD cycle:
 
 ### Cycle Success Criteria
 
-- [ ] All 3 features reach VERIFIED position
-- [ ] All 34 acceptance criteria verified (12 + 10 + 12)
-- [ ] Full test suite passes (no regressions from existing 237 tests)
-- [ ] Test coverage >= 80%
-- [ ] ruff check clean
-- [ ] mypy clean
-- [ ] No secrets in codebase
-- [ ] `.env.example` documents all environment variables
+- [x] All 3 features reach VERIFIED position — all DONE
+- [x] All 34 acceptance criteria verified (12 + 10 + 12)
+- [x] Full test suite passes (294 tests, up from 237)
+- [x] Test coverage >= 80% — 92% achieved
+- [x] ruff check clean
+- [x] mypy clean
+- [x] No secrets in codebase
+- [x] `.env.example` documents all environment variables
 
 ## Agent Autonomy & Checkpoints
 
