@@ -17,6 +17,10 @@ and this project adheres to [Conventional Commits](https://www.conventionalcommi
 - Fix .env.example tests: mount file into test container and use absolute path
 - Fix ruff format issues in app/middleware.py and tests/test_security_hardening.py
 
+### Documentation
+
+- Update README with current features, configuration, CI/CD, and project structure
+
 ### Changed
 
 - M3 Reliability milestone marked COMPLETE (Structured Logging, Error Handling, Security Hardening)

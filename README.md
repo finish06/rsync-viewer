@@ -1,23 +1,30 @@
 # Rsync Log Viewer
 
-A web application for collecting, parsing, and visualizing rsync synchronization logs. Built with FastAPI, PostgreSQL, and HTMX.
+A web application for collecting, parsing, and visualizing rsync synchronization logs. Built with FastAPI, PostgreSQL, and HTMX for homelab deployment.
 
-## Overview
-
-![Project Infographic](docs/infographic.svg)
+[![CI](https://github.com/finish06/rsync-viewer/actions/workflows/ci.yml/badge.svg)](https://github.com/finish06/rsync-viewer/actions/workflows/ci.yml)
 
 ## Features
 
-- **Log Collection**: REST API endpoint to receive rsync output logs
-- **Automatic Parsing**: Extracts transfer stats, file counts, speeds, and file lists from raw rsync output
-- **Web Dashboard**: Interactive table with filtering by source, date range, and sync type
-- **Visualizations**: Charts showing sync duration, file counts, and bytes transferred over time
-- **Dry Run Detection**: Automatically identifies and filters dry run syncs
+- **Log Collection** — REST API endpoint to receive rsync output with API key authentication
+- **Automatic Parsing** — Extracts transfer stats, file counts, speeds, and file lists from raw rsync output
+- **Web Dashboard** — Interactive table with filtering by source, date range, and sync type
+- **Visualizations** — Charts showing sync duration, file counts, and bytes transferred over time
+- **Failure Detection** — Exit code tracking and stale sync monitoring
+- **Webhook Notifications** — Alerts via Discord or generic webhooks with retry logic and auto-disable
+- **Notification History** — Dashboard tab with filters and pagination for past alerts
+- **Dark Mode** — Light, dark, and system theme toggle
+- **Security Hardening** — Rate limiting, bcrypt API key hashing, CSRF protection, security headers
+- **Structured Logging** — JSON log output with request tracing and sensitive data masking
+
+## Architecture
+
+See [docs/architecture.mmd](docs/architecture.mmd) for a full Mermaid diagram of the application architecture.
 
 ## Prerequisites
 
 - Python 3.11+
-- Docker and Docker Compose (for containerized deployment)
+- Docker and Docker Compose
 - PostgreSQL 16+ (or use the provided Docker setup)
 
 ## Quick Start
@@ -26,6 +33,7 @@ A web application for collecting, parsing, and visualizing rsync synchronization
 
 ```bash
 cp .env.example .env
+# Edit .env with your settings (API key, secret key, etc.)
 docker-compose up -d
 ```
 
@@ -35,7 +43,7 @@ The application will be available at http://localhost:8000
 
 ```bash
 # Create virtual environment
-python -m venv .venv
+python3.13 -m venv .venv
 source .venv/bin/activate
 
 # Install dependencies
@@ -57,8 +65,13 @@ Environment variables (see `.env.example`):
 | `DATABASE_URL` | PostgreSQL connection string | `postgresql+psycopg://postgres:postgres@localhost:5432/rsync_viewer` |
 | `APP_NAME` | Application name | `Rsync Log Viewer` |
 | `DEBUG` | Enable debug mode | `true` |
-| `SECRET_KEY` | Secret key for sessions | - |
-| `DEFAULT_API_KEY` | API key for log submission | - |
+| `SECRET_KEY` | Secret key for sessions | `change-me` |
+| `DEFAULT_API_KEY` | API key for log submission | — |
+| `RATE_LIMIT_AUTHENTICATED` | Rate limit for authenticated requests | `60/minute` |
+| `RATE_LIMIT_UNAUTHENTICATED` | Rate limit for unauthenticated requests | `20/minute` |
+| `MAX_REQUEST_BODY_SIZE` | Max request body in bytes | `10485760` (10 MB) |
+| `HSTS_ENABLED` | Enable Strict-Transport-Security header | `false` |
+| `CSP_REPORT_ONLY` | Use CSP in report-only mode | `true` |
 
 ## API Usage
 
@@ -83,48 +96,81 @@ curl http://localhost:8000/api/v1/sync-logs
 curl http://localhost:8000/api/v1/sync-logs?source_name=backup-server
 ```
 
-### Get Sync Log Details
+### Manage Monitors
 
 ```bash
-curl http://localhost:8000/api/v1/sync-logs/{sync_id}
+# Create a monitor for stale sync detection
+curl -X POST http://localhost:8000/api/v1/monitors \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: your-api-key" \
+  -d '{"source_name": "backup-server", "expected_interval_hours": 24}'
 ```
+
+### Manage Webhooks
+
+```bash
+# Create a Discord webhook
+curl -X POST http://localhost:8000/api/v1/webhooks \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: your-api-key" \
+  -d '{"name": "Discord Alerts", "url": "https://discord.com/api/webhooks/...", "webhook_type": "discord"}'
+```
+
+Full API documentation is available at http://localhost:8000/docs (Swagger UI).
 
 ## Testing
 
 ```bash
+# Run all tests
 pytest
-```
 
-With coverage:
-
-```bash
+# With coverage
 pytest --cov=app
+
+# Run in Docker (matches CI)
+docker compose -f docker-compose.dev.yml run --rm test \
+  pytest tests/ --cov=app --cov-report=term-missing --cov-fail-under=80
 ```
+
+## CI/CD
+
+The GitHub Actions pipeline runs on every push and PR to `main`:
+
+1. **Lint** — `ruff check` and `ruff format --check`
+2. **Type Check** — `mypy app/`
+3. **Tests** — `pytest` with 80% coverage threshold
+4. **Build & Push** — Docker image pushed to registry with `beta` tag (on merge to main only)
 
 ## Project Structure
 
 ```
 rsync-viewer/
 ├── app/
-│   ├── api/
-│   │   └── endpoints/      # API route handlers
-│   ├── models/             # SQLModel database models
-│   ├── schemas/            # Pydantic request/response schemas
-│   ├── services/           # Business logic (rsync parser)
-│   ├── static/             # CSS assets
-│   ├── templates/          # Jinja2 HTML templates
-│   ├── config.py           # Application settings
-│   ├── database.py         # Database connection
-│   └── main.py             # FastAPI application
-├── tests/                  # Test suite
-├── scripts/                # Utility scripts
-├── docker-compose.yml      # Docker configuration
-└── requirements.txt        # Python dependencies
+│   ├── api/endpoints/        # REST API route handlers
+│   ├── models/               # SQLModel database models
+│   ├── schemas/              # Pydantic request/response schemas
+│   ├── services/             # Business logic (parser, webhooks, stale checker)
+│   ├── static/               # CSS assets
+│   ├── templates/            # Jinja2 HTML templates
+│   ├── config.py             # Application settings
+│   ├── csrf.py               # CSRF token generation/validation
+│   ├── database.py           # Database connection
+│   ├── errors.py             # Error codes and response helpers
+│   ├── logging_config.py     # Structured JSON logging
+│   ├── middleware.py          # Security headers, body size, CSRF middleware
+│   └── main.py               # FastAPI application entry point
+├── tests/                    # Test suite (294 tests, 92% coverage)
+├── specs/                    # Feature specifications
+├── docs/                     # Documentation, milestones, plans
+├── .github/workflows/        # CI/CD pipeline
+├── docker-compose.yml        # Production Docker config
+├── docker-compose.dev.yml    # Test Docker config
+└── requirements.txt          # Python dependencies
 ```
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions are welcome! This project uses conventional commits (`feat:`, `fix:`, `docs:`, etc.) and requires PR review before merging to main.
 
 ## License
 
