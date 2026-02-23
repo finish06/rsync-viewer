@@ -21,6 +21,7 @@ and this project adheres to [Conventional Commits](https://www.conventionalcommi
 
 - Update README with current features, configuration, CI/CD, and project structure
 - Regenerate infographic with v1.5.0 metrics (19 specs, 294 tests, 92% coverage)
+- Fix infographic: center metrics evenly, remove ADD branding from footer
 
 ### Changed
 
