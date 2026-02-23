@@ -5,7 +5,7 @@
 **Appetite:** 1 week
 **Target Maturity:** alpha
 **Started:** 2026-02-21
-**Completed:** —
+**Completed:** 2026-02-22
 
 ## Success Criteria
 
@@ -21,9 +21,9 @@
 ```
 Failure Detection    ████████████████████████████████████  DONE
 Webhook Service      ████████████████████████████████████  DONE
-Discord Integration  ██████████████████████████████████░░  VERIFIED (PR #6)
-Webhook Settings UI  ██████████████████████████████████░░  VERIFIED (PR #8)
-Notification History ██████████████████████████████████░░  VERIFIED (PR #9)
+Discord Integration  ████████████████████████████████████  DONE (PR #6, merged 2026-02-21)
+Webhook Settings UI  ████████████████████████████████████  DONE (PR #8, merged 2026-02-22)
+Notification History ████████████████████████████████████  DONE (PR #9, merged 2026-02-22)
 ```
 
 ## Features
@@ -32,9 +32,9 @@ Notification History ███████████████████�
 |---------|------|----------|-------|
 | Failure Detection | specs/failure-detection.md | DONE | 31 tests, exit code + stale sync + monitors CRUD |
 | Webhook Notification Service | specs/webhook-service.md | DONE | Backend complete, retry + auto-disable + notification log |
-| Discord Integration | specs/discord-integration.md | VERIFIED | 26 tests, embeds + source filters + rate limiting, PR #6 |
-| Webhook Settings UI | specs/webhook-service.md (AC-007) | VERIFIED | 21 tests, full CRUD + toggle + test button, PR #8 |
-| Notification History | specs/notification-history.md | VERIFIED | 17 tests, HTMX dashboard tab + filters + pagination, PR #9 |
+| Discord Integration | specs/discord-integration.md | DONE | 26 tests, embeds + source filters + rate limiting, PR #6 merged |
+| Webhook Settings UI | specs/webhook-service.md (AC-007) | DONE | 21 tests, full CRUD + toggle + test button, PR #8 merged |
+| Notification History | specs/notification-history.md | DONE | 17 tests, HTMX dashboard tab + filters + pagination, PR #9 merged |
 
 ## Dependencies
 
@@ -63,4 +63,18 @@ Notification History ███████████████████�
 
 ## Retrospective
 
-—
+**Completed:** 2026-02-22 (5 features across 4 cycles, within 1-week appetite)
+
+**What went well:**
+- Clean dependency chain: failure detection → webhook service → Discord → UI → history. Each built naturally on the prior.
+- All 5 features shipped with strong test coverage (31 + backend + 26 + 21 + 17 tests).
+- Performance optimizations (N+1 queries, webhook.enabled index, DB commit reduction) were addressed inline during implementation rather than deferred.
+
+**What could improve:**
+- VERIFIED → DONE promotion was missed at milestone close — features sat at VERIFIED after PR merge instead of being immediately marked DONE.
+- The webhook settings UI spec was embedded in the webhook-service spec (AC-007) rather than being its own spec, which made tracking slightly ambiguous.
+
+**Key learnings:**
+- APScheduler integration for stale sync detection worked well and was straightforward.
+- Discord rate limit handling (429 + Retry-After) needed explicit testing — easy to miss.
+- HTMX partial loading for notification history tab was a clean pattern worth reusing.

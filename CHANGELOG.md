@@ -26,6 +26,7 @@ and this project adheres to [Conventional Commits](https://www.conventionalcommi
 ### Changed
 
 - M3 Reliability milestone marked COMPLETE (Structured Logging, Error Handling, Security Hardening)
+- M2 Notifications milestone fully closed: promote 3 features from VERIFIED → DONE, add completion date and retrospective
 
 ## [1.5.0] - 2026-02-23
 
