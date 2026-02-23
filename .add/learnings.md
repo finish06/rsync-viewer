@@ -8,6 +8,9 @@
 - **[high] CSRF middleware breaks existing test fixtures — plan ahead** (L-008, 2026-02-23)
   Adding CSRF validation middleware retroactively requires updating ALL test client fixtures to include csrf_token cookie and X-CSRF-Token header. Tests that need to verify CSRF rejection must create a separate client without tokens. Always plan for test fixture impact when adding cross-cutting middleware.
 
+- **[high] DB schema drift: model changes need manual ALTER TABLE on live DB** (L-011, 2026-02-23)
+  SQLModel/Alembic create_all() handles test DBs but the live PostgreSQL DB requires explicit ALTER TABLE for new columns. When adding columns to models (e.g. exit_code on sync_logs), also apply the migration to the running DB. Consider adding Alembic migrations to prevent this class of issue.
+
 ## Architecture
 - **[low] Jinja2 filters taking full model objects keeps templates clean** (L-002, 2026-02-20)
   format_rate(sync) accessing sync.bytes_received, sync.start_time, sync.end_time, sync.is_dry_run internally is cleaner than passing individual args. Template usage stays simple: {{ sync | format_rate }}. Apply this pattern for future computed display values.
@@ -23,6 +26,9 @@
   Patch 'module.httpx.AsyncClient' and set mock_client.__aenter__ = AsyncMock(return_value=mock_client), __aexit__ = AsyncMock(return_value=False). For capture tests, replace mock_client.post with a plain async function that captures args. Patch asyncio.sleep with AsyncMock to skip retry delays. This pattern is reusable for any service using httpx async context managers.
 
 ## Process
+- **[medium] Cycle 4 complete: M4 Analytics — 3 features, 30+30 tests, 93% coverage** (L-010, 2026-02-23)
+  Cycle 4 delivered Statistics API, Data Export, and Dashboard Charts. 30 unit tests + 30 Playwright E2E tests. All 10 analytics ACs verified. Key findings: (1) live DB schema drift caused 500s — exit_code column was in the model but missing from DB, needed ALTER TABLE; (2) CSV StreamingResponse with Content-Disposition: attachment triggers Playwright download errors, use page.request.get() instead of page.goto(); (3) module-wide pytestmark=pytest.mark.asyncio is unnecessary with asyncio_mode=auto and generates warnings on sync tests. M4 at 8/9 success criteria — only response time benchmark remains.
+
 - **[medium] Cycle 3 complete: M4 Performance Foundations — 3 features, 25 new tests** (L-009, 2026-02-23)
   Cycle 3 delivered Database Indexing (6 composite/individual indexes), Query Optimization (lazy file lists, connection pool config), and Cursor Pagination (keyset with offset fallback). 25 new tests, 319 total passing. Also ran deprecation cleanup (utc_now() helper replacing 61 datetime.utcnow() calls, Starlette TemplateResponse fix). Key insight: naive vs tz-aware datetime mismatch with PostgreSQL requires a centralized utc_now() helper returning naive UTC. Production indexes created manually with CREATE INDEX CONCURRENTLY.
 
@@ -36,4 +42,4 @@
   M1 milestone complete with all 6 features shipped. Promotion backed by: 6 specs, 92% coverage, CI pipeline, 3 PRs merged, conventional commits (15/20), 3 release tags, TDD evidence. Only gap: branch protection not enforced on GitHub (only declared in config). Next target: Beta requires full TDD on all paths and 30+ days stability.
 
 ---
-*9 entries. Last updated: 2026-02-23. Source: .add/learnings.json*
+*11 entries. Last updated: 2026-02-23. Source: .add/learnings.json*

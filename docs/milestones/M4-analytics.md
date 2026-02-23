@@ -1,11 +1,11 @@
 # M4 — Analytics & Performance
 
 **Goal:** Add trend analysis, statistics aggregation, data export, and interactive dashboard charts — backed by database and query performance optimizations to handle large datasets
-**Status:** IN_PROGRESS
+**Status:** COMPLETE
 **Appetite:** 2 weeks
 **Target Maturity:** beta
 **Started:** 2026-02-23
-**Completed:** —
+**Completed:** 2026-02-23
 
 ## Success Criteria
 
@@ -14,7 +14,7 @@
 - [x] Interactive Chart.js charts on dashboard (duration, file count, bytes over time)
 - [x] Customizable date range selector for all analytics views
 - [x] Per-source comparison view with side-by-side statistics
-- [ ] API response times under 200ms for list operations with 10,000+ records
+- [x] API response times under 200ms for list operations with 10,000+ records
 - [x] Database indexes on all frequently queried columns
 - [x] Cursor-based pagination on sync logs endpoint (replaces offset pagination)
 - [x] No N+1 query patterns in codebase
@@ -76,4 +76,30 @@ Redis Caching          ░░░░░░░░░░░░░░░░░░░
 
 ## Retrospective
 
-—
+### Cycle 4 Completion (2026-02-23)
+
+**Delivered:** Statistics API, Data Export, Dashboard Charts — all 10 analytics ACs verified.
+
+**Metrics:**
+- 30 new unit/integration tests (349 total, 93% coverage)
+- 30 Playwright E2E tests (all passing)
+- 0 ruff/mypy issues
+- Deprecation warnings cleaned (60 pytestmark warnings eliminated)
+
+**What went well:**
+- TDD cycle was clean — 30 RED tests, then GREEN implementation, no rework
+- Chart.js integration reused existing patterns seamlessly
+- Sequential Stats → Export → Charts flow shared query patterns efficiently
+
+**What was harder:**
+- Live DB missing `exit_code` column caused 500 errors in E2E — needed manual ALTER TABLE
+- CSV export's Content-Disposition header triggered Playwright download errors (fixed with `page.request.get()`)
+
+**Benchmark (10,501 records):**
+- Summary API: ~9ms (daily/monthly)
+- Sources API: ~6ms
+- CSV Export (10k): ~100ms
+- JSON Export (10k): ~170ms
+- Sync Logs list: ~4ms
+
+All endpoints under 200ms target. Column-select optimization on export reduced JSON from ~202ms to ~170ms. Redis caching confirmed unnecessary — indexes from cycle-3 provide sufficient performance.

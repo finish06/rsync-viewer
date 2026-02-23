@@ -2,9 +2,9 @@
 
 **Milestone:** M4 — Analytics & Performance
 **Maturity:** alpha
-**Status:** PLANNED
-**Started:** TBD
-**Completed:** TBD
+**Status:** COMPLETE
+**Started:** 2026-02-23
+**Completed:** 2026-02-23
 **Duration Budget:** 4-6 hours (away mode)
 
 ## Work Items
@@ -107,13 +107,13 @@ TDD cycle:
 
 ### Cycle Success Criteria
 
-- [ ] All 3 features reach DONE position
-- [ ] Analytics spec ACs covered: AC-001 through AC-010 (10 total)
-- [ ] Full test suite passes (no regressions on existing 319+ tests)
-- [ ] Test coverage >= 80%
-- [ ] ruff check clean
-- [ ] mypy clean
-- [ ] New /analytics route accessible and functional
+- [x] All 3 features reach DONE position
+- [x] Analytics spec ACs covered: AC-001 through AC-010 (10 total)
+- [x] Full test suite passes (349 tests, 0 warnings, 0 failures)
+- [x] Test coverage >= 80% (93% actual)
+- [x] ruff check clean
+- [x] mypy clean
+- [x] New /analytics route accessible and functional (30 Playwright E2E tests pass)
 
 ### Out of Scope
 

@@ -195,7 +195,18 @@ async def export_data(
     # Cap limit at MAX_EXPORT_LIMIT
     effective_limit = min(limit, MAX_EXPORT_LIMIT)
 
-    statement = select(SyncLog).order_by(SyncLog.start_time.desc())
+    statement = select(  # type: ignore[call-overload,misc]
+        SyncLog.source_name,
+        SyncLog.start_time,
+        SyncLog.end_time,
+        SyncLog.file_count,
+        SyncLog.bytes_received,
+        SyncLog.bytes_sent,
+        SyncLog.total_size_bytes,
+        SyncLog.exit_code,
+        SyncLog.status,
+        SyncLog.is_dry_run,
+    ).order_by(SyncLog.start_time.desc())
 
     if source:
         statement = statement.where(SyncLog.source_name == source)
@@ -227,7 +238,7 @@ async def export_data(
             status=r.status,
             is_dry_run=r.is_dry_run,
         )
-        for r in results
+        for r in results  # type: ignore[union-attr]
     ]
 
     if format == "csv":
