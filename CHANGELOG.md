@@ -28,6 +28,41 @@ and this project adheres to [Conventional Commits](https://www.conventionalcommi
 - M3 Reliability milestone marked COMPLETE (Structured Logging, Error Handling, Security Hardening)
 - M2 Notifications milestone fully closed: promote 3 features from VERIFIED → DONE, add completion date and retrospective
 
+## [1.7.0] - 2026-02-24
+
+### Added
+
+- Development & deployment setup guide (`docs/setup.md`)
+- Environment variables reference with all 19 config vars (`docs/environment-variables.md`)
+- Architecture diagram with Mermaid and data flow documentation (`docs/architecture.md`)
+- Database schema documentation for all 6 tables (`docs/database-schema.md`)
+- Rsync log ingestion guide with curl and bash script examples (`docs/ingestion-guide.md`)
+- Troubleshooting guide covering database, Docker, and API issues (`docs/troubleshooting.md`)
+- Grafana sync overview dashboard template (`grafana/sync-overview.json`)
+- Grafana API performance dashboard template (`grafana/api-performance.json`)
+- 27 automated tests verifying documentation completeness and dashboard validity
+
+### Fixed
+
+- Isolate Playwright e2e tests from pytest-asyncio unit tests to prevent event loop contamination
+- Mount `docs/` and `grafana/` directories in CI test container
+
+### Changed
+
+- M6 Observability milestone marked COMPLETE (8/8 success criteria met)
+
+## [1.6.0] - 2026-02-23
+
+### Added
+
+- Prometheus `/metrics` endpoint with sync, API, and application health metrics
+- Sync metrics: totals, duration histogram, files/bytes counters (per source)
+- API metrics: request totals and duration histogram (per endpoint/method)
+- Application health metrics: version info gauge
+- Data retention service with configurable auto-cleanup (`DATA_RETENTION_DAYS`)
+- Background retention task with FK cascade deletion order
+- 26 metrics and retention tests
+
 ## [1.5.0] - 2026-02-23
 
 ### Added
