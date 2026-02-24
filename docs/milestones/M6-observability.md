@@ -25,6 +25,7 @@ Prometheus Metrics     ███████████████████
 Data Retention         ████████████████████████████████████  DONE
 Grafana Dashboards     ████████████████████████████████████  DONE
 Project Documentation  ████████████████████████████████████  DONE
+Changelog Viewer       ████████████████████████████████████  DONE
 ```
 
 ## Features
@@ -37,6 +38,7 @@ Project Documentation  ███████████████████
 | Setup & Deployment Guide | specs/documentation.md | DONE | Dev setup, Docker deployment, env var reference |
 | Architecture Documentation | specs/documentation.md | DONE | System diagram, DB schema, data flow |
 | Operational Documentation | specs/documentation.md | DONE | Troubleshooting guide, ingestion configuration |
+| Changelog Viewer | specs/changelog-viewer.md | DONE | Settings page tab with HTMX accordions, "Current" badge |
 
 ## Dependencies
 

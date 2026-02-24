@@ -39,6 +39,7 @@ Retry & Cancellation   ░░░░░░░░░░░░░░░░░░░
 | Real-Time Progress | specs/sync-scheduling.md | SHAPED | WebSocket/SSE for live status updates |
 | Retry & Cancellation | specs/sync-scheduling.md | SHAPED | Exponential backoff, process termination |
 | Currently Running View | specs/sync-scheduling.md | SHAPED | Active sync dashboard with cancel controls |
+| Deprecation Cleanup | specs/deprecation-cleanup.md | SHAPED | Remove legacy code and deprecated patterns |
 
 ## Pre-Milestone Actions
 
