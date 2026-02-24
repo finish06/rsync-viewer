@@ -13,18 +13,18 @@
 - [x] Sync metrics exported: totals, duration histogram, files/bytes counters (per source)
 - [x] API metrics exported: request totals and duration histogram (per endpoint)
 - [x] Application health metrics: DB connections, app version
-- [ ] Grafana dashboard JSON templates provided in `grafana/` directory
-- [ ] Setup guide enables new developers to deploy using only documentation
-- [ ] All environment variables documented with descriptions and defaults
-- [ ] Architecture diagram and database schema documentation exist
+- [x] Grafana dashboard JSON templates provided in `grafana/` directory
+- [x] Setup guide enables new developers to deploy using only documentation
+- [x] All environment variables documented with descriptions and defaults
+- [x] Architecture diagram and database schema documentation exist
 
 ## Hill Chart
 
 ```
 Prometheus Metrics     ████████████████████████████████████  DONE
 Data Retention         ████████████████████████████████████  DONE
-Grafana Dashboards     ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  SHAPED
-Project Documentation  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  SHAPED
+Grafana Dashboards     ████████████████████████████████████  DONE
+Project Documentation  ████████████████████████████████████  DONE
 ```
 
 ## Features
@@ -33,10 +33,10 @@ Project Documentation  ░░░░░░░░░░░░░░░░░░░
 |---------|------|----------|-------|
 | Prometheus Metrics Endpoint | specs/metrics-export.md | DONE | /metrics with sync, API, and health metrics (v1.6.0) |
 | Data Retention Policies | specs/metrics-export.md | DONE | Configurable auto-cleanup with FK cascade (v1.6.0) |
-| Grafana Dashboard Templates | specs/metrics-export.md | SHAPED | Sync overview + API performance dashboards |
-| Setup & Deployment Guide | specs/documentation.md | SHAPED | Dev setup, Docker deployment, env var reference |
-| Architecture Documentation | specs/documentation.md | SHAPED | System diagram, DB schema, data flow |
-| Operational Documentation | specs/documentation.md | SHAPED | Troubleshooting guide, ingestion configuration |
+| Grafana Dashboard Templates | specs/metrics-export.md | DONE | Sync overview + API performance dashboards |
+| Setup & Deployment Guide | specs/documentation.md | DONE | Dev setup, Docker deployment, env var reference |
+| Architecture Documentation | specs/documentation.md | DONE | System diagram, DB schema, data flow |
+| Operational Documentation | specs/documentation.md | DONE | Troubleshooting guide, ingestion configuration |
 
 ## Dependencies
 
@@ -64,7 +64,7 @@ Project Documentation  ░░░░░░░░░░░░░░░░░░░
 | Cycle | Features | Status | Notes |
 |-------|----------|--------|-------|
 | cycle-5 | Prometheus Metrics, Data Retention | COMPLETE | 26 tests, merged PR #10, tagged v1.6.0 |
-| cycle-6 | Project Documentation, Grafana Dashboards | PLANNED | Docs first, then Grafana |
+| cycle-6 | Project Documentation, Grafana Dashboards | COMPLETE | 27 tests, 6 doc files + 2 Grafana dashboards |
 
 ## Retrospective
 
