@@ -1,10 +1,10 @@
 # M6 — Observability
 
 **Goal:** Make the system observable for both machines (Prometheus metrics) and humans (comprehensive documentation)
-**Status:** LATER
+**Status:** IN_PROGRESS
 **Appetite:** 1 week
 **Target Maturity:** beta
-**Started:** —
+**Started:** 2026-02-23
 **Completed:** —
 
 ## Success Criteria
@@ -63,7 +63,7 @@ Data Retention         ░░░░░░░░░░░░░░░░░░░
 
 | Cycle | Features | Status | Notes |
 |-------|----------|--------|-------|
-| — | — | — | Cycles to be planned when milestone starts |
+| cycle-5 | Prometheus Metrics, Data Retention | PLANNED | Metrics endpoint + retention background task |
 
 ## Retrospective
 

@@ -1,34 +1,33 @@
 # Away Mode Log
 
 **Started:** 2026-02-23
-**Expected Return:** ~4 hours
-**Duration:** 4 hours
-**Focus:** Execute cycle-4 — M4 Analytics Features (Statistics API, Data Export, Dashboard Charts)
+**Expected Return:** ~8 hours
+**Duration:** 8 hours
+**Focus:** Execute cycle-5 — M6 Observability (Prometheus Metrics + Data Retention)
 
 ## Work Plan
 
-1. Commit cycle-3 completion artifacts
-2. Phase 1: Statistics API — TDD for AC-001, AC-002, AC-003
-3. Phase 2: Data Export — TDD for AC-004, AC-005, AC-010
-4. Phase 3: Dashboard Charts — TDD for AC-006, AC-007, AC-008, AC-009
-5. Quality gates after each phase
-6. Update CHANGELOG with each commit
+1. Phase 1: Prometheus Metrics — TDD for AC-001, AC-002, AC-003, AC-004, AC-009, AC-010
+2. Phase 2: Data Retention — TDD for AC-007, AC-008
+3. Quality gates after each phase (ruff check + ruff format + mypy)
+4. Commit + push after each phase
+5. Update cycle-5.md and M6 milestone with progress
 
 ## Queued for Human Return
 
-1. Review completed cycle-4 work and test results
-2. Decide if Redis caching is needed (deferred feature)
-3. Decide on M4 milestone closure
-4. API response time benchmark with 10k+ records (AC not yet verified)
-5. Merge to main if satisfied
+1. Review completed cycle-5 work and test results
+2. Cycle-6 planning (Grafana dashboards + documentation)
+3. PR review and merge to main
+4. Release tagging (v1.6.0)
+5. Production deployment
 
 ## Progress Log
 
 | Time | Task | Status | Notes |
 |------|------|--------|-------|
-| T+0 | Commit cycle-3 completion + cycle-4 plan | DONE | Commit e7c192d |
-| T+15 | RED: Write 30 failing tests for analytics | DONE | All 30 tests fail (404 — endpoints don't exist yet) |
-| T+45 | GREEN: Implement all 3 features | DONE | Statistics API, Data Export, Dashboard Charts. All 30 tests pass. |
-| T+50 | VERIFY: Full test suite + quality gates | DONE | 349 tests pass, ruff clean, mypy clean |
-| T+55 | Commit analytics implementation | DONE | Commit bcb8d52. 30 new tests, all 10 analytics ACs covered. |
-| T+60 | Update M4 milestone (8/9 success criteria met) | DONE | Hill chart updated, features/cycles tables updated |
+| T+0 | RED: Write 26 failing tests (metrics + retention) | Complete | 18 metrics tests + 8 retention tests |
+| T+1 | GREEN: Implement metrics.py, retention.py, wire endpoints | Complete | All 26 tests passing |
+| T+2 | Fix test issues (created_at, lifespan, SQLAlchemy state) | Complete | 5 test fixes applied |
+| T+3 | VERIFY: ruff check, ruff format, mypy | Complete | All clean, 162 core tests pass |
+| T+4 | Commit + push to feature/m6-observability | Complete | 2 commits pushed |
+| T+5 | Deprecation cleanup check | Complete | No datetime.utcnow() or other deprecation patterns found |

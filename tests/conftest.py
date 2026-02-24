@@ -198,6 +198,7 @@ def create_sync_log(db_session: Session):
         file_list: list[str] = None,
         is_dry_run: bool = False,
         exit_code: int = 0,
+        created_at: datetime = None,
     ) -> SyncLog:
         now = utc_now()
         sync_log = SyncLog(
@@ -215,6 +216,8 @@ def create_sync_log(db_session: Session):
             is_dry_run=is_dry_run,
             exit_code=exit_code,
         )
+        if created_at is not None:
+            sync_log.created_at = created_at
         db_session.add(sync_log)
         db_session.commit()
         db_session.refresh(sync_log)
