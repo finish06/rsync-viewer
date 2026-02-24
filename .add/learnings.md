@@ -26,6 +26,9 @@
   Patch 'module.httpx.AsyncClient' and set mock_client.__aenter__ = AsyncMock(return_value=mock_client), __aexit__ = AsyncMock(return_value=False). For capture tests, replace mock_client.post with a plain async function that captures args. Patch asyncio.sleep with AsyncMock to skip retry delays. This pattern is reusable for any service using httpx async context managers.
 
 ## Process
+- **[medium] Retro 2: ruff format drift and E2E CI exclusion** (L-012, 2026-02-23)
+  Period 2026-02-20→23 covered M2-M5 (132→350 tests, 93% coverage). Two process issues: (1) ruff format drift accumulated silently across 9 files — always run ruff format before committing; (2) Playwright E2E adds CI complexity at alpha maturity with marginal gain — defer to beta, keep local-only. Workflow otherwise solid — TDD cycle and quality gates are reliable.
+
 - **[medium] Cycle 4 complete: M4 Analytics — 3 features, 30+30 tests, 93% coverage** (L-010, 2026-02-23)
   Cycle 4 delivered Statistics API, Data Export, and Dashboard Charts. 30 unit tests + 30 Playwright E2E tests. All 10 analytics ACs verified. Key findings: (1) live DB schema drift caused 500s — exit_code column was in the model but missing from DB, needed ALTER TABLE; (2) CSV StreamingResponse with Content-Disposition: attachment triggers Playwright download errors, use page.request.get() instead of page.goto(); (3) module-wide pytestmark=pytest.mark.asyncio is unnecessary with asyncio_mode=auto and generates warnings on sync tests. M4 at 8/9 success criteria — only response time benchmark remains.
 
@@ -42,4 +45,4 @@
   M1 milestone complete with all 6 features shipped. Promotion backed by: 6 specs, 92% coverage, CI pipeline, 3 PRs merged, conventional commits (15/20), 3 release tags, TDD evidence. Only gap: branch protection not enforced on GitHub (only declared in config). Next target: Beta requires full TDD on all paths and 30+ days stability.
 
 ---
-*11 entries. Last updated: 2026-02-23. Source: .add/learnings.json*
+*12 entries. Last updated: 2026-02-23. Source: .add/learnings.json*

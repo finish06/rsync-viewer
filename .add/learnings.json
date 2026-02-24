@@ -145,6 +145,19 @@
       "date": "2026-02-23",
       "classified_by": "agent",
       "checkpoint_type": "verification-catch"
+    },
+    {
+      "id": "L-012",
+      "title": "Retro 2: ruff format drift and E2E CI exclusion",
+      "body": "Period 2026-02-20→23 covered M2-M5 (132→350 tests, 93% coverage). Two process issues: (1) ruff format drift accumulated silently across 9 files — always run ruff format before committing; (2) Playwright E2E adds CI complexity at alpha maturity with marginal gain — defer to beta, keep local-only. Workflow otherwise solid — TDD cycle and quality gates are reliable.",
+      "scope": "project",
+      "stack": ["python", "fastapi"],
+      "category": "process",
+      "severity": "medium",
+      "source": "rsync-viewer",
+      "date": "2026-02-23",
+      "classified_by": "agent",
+      "checkpoint_type": "retro"
     }
   ]
 }
