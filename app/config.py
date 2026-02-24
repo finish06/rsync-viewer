@@ -21,6 +21,9 @@ class Settings(BaseSettings):
     db_max_overflow: int = 20
     db_pool_timeout: int = 30
     query_timeout_seconds: int = 30
+    metrics_enabled: bool = True
+    data_retention_days: int = 0  # 0 = disabled (keep forever)
+    retention_cleanup_interval_hours: int = 24
 
 
 @lru_cache

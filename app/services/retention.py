@@ -1,0 +1,135 @@
+"""Data retention cleanup service.
+
+Handles automatic cleanup of old sync logs based on configurable retention period.
+"""
+
+import asyncio
+import logging
+
+from sqlmodel import Session, select, delete
+
+from app.models.failure_event import FailureEvent
+from app.models.notification_log import NotificationLog
+from app.models.sync_log import SyncLog
+from app.utils import utc_now
+
+logger = logging.getLogger(__name__)
+
+
+def cleanup_old_sync_logs(session: Session, retention_days: int) -> int:
+    """Delete sync logs older than the retention period.
+
+    Handles FK cascade by deleting related records first:
+    1. NotificationLogs referencing FailureEvents for old sync logs
+    2. FailureEvents referencing old sync logs
+    3. Old sync logs themselves
+
+    Args:
+        session: Database session.
+        retention_days: Number of days to retain. 0 = disabled (no deletion).
+
+    Returns:
+        Number of sync logs deleted.
+    """
+    if retention_days <= 0:
+        return 0
+
+    cutoff = utc_now() - __import__("datetime").timedelta(days=retention_days)
+
+    # Find old sync log IDs
+    old_sync_ids = session.exec(
+        select(SyncLog.id).where(SyncLog.created_at < cutoff)
+    ).all()
+
+    if not old_sync_ids:
+        return 0
+
+    old_sync_id_list = list(old_sync_ids)
+
+    # Step 1: Find failure events referencing old sync logs
+    old_failure_ids = session.exec(
+        select(FailureEvent.id).where(
+            FailureEvent.sync_log_id.in_(old_sync_id_list)  # type: ignore[union-attr]
+        )
+    ).all()
+
+    if old_failure_ids:
+        old_failure_id_list = list(old_failure_ids)
+
+        # Step 2: Delete notification logs referencing those failure events
+        session.exec(
+            delete(NotificationLog).where(
+                NotificationLog.failure_event_id.in_(old_failure_id_list)  # type: ignore[union-attr,attr-defined]
+            )
+        )
+
+        # Step 3: Delete the failure events
+        session.exec(
+            delete(FailureEvent).where(
+                FailureEvent.sync_log_id.in_(old_sync_id_list)  # type: ignore[union-attr]
+            )
+        )
+
+    # Step 4: Delete the old sync logs
+    session.exec(
+        delete(SyncLog).where(SyncLog.created_at < cutoff)  # type: ignore[arg-type]
+    )
+
+    count = len(old_sync_id_list)
+    session.commit()
+
+    logger.info(
+        "Retention cleanup completed",
+        extra={"deleted_count": count, "retention_days": retention_days},
+    )
+
+    return count
+
+
+async def retention_background_task(
+    retention_days: int,
+    interval_hours: int,
+    shutdown_event: asyncio.Event,
+    engine=None,
+) -> None:
+    """Background task that periodically runs retention cleanup.
+
+    Args:
+        retention_days: Days to retain sync logs. 0 = disabled.
+        interval_hours: Hours between cleanup runs.
+        shutdown_event: Event signaling app shutdown.
+        engine: SQLAlchemy engine for creating sessions.
+    """
+    if retention_days <= 0:
+        logger.info("Data retention disabled (retention_days=0)")
+        return
+
+    logger.info(
+        "Retention background task started",
+        extra={
+            "retention_days": retention_days,
+            "interval_hours": interval_hours,
+        },
+    )
+
+    interval_seconds = interval_hours * 3600
+
+    while not shutdown_event.is_set():
+        try:
+            if engine is not None:
+                with Session(engine) as session:
+                    deleted = cleanup_old_sync_logs(session, retention_days)
+                    if deleted > 0:
+                        logger.info(
+                            "Retention cleanup deleted records",
+                            extra={"deleted_count": deleted},
+                        )
+        except Exception:
+            logger.exception("Retention cleanup failed")
+
+        # Wait for interval or shutdown
+        try:
+            await asyncio.wait_for(shutdown_event.wait(), timeout=interval_seconds)
+            break  # Shutdown signaled
+        except asyncio.TimeoutError:
+            continue  # Interval elapsed, run again

@@ -22,6 +22,7 @@ from app.schemas.sync_log import (
     SourceListResponse,
     ErrorResponse,
 )
+from app.metrics import record_sync
 from app.services.rsync_parser import RsyncParser
 from app.services.webhook_dispatcher import dispatch_webhooks
 
@@ -99,6 +100,18 @@ async def create_sync_log(
     session.add(sync_log)
     session.commit()
     session.refresh(sync_log)
+
+    # Record Prometheus metrics
+    duration_seconds = None
+    if sync_log.start_time and sync_log.end_time:
+        duration_seconds = (sync_log.end_time - sync_log.start_time).total_seconds()
+    record_sync(
+        source=sync_log.source_name,
+        status="failed" if (data.exit_code and data.exit_code != 0) else "success",
+        duration_seconds=duration_seconds,
+        files=sync_log.file_count,
+        bytes_transferred=sync_log.bytes_received,
+    )
 
     # Create FailureEvent for non-zero exit codes
     failure = None

@@ -6,8 +6,11 @@ from datetime import datetime, timedelta
 from typing import Optional
 from uuid import UUID
 
+import asyncio
+
 import httpx
 from fastapi import FastAPI, HTTPException, Request, Query, Depends
+from starlette.responses import Response as StarletteResponse
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -23,6 +26,7 @@ from app.database import engine, get_session
 from app.api.endpoints import sync_logs, monitors, failures, webhooks, analytics
 from app.errors import make_error_response, INTERNAL_ERROR, VALIDATION_ERROR
 from app.logging_config import setup_logging
+from app.metrics import PrometheusMiddleware, get_metrics_output, set_app_info
 from app.middleware import (
     BodySizeLimitMiddleware,
     CsrfMiddleware,
@@ -74,7 +78,35 @@ async def lifespan(app: FastAPI):
     setup_logging(log_level=settings.log_level, log_format=settings.log_format)
     # Create tables on startup
     SQLModel.metadata.create_all(engine)
+
+    # Set Prometheus app info
+    set_app_info(version="1.5.0")
+
+    # Start retention background task
+    shutdown_event = asyncio.Event()
+    retention_task = None
+    if settings.data_retention_days > 0:
+        from app.services.retention import retention_background_task
+
+        retention_task = asyncio.create_task(
+            retention_background_task(
+                retention_days=settings.data_retention_days,
+                interval_hours=settings.retention_cleanup_interval_hours,
+                shutdown_event=shutdown_event,
+                engine=engine,
+            )
+        )
+
     yield
+
+    # Shutdown retention task
+    shutdown_event.set()
+    if retention_task is not None:
+        retention_task.cancel()
+        try:
+            await retention_task
+        except asyncio.CancelledError:
+            pass
 
 
 app = FastAPI(
@@ -169,10 +201,11 @@ app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # type: ignore[arg-type]
 
 # Middleware order: outermost runs first
-# SecurityHeaders → BodySizeLimit → RequestLogging → (rate limiting via slowapi)
+# SecurityHeaders → BodySizeLimit → Prometheus → RequestLogging → CSRF → (rate limiting)
 app.add_middleware(RequestLoggingMiddleware)
 app.add_middleware(CsrfMiddleware)
 app.add_middleware(SlowAPIMiddleware)
+app.add_middleware(PrometheusMiddleware)
 app.add_middleware(BodySizeLimitMiddleware)
 app.add_middleware(SecurityHeadersMiddleware)
 
@@ -943,6 +976,19 @@ async def htmx_webhook_test(
         return HTMLResponse(
             f'<span class="test-result test-failure">Failed: {e}</span>'
         )
+
+
+@app.get("/metrics")
+async def metrics_endpoint():
+    """Prometheus metrics endpoint (AC-001, AC-009).
+
+    Unauthenticated — standard for Prometheus scraping.
+    """
+    data = get_metrics_output()
+    return StarletteResponse(
+        content=data,
+        media_type="text/plain; version=0.0.4; charset=utf-8",
+    )
 
 
 @app.get("/health")
