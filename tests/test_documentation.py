@@ -122,7 +122,11 @@ class TestDatabaseSchema:
         """Schema doc describes foreign key relationships."""
         with open(os.path.join(DOCS_DIR, "database-schema.md")) as f:
             content = f.read().lower()
-        assert "foreign key" in content or "relationship" in content or "references" in content
+        assert (
+            "foreign key" in content
+            or "relationship" in content
+            or "references" in content
+        )
 
 
 class TestDataFlow:
@@ -185,32 +189,44 @@ class TestGrafanaDashboards:
 
     def test_ac005_sync_overview_dashboard_exists(self):
         """grafana/sync-overview.json exists."""
-        path = os.path.join(os.path.dirname(__file__), "..", "grafana", "sync-overview.json")
+        path = os.path.join(
+            os.path.dirname(__file__), "..", "grafana", "sync-overview.json"
+        )
         assert os.path.isfile(path)
 
     def test_ac006_sync_dashboard_has_panels(self):
         """Sync overview dashboard contains expected panels."""
         import json
 
-        path = os.path.join(os.path.dirname(__file__), "..", "grafana", "sync-overview.json")
+        path = os.path.join(
+            os.path.dirname(__file__), "..", "grafana", "sync-overview.json"
+        )
         with open(path) as f:
             dashboard = json.load(f)
         # Should have panels array
         assert "panels" in dashboard
         panel_titles = [p.get("title", "").lower() for p in dashboard["panels"]]
         panel_text = " ".join(panel_titles)
-        assert "sync" in panel_text or "frequency" in panel_text or "duration" in panel_text
+        assert (
+            "sync" in panel_text
+            or "frequency" in panel_text
+            or "duration" in panel_text
+        )
 
     def test_ac005_api_dashboard_exists(self):
         """grafana/api-performance.json exists."""
-        path = os.path.join(os.path.dirname(__file__), "..", "grafana", "api-performance.json")
+        path = os.path.join(
+            os.path.dirname(__file__), "..", "grafana", "api-performance.json"
+        )
         assert os.path.isfile(path)
 
     def test_ac006_api_dashboard_has_panels(self):
         """API performance dashboard contains expected panels."""
         import json
 
-        path = os.path.join(os.path.dirname(__file__), "..", "grafana", "api-performance.json")
+        path = os.path.join(
+            os.path.dirname(__file__), "..", "grafana", "api-performance.json"
+        )
         with open(path) as f:
             dashboard = json.load(f)
         assert "panels" in dashboard
