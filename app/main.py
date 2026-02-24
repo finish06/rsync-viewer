@@ -3,6 +3,7 @@ import logging
 import re
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
+from pathlib import Path
 from typing import Optional
 from uuid import UUID
 
@@ -34,6 +35,7 @@ from app.middleware import (
     SecurityHeadersMiddleware,
 )
 from app.models.sync_log import SyncLog
+from app.services.changelog_parser import parse_changelog
 from app.models.monitor import SyncSourceMonitor  # noqa: F401 — ensure table creation
 from app.models.failure_event import FailureEvent
 from app.models.webhook import WebhookEndpoint
@@ -602,9 +604,40 @@ async def htmx_notifications(
 @app.get("/settings")
 async def settings_page(request: Request):
     """Settings page"""
+    changelog_versions = parse_changelog(path=Path("CHANGELOG.md"))
     return templates.TemplateResponse(
         request,
         "settings.html",
+        context={"changelog_available": len(changelog_versions) > 0},
+    )
+
+
+@app.get("/htmx/changelog")
+async def htmx_changelog_list(request: Request):
+    """HTMX partial: changelog version accordion list."""
+    versions = parse_changelog(path=Path("CHANGELOG.md"))
+    current_settings = get_settings()
+    return templates.TemplateResponse(
+        request,
+        "partials/changelog_list.html",
+        context={
+            "versions": versions,
+            "app_version": current_settings.app_version,
+        },
+    )
+
+
+@app.get("/htmx/changelog/{version}")
+async def htmx_changelog_detail(request: Request, version: str):
+    """HTMX partial: expanded version content with grouped sections."""
+    versions = parse_changelog(path=Path("CHANGELOG.md"))
+    target = next((v for v in versions if v.version == version), None)
+    if target is None:
+        raise HTTPException(status_code=404, detail=f"Version {version} not found")
+    return templates.TemplateResponse(
+        request,
+        "partials/changelog_detail.html",
+        context={"version": target},
     )
 
 

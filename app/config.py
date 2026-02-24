@@ -24,6 +24,7 @@ class Settings(BaseSettings):
     metrics_enabled: bool = True
     data_retention_days: int = 0  # 0 = disabled (keep forever)
     retention_cleanup_interval_hours: int = 24
+    app_version: str = "1.7.0"
 
 
 @lru_cache

@@ -40,5 +40,21 @@
             </div>
         </div>
     </div>
+
+    {% if changelog_available %}
+    <div class="settings-section" id="changelog-tab">
+        <div class="settings-section-header">
+            <h2>Changelog</h2>
+        </div>
+        <div class="settings-section-body">
+            <div id="changelog-list"
+                 hx-get="/htmx/changelog"
+                 hx-trigger="load"
+                 hx-swap="innerHTML">
+                <div class="loading">Loading changelog...</div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
 </div>
 {% endblock %}

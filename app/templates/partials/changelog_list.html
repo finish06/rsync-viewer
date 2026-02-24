@@ -1,0 +1,20 @@
+<div class="changelog-list">
+    {% for v in versions %}
+    <div class="changelog-version">
+        <div class="changelog-version-header"
+             hx-get="/htmx/changelog/{{ v.version }}"
+             hx-target="#changelog-detail-{{ loop.index }}"
+             hx-swap="innerHTML"
+             style="cursor: pointer; padding: 0.75rem 1rem; border-bottom: 1px solid var(--border-color, #e0e0e0); display: flex; align-items: center; gap: 0.5rem;">
+            <strong>{{ v.version }}</strong>
+            {% if v.date %}
+            <span style="color: var(--text-muted, #888); font-size: 0.875rem;">{{ v.date }}</span>
+            {% endif %}
+            {% if v.version == app_version %}
+            <span class="badge badge-current" style="background: var(--accent-color, #22c55e); color: #fff; padding: 0.125rem 0.5rem; border-radius: 4px; font-size: 0.75rem;">Current</span>
+            {% endif %}
+        </div>
+        <div id="changelog-detail-{{ loop.index }}"></div>
+    </div>
+    {% endfor %}
+</div>
