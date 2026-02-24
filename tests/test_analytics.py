@@ -470,41 +470,47 @@ class TestExportEndpoint:
 class TestDashboardAnalyticsRoute:
     """AC-006, AC-007, AC-008, AC-009: Dashboard charts and analytics page."""
 
-    async def test_ac006_analytics_page_renders(self, client):
-        """GET /analytics returns 200 with HTML page."""
-        response = await client.get("/analytics")
+    async def test_ac006_analytics_page_redirects_to_tab(self, client):
+        """GET /analytics redirects to dashboard analytics tab."""
+        response = await client.get("/analytics", follow_redirects=False)
+        assert response.status_code == 302
+        assert "tab=analytics" in response.headers["location"]
+
+    async def test_ac006_analytics_partial_renders(self, client):
+        """GET /htmx/analytics returns 200 with analytics content."""
+        response = await client.get("/htmx/analytics")
         assert response.status_code == 200
         assert "text/html" in response.headers["content-type"]
 
-    async def test_ac006_analytics_page_includes_chartjs(self, client):
-        """Analytics page includes Chart.js script."""
-        response = await client.get("/analytics")
+    async def test_ac006_analytics_partial_includes_chartjs(self, client):
+        """Analytics partial includes Chart.js initialization."""
+        response = await client.get("/htmx/analytics")
         assert response.status_code == 200
-        assert "chart.js" in response.text.lower() or "Chart" in response.text
+        assert "Chart" in response.text
 
-    async def test_ac007_analytics_page_has_date_picker(self, client):
-        """Analytics page includes date range inputs."""
-        response = await client.get("/analytics")
+    async def test_ac007_analytics_partial_has_date_picker(self, client):
+        """Analytics partial includes date range inputs."""
+        response = await client.get("/htmx/analytics")
         assert response.status_code == 200
         assert 'type="date"' in response.text
 
-    async def test_ac007_analytics_page_has_period_selector(self, client):
-        """Analytics page includes period selector (daily/weekly/monthly)."""
-        response = await client.get("/analytics")
+    async def test_ac007_analytics_partial_has_period_selector(self, client):
+        """Analytics partial includes period selector (daily/weekly/monthly)."""
+        response = await client.get("/htmx/analytics")
         assert response.status_code == 200
         assert "daily" in response.text.lower()
         assert "weekly" in response.text.lower()
         assert "monthly" in response.text.lower()
 
-    async def test_ac006_analytics_page_has_source_filter(self, client):
-        """Analytics page includes source filter dropdown."""
-        response = await client.get("/analytics")
+    async def test_ac006_analytics_partial_has_source_filter(self, client):
+        """Analytics partial includes source filter dropdown."""
+        response = await client.get("/htmx/analytics")
         assert response.status_code == 200
         assert "source" in response.text.lower()
 
-    async def test_ac008_analytics_page_has_comparison_section(self, client):
-        """Analytics page includes per-source comparison section."""
-        response = await client.get("/analytics")
+    async def test_ac008_analytics_partial_has_comparison_section(self, client):
+        """Analytics partial includes per-source comparison section."""
+        response = await client.get("/htmx/analytics")
         assert response.status_code == 200
         assert (
             "comparison" in response.text.lower() or "compare" in response.text.lower()

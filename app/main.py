@@ -260,17 +260,11 @@ async def index(request: Request, session: Session = Depends(get_session)):
 
 
 @app.get("/analytics")
-async def analytics_page(request: Request, session: Session = Depends(get_session)):
-    """Analytics dashboard page with charts and export controls."""
-    sources = session.exec(
-        select(SyncLog.source_name).distinct().order_by(SyncLog.source_name)
-    ).all()
+async def analytics_page():
+    """Redirect to dashboard analytics tab."""
+    from fastapi.responses import RedirectResponse
 
-    return templates.TemplateResponse(
-        request,
-        "analytics.html",
-        context={"sources": sources},
-    )
+    return RedirectResponse(url="/?tab=analytics", status_code=302)
 
 
 def _parse_date(value: str) -> datetime:
@@ -357,6 +351,20 @@ async def htmx_sync_table(
             "show_dry_run": show_dry_run,
             "hide_empty": hide_empty,
         },
+    )
+
+
+@app.get("/htmx/analytics")
+async def htmx_analytics(request: Request, session: Session = Depends(get_session)):
+    """HTMX partial: analytics tab with charts, comparison, and export."""
+    sources = session.exec(
+        select(SyncLog.source_name).distinct().order_by(SyncLog.source_name)
+    ).all()
+
+    return templates.TemplateResponse(
+        request,
+        "partials/analytics.html",
+        context={"sources": sources},
     )
 
 

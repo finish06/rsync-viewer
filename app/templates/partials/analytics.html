@@ -1,0 +1,267 @@
+<div class="analytics-panel">
+    <section class="analytics-controls">
+        <form id="analytics-form" class="analytics-filter-form">
+            <div class="analytics-filter-row">
+                <div class="filter-group">
+                    <label for="analytics-period">Period</label>
+                    <select name="period" id="analytics-period">
+                        <option value="daily" selected>Daily</option>
+                        <option value="weekly">Weekly</option>
+                        <option value="monthly">Monthly</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label for="analytics-start">From</label>
+                    <input type="date" name="start" id="analytics-start">
+                </div>
+
+                <div class="filter-group">
+                    <label for="analytics-end">To</label>
+                    <input type="date" name="end" id="analytics-end">
+                </div>
+
+                <div class="filter-group">
+                    <label for="analytics-source">Source</label>
+                    <select name="source" id="analytics-source">
+                        <option value="">All Sources</option>
+                        {% for source in sources %}
+                        <option value="{{ source }}">{{ source }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="filter-group filter-group-btn">
+                    <button type="submit" class="btn btn-primary">Update</button>
+                </div>
+            </div>
+        </form>
+    </section>
+
+    <section class="analytics-charts">
+        <div class="charts-grid charts-grid-2x2">
+            <div class="chart-container">
+                <h3>Sync Duration Over Time</h3>
+                <canvas id="duration-chart"></canvas>
+            </div>
+
+            <div class="chart-container">
+                <h3>File Count Over Time</h3>
+                <canvas id="filecount-chart"></canvas>
+            </div>
+
+            <div class="chart-container">
+                <h3>Bytes Transferred Over Time</h3>
+                <canvas id="bytes-chart"></canvas>
+            </div>
+
+            <div class="chart-container">
+                <h3>Success / Failure Rate</h3>
+                <canvas id="success-chart"></canvas>
+            </div>
+        </div>
+    </section>
+
+    <section class="analytics-comparison">
+        <h3>Source Comparison</h3>
+        <div id="comparison-container">
+            <p class="loading">Loading source data...</p>
+        </div>
+    </section>
+
+    <section class="analytics-export">
+        <h3>Export Data</h3>
+        <div class="export-controls">
+            <a id="export-csv" class="btn btn-secondary" href="/api/v1/analytics/export?format=csv">Download CSV</a>
+            <a id="export-json" class="btn btn-secondary" href="/api/v1/analytics/export?format=json">Download JSON</a>
+        </div>
+    </section>
+</div>
+
+<script>
+(function() {
+    var durationChart, filecountChart, bytesChart, successChart;
+
+    var chartColors = {
+        blue: { border: '#3b82f6', bg: 'rgba(59, 130, 246, 0.1)' },
+        green: { border: '#22c55e', bg: 'rgba(34, 197, 94, 0.1)' },
+        amber: { border: '#f59e0b', bg: 'rgba(245, 158, 11, 0.1)' },
+        red: { border: '#ef4444', bg: 'rgba(239, 68, 68, 0.1)' },
+    };
+
+    function formatBytes(bytes) {
+        if (bytes >= 1073741824) return (bytes / 1073741824).toFixed(1) + ' GB';
+        if (bytes >= 1048576) return (bytes / 1048576).toFixed(1) + ' MB';
+        if (bytes >= 1024) return (bytes / 1024).toFixed(1) + ' KB';
+        return bytes + ' B';
+    }
+
+    function initCharts() {
+        var commonOpts = {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { ticks: { maxRotation: 45, minRotation: 45, font: { size: 10 } } },
+                y: { beginAtZero: true, ticks: { font: { size: 10 } } }
+            }
+        };
+
+        durationChart = new Chart(document.getElementById('duration-chart'), {
+            type: 'line',
+            data: { labels: [], datasets: [{
+                label: 'Avg Duration (s)', data: [],
+                borderColor: chartColors.blue.border,
+                backgroundColor: chartColors.blue.bg,
+                tension: 0.3, fill: true
+            }] },
+            options: commonOpts
+        });
+
+        filecountChart = new Chart(document.getElementById('filecount-chart'), {
+            type: 'bar',
+            data: { labels: [], datasets: [{
+                label: 'Total Files', data: [],
+                backgroundColor: chartColors.green.border,
+                borderRadius: 4
+            }] },
+            options: commonOpts
+        });
+
+        bytesChart = new Chart(document.getElementById('bytes-chart'), {
+            type: 'line',
+            data: { labels: [], datasets: [{
+                label: 'Total Bytes', data: [],
+                borderColor: chartColors.amber.border,
+                backgroundColor: chartColors.amber.bg,
+                fill: true, tension: 0.3
+            }] },
+            options: {
+                ...commonOpts,
+                scales: {
+                    ...commonOpts.scales,
+                    y: {
+                        ...commonOpts.scales.y,
+                        ticks: {
+                            ...commonOpts.scales.y.ticks,
+                            callback: function(v) { return formatBytes(v); }
+                        }
+                    }
+                }
+            }
+        });
+
+        successChart = new Chart(document.getElementById('success-chart'), {
+            type: 'bar',
+            data: {
+                labels: [],
+                datasets: [
+                    { label: 'Successful', data: [], backgroundColor: chartColors.green.border, borderRadius: 4 },
+                    { label: 'Failed', data: [], backgroundColor: chartColors.red.border, borderRadius: 4 }
+                ]
+            },
+            options: {
+                ...commonOpts,
+                plugins: { legend: { display: true, position: 'top' } },
+                scales: { x: { ...commonOpts.scales.x, stacked: true }, y: { ...commonOpts.scales.y, stacked: true } }
+            }
+        });
+    }
+
+    function updateCharts(data) {
+        var labels = data.map(function(d) { return d.date; });
+        durationChart.data.labels = labels;
+        durationChart.data.datasets[0].data = data.map(function(d) { return d.avg_duration_seconds; });
+        durationChart.update();
+
+        filecountChart.data.labels = labels;
+        filecountChart.data.datasets[0].data = data.map(function(d) { return d.total_files_transferred; });
+        filecountChart.update();
+
+        bytesChart.data.labels = labels;
+        bytesChart.data.datasets[0].data = data.map(function(d) { return d.total_bytes_transferred; });
+        bytesChart.update();
+
+        successChart.data.labels = labels;
+        successChart.data.datasets[0].data = data.map(function(d) { return d.successful_syncs; });
+        successChart.data.datasets[1].data = data.map(function(d) { return d.failed_syncs; });
+        successChart.update();
+    }
+
+    function loadComparison() {
+        var params = new URLSearchParams();
+        var startVal = document.getElementById('analytics-start').value;
+        var endVal = document.getElementById('analytics-end').value;
+        if (startVal) params.set('start', startVal);
+        if (endVal) params.set('end', endVal);
+
+        fetch('/api/v1/analytics/sources?' + params.toString())
+            .then(function(r) { return r.json(); })
+            .then(function(sources) {
+                var container = document.getElementById('comparison-container');
+                if (sources.length === 0) {
+                    container.innerHTML = '<p class="text-muted">No source data available for the selected period.</p>';
+                    return;
+                }
+                var html = '<div class="comparison-grid">';
+                sources.forEach(function(s) {
+                    var successPct = (s.success_rate * 100).toFixed(1);
+                    var successClass = s.success_rate >= 0.95 ? 'stat-success' : (s.success_rate >= 0.8 ? 'stat-warning' : 'stat-danger');
+
+                    html += '<div class="comparison-card">';
+                    html += '<div class="comparison-card-header"><h4>' + s.source_name + '</h4></div>';
+                    html += '<div class="comparison-card-stats">';
+                    html += '<div class="stat-item"><span class="stat-value">' + s.total_syncs + '</span><span class="stat-label">Total Syncs</span></div>';
+                    html += '<div class="stat-item"><span class="stat-value ' + successClass + '">' + successPct + '%</span><span class="stat-label">Success Rate</span></div>';
+                    html += '<div class="stat-item"><span class="stat-value">' + (s.avg_duration_seconds ? s.avg_duration_seconds.toFixed(1) + 's' : 'N/A') + '</span><span class="stat-label">Avg Duration</span></div>';
+                    html += '<div class="stat-item"><span class="stat-value">' + (s.avg_files_transferred ? Math.round(s.avg_files_transferred).toLocaleString() : 'N/A') + '</span><span class="stat-label">Avg Files</span></div>';
+                    html += '</div>';
+                    html += '</div>';
+                });
+                html += '</div>';
+                container.innerHTML = html;
+            });
+    }
+
+    function fetchAnalytics() {
+        var period = document.getElementById('analytics-period').value;
+        var startVal = document.getElementById('analytics-start').value;
+        var endVal = document.getElementById('analytics-end').value;
+        var source = document.getElementById('analytics-source').value;
+
+        if (!startVal || !endVal) return;
+
+        var params = new URLSearchParams({period: period, start: startVal, end: endVal});
+        if (source) params.set('source', source);
+
+        fetch('/api/v1/analytics/summary?' + params.toString())
+            .then(function(r) { return r.json(); })
+            .then(function(result) { updateCharts(result.data); });
+
+        loadComparison();
+
+        // Update export links
+        var exportParams = new URLSearchParams();
+        if (startVal) exportParams.set('start', startVal);
+        if (endVal) exportParams.set('end', endVal);
+        if (source) exportParams.set('source', source);
+        document.getElementById('export-csv').href = '/api/v1/analytics/export?format=csv&' + exportParams.toString();
+        document.getElementById('export-json').href = '/api/v1/analytics/export?format=json&' + exportParams.toString();
+    }
+
+    // Default date range: last 30 days
+    var now = new Date();
+    var start = new Date(now);
+    start.setDate(start.getDate() - 30);
+    document.getElementById('analytics-start').value = start.toISOString().split('T')[0];
+    document.getElementById('analytics-end').value = now.toISOString().split('T')[0];
+
+    initCharts();
+    fetchAnalytics();
+
+    document.getElementById('analytics-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        fetchAnalytics();
+    });
+})();
+</script>

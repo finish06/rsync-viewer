@@ -4,6 +4,7 @@
 <div class="dashboard">
     <div class="dashboard-tabs">
         <button class="dashboard-tab active" data-tab="syncs" onclick="switchTab('syncs', this)">Sync Logs</button>
+        <button class="dashboard-tab" data-tab="analytics" onclick="switchTab('analytics', this)">Analytics</button>
         <button class="dashboard-tab" data-tab="notifications" onclick="switchTab('notifications', this)">Notifications</button>
     </div>
 
@@ -60,12 +61,6 @@
             </form>
         </section>
 
-        <section class="charts-wrapper">
-            <div id="charts-container">
-                <div class="charts-loading">Loading charts...</div>
-            </div>
-        </section>
-
         <section class="sync-logs">
             <div id="sync-table"
                  hx-indicator="#loading">
@@ -73,6 +68,12 @@
             </div>
             <div id="loading" class="htmx-indicator">Loading...</div>
         </section>
+    </div>
+
+    <div id="analytics-tab" class="tab-content" style="display: none;">
+        <div id="analytics-container">
+            <div class="loading">Loading analytics...</div>
+        </div>
     </div>
 
     <div id="notifications-tab" class="tab-content" style="display: none;">
@@ -86,6 +87,7 @@
 
 <script>
 var currentRange = '7d';
+var analyticsLoaded = false;
 var notificationsLoaded = false;
 
 function switchTab(tab, btn) {
@@ -96,7 +98,14 @@ function switchTab(tab, btn) {
 
     // Show/hide tab content
     document.getElementById('syncs-tab').style.display = (tab === 'syncs') ? '' : 'none';
+    document.getElementById('analytics-tab').style.display = (tab === 'analytics') ? '' : 'none';
     document.getElementById('notifications-tab').style.display = (tab === 'notifications') ? '' : 'none';
+
+    // Load analytics on first view
+    if (tab === 'analytics' && !analyticsLoaded) {
+        htmx.ajax('GET', '/htmx/analytics', '#analytics-container');
+        analyticsLoaded = true;
+    }
 
     // Load notifications on first view
     if (tab === 'notifications' && !notificationsLoaded) {
@@ -133,7 +142,6 @@ function applyDateRange(range, params) {
 }
 
 function fetchDashboard(params) {
-    htmx.ajax('GET', '/htmx/charts?' + params.toString(), '#charts-container');
     htmx.ajax('GET', '/htmx/sync-table?' + params.toString(), '#sync-table');
 }
 
@@ -175,6 +183,14 @@ function resetFilters() {
 // Default: load with Last 7 Days on page load
 document.addEventListener('DOMContentLoaded', function() {
     selectRange('7d');
+
+    // Handle ?tab= query param for deep linking
+    var params = new URLSearchParams(window.location.search);
+    var tab = params.get('tab');
+    if (tab === 'analytics' || tab === 'notifications') {
+        var btn = document.querySelector('[data-tab="' + tab + '"]');
+        switchTab(tab, btn);
+    }
 });
 </script>
 {% endblock %}
