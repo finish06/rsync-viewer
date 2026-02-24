@@ -1,0 +1,132 @@
+{
+  "title": "Rsync Sync Overview",
+  "uid": "rsync-sync-overview",
+  "description": "Overview of rsync synchronization metrics — sync frequency, duration, and data transfer",
+  "tags": ["rsync", "sync"],
+  "timezone": "browser",
+  "editable": true,
+  "time": {
+    "from": "now-24h",
+    "to": "now"
+  },
+  "refresh": "30s",
+  "panels": [
+    {
+      "id": 1,
+      "title": "Sync Frequency (per source)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "expr": "rate(rsync_syncs_total[5m])",
+          "legendFormat": "{{source}} — {{status}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops"
+        }
+      }
+    },
+    {
+      "id": 2,
+      "title": "Sync Duration (p50 / p95 / p99)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50, rate(rsync_sync_duration_seconds_bucket[5m]))",
+          "legendFormat": "p50"
+        },
+        {
+          "expr": "histogram_quantile(0.95, rate(rsync_sync_duration_seconds_bucket[5m]))",
+          "legendFormat": "p95"
+        },
+        {
+          "expr": "histogram_quantile(0.99, rate(rsync_sync_duration_seconds_bucket[5m]))",
+          "legendFormat": "p99"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        }
+      }
+    },
+    {
+      "id": 3,
+      "title": "Total Syncs by Source",
+      "type": "stat",
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 8 },
+      "targets": [
+        {
+          "expr": "rsync_syncs_total",
+          "legendFormat": "{{source}} — {{status}}"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Bytes Transferred Rate",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "targets": [
+        {
+          "expr": "rate(rsync_bytes_transferred_total[5m])",
+          "legendFormat": "{{source}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Bps"
+        }
+      }
+    },
+    {
+      "id": 5,
+      "title": "Files Transferred Rate",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
+      "targets": [
+        {
+          "expr": "rate(rsync_files_transferred_total[5m])",
+          "legendFormat": "{{source}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        }
+      }
+    },
+    {
+      "id": 6,
+      "title": "Sync Failure Rate",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
+      "targets": [
+        {
+          "expr": "rate(rsync_syncs_total{status=\"failed\"}[5m])",
+          "legendFormat": "{{source}} failures"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops"
+        }
+      }
+    }
+  ],
+  "templating": {
+    "list": [
+      {
+        "name": "source",
+        "type": "query",
+        "query": "label_values(rsync_syncs_total, source)",
+        "multi": true,
+        "includeAll": true
+      }
+    ]
+  },
+  "schemaVersion": 39
+}

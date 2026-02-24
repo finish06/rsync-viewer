@@ -1,33 +1,38 @@
 # Away Mode Log
 
-**Started:** 2026-02-23
-**Expected Return:** ~8 hours
-**Duration:** 8 hours
-**Focus:** Execute cycle-5 — M6 Observability (Prometheus Metrics + Data Retention)
+**Started:** 2026-02-24
+**Expected Return:** ~6 hours
+**Duration:** 6 hours
+**Focus:** Execute cycle-6 — M6 Documentation & Grafana Dashboards
 
 ## Work Plan
 
-1. Phase 1: Prometheus Metrics — TDD for AC-001, AC-002, AC-003, AC-004, AC-009, AC-010
-2. Phase 2: Data Retention — TDD for AC-007, AC-008
-3. Quality gates after each phase (ruff check + ruff format + mypy)
-4. Commit + push after each phase
-5. Update cycle-5.md and M6 milestone with progress
+1. Phase 1: Documentation TDD (AC-001–AC-008) — tests, write docs, verify
+2. Phase 2: Grafana Dashboards TDD (AC-005, AC-006) — tests, write JSON, verify
+3. Commit + push after each phase
+4. Create PR for cycle-6
 
 ## Queued for Human Return
 
-1. Review completed cycle-5 work and test results
-2. Cycle-6 planning (Grafana dashboards + documentation)
-3. PR review and merge to main
-4. Release tagging (v1.6.0)
-5. Production deployment
+1. Review and merge cycle-6 PR
+2. Close cycle-6 and M6 milestone
+3. Release tagging (v1.7.0)
+4. Plan next milestone
 
 ## Progress Log
 
 | Time | Task | Status | Notes |
 |------|------|--------|-------|
-| T+0 | RED: Write 26 failing tests (metrics + retention) | Complete | 18 metrics tests + 8 retention tests |
-| T+1 | GREEN: Implement metrics.py, retention.py, wire endpoints | Complete | All 26 tests passing |
-| T+2 | Fix test issues (created_at, lifespan, SQLAlchemy state) | Complete | 5 test fixes applied |
-| T+3 | VERIFY: ruff check, ruff format, mypy | Complete | All clean, 162 core tests pass |
-| T+4 | Commit + push to feature/m6-observability | Complete | 2 commits pushed |
-| T+5 | Deprecation cleanup check | Complete | No datetime.utcnow() or other deprecation patterns found |
+| 1 | RED: Write 27 documentation tests | DONE | All 27 tests failing as expected |
+| 2 | GREEN: Write docs/setup.md | DONE | AC-001 |
+| 3 | GREEN: Write docs/environment-variables.md | DONE | AC-002 |
+| 4 | GREEN: Write docs/architecture.md | DONE | AC-003, AC-005 (Mermaid diagram + data flow) |
+| 5 | GREEN: Write docs/database-schema.md | DONE | AC-004 (all 6 tables documented) |
+| 6 | GREEN: Write docs/ingestion-guide.md | DONE | AC-006 (curl + bash script examples) |
+| 7 | GREEN: Write docs/troubleshooting.md | DONE | AC-007 (DB, Docker, API issues) |
+| 8 | GREEN: Write grafana/sync-overview.json | DONE | 6 panels: frequency, duration, totals, bytes, files, failures |
+| 9 | GREEN: Write grafana/api-performance.json | DONE | 6 panels: request rate, latency, totals, errors, table, status |
+| 10 | VERIFY: 27/27 tests pass | DONE | Zero regressions (160 core tests pass) |
+| 11 | VERIFY: ruff + mypy clean | DONE | Fixed unused pytest import |
+| 12 | Commit + push | DONE | 2 commits on feature/m6-docs-grafana |
+| 13 | Create PR | PENDING | Ready to create |

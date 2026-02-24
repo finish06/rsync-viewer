@@ -144,14 +144,15 @@
   },
   "planning": {
     "current_milestone": "M6-observability",
-    "current_cycle": "cycle-5",
+    "current_cycle": "cycle-6",
     "wip_limit": 1,
     "parallel_agents": 1,
     "cycle_history": [
       "cycle-1",
       "cycle-2",
       "cycle-3",
-      "cycle-4"
+      "cycle-4",
+      "cycle-5"
     ]
   }
 }
