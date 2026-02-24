@@ -615,7 +615,11 @@ async def settings_page(request: Request):
 @app.get("/htmx/changelog")
 async def htmx_changelog_list(request: Request):
     """HTMX partial: changelog version accordion list."""
-    versions = parse_changelog(path=Path("CHANGELOG.md"))
+    versions = [
+        v
+        for v in parse_changelog(path=Path("CHANGELOG.md"))
+        if v.version != "Unreleased"
+    ]
     current_settings = get_settings()
     return templates.TemplateResponse(
         request,

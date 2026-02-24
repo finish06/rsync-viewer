@@ -6,55 +6,62 @@
 <div class="settings-page">
     <h1 style="font-size: 1.5rem; font-weight: 600; margin-bottom: 1.5rem;">Settings</h1>
 
-    <div class="settings-section">
-        <div class="settings-section-header">
-            <h2>Appearance</h2>
-        </div>
-        <div class="settings-section-body">
-            <label class="settings-label">Theme</label>
-            <div class="theme-options">
-                <button class="theme-option" data-theme-value="light" type="button">Light</button>
-                <button class="theme-option" data-theme-value="dark" type="button">Dark</button>
-                <button class="theme-option" data-theme-value="system" type="button">System</button>
+    <div class="settings-grid">
+        <div class="settings-column">
+            <div class="settings-section">
+                <div class="settings-section-header">
+                    <h2>Appearance</h2>
+                </div>
+                <div class="settings-section-body">
+                    <label class="settings-label">Theme</label>
+                    <div class="theme-options">
+                        <button class="theme-option" data-theme-value="light" type="button">Light</button>
+                        <button class="theme-option" data-theme-value="dark" type="button">Dark</button>
+                        <button class="theme-option" data-theme-value="system" type="button">System</button>
+                    </div>
+                </div>
             </div>
-        </div>
-    </div>
 
-    <div class="settings-section">
-        <div class="settings-section-header settings-section-header-flex">
-            <h2>Webhooks</h2>
-            <button class="theme-option"
-                    hx-get="/htmx/webhooks/add"
-                    hx-target="#modal-container"
-                    hx-swap="innerHTML"
-                    type="button">
-                Add Webhook
-            </button>
-        </div>
-        <div class="settings-section-body">
-            <div id="webhooks-list"
-                 hx-get="/htmx/webhooks"
-                 hx-trigger="load"
-                 hx-swap="innerHTML">
-                <div class="loading">Loading webhooks...</div>
+            <div class="settings-section">
+                <div class="settings-section-header settings-section-header-flex">
+                    <h2>Webhooks</h2>
+                    <button class="theme-option"
+                            hx-get="/htmx/webhooks/add"
+                            hx-target="#modal-container"
+                            hx-swap="innerHTML"
+                            type="button">
+                        Add Webhook
+                    </button>
+                </div>
+                <div class="settings-section-body">
+                    <div id="webhooks-list"
+                         hx-get="/htmx/webhooks"
+                         hx-trigger="load"
+                         hx-swap="innerHTML">
+                        <div class="loading">Loading webhooks...</div>
+                    </div>
+                </div>
             </div>
         </div>
-    </div>
 
-    {% if changelog_available %}
-    <div class="settings-section" id="changelog-tab">
-        <div class="settings-section-header">
-            <h2>Changelog</h2>
-        </div>
-        <div class="settings-section-body">
-            <div id="changelog-list"
-                 hx-get="/htmx/changelog"
-                 hx-trigger="load"
-                 hx-swap="innerHTML">
-                <div class="loading">Loading changelog...</div>
+        <div class="settings-column">
+            {% if changelog_available %}
+            <div class="settings-section" id="changelog-tab">
+                <div class="settings-section-header">
+                    <h2>Changelog</h2>
+                </div>
+                <div class="settings-section-body">
+                    <div id="changelog-list"
+                         hx-get="/htmx/changelog"
+                         hx-trigger="load"
+                         hx-swap="innerHTML">
+                        <div class="loading">Loading changelog...</div>
+                    </div>
+                </div>
             </div>
+            {% endif %}
         </div>
     </div>
-    {% endif %}
 </div>
+<script src="/static/js/changelog.js"></script>
 {% endblock %}

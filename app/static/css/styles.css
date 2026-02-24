@@ -764,7 +764,20 @@ main {
 
 /* Settings Page */
 .settings-page {
-    max-width: 800px;
+    max-width: 1200px;
+}
+
+.settings-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    align-items: start;
+}
+
+@media (max-width: 768px) {
+    .settings-grid {
+        grid-template-columns: 1fr;
+    }
 }
 
 .settings-section {
