@@ -8,10 +8,10 @@
     "author": "finish06"
   },
   "maturity": {
-    "level": "alpha",
-    "promoted_from": "poc",
-    "promoted_date": "2026-02-20",
-    "next_promotion_criteria": "Full specs for all features, TDD adopted on all paths, 80%+ coverage sustained, error handling complete, 30+ days stability"
+    "level": "beta",
+    "promoted_from": "alpha",
+    "promoted_date": "2026-02-24",
+    "next_promotion_criteria": "80%+ coverage sustained, protected branches enforced, 3+ environments, all quality gates blocking, 30+ days production stability, SLAs defined"
   },
   "architecture": {
     "languages": [
@@ -143,8 +143,8 @@
     "lastVersionTag": null
   },
   "planning": {
-    "current_milestone": "M6-observability",
-    "current_cycle": "cycle-6",
+    "current_milestone": null,
+    "current_cycle": null,
     "wip_limit": 1,
     "parallel_agents": 1,
     "cycle_history": [
@@ -152,7 +152,8 @@
       "cycle-2",
       "cycle-3",
       "cycle-4",
-      "cycle-5"
+      "cycle-5",
+      "cycle-6"
     ]
   }
 }

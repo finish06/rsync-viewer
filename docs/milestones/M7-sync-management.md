@@ -40,6 +40,13 @@ Retry & Cancellation   ░░░░░░░░░░░░░░░░░░░
 | Retry & Cancellation | specs/sync-scheduling.md | SHAPED | Exponential backoff, process termination |
 | Currently Running View | specs/sync-scheduling.md | SHAPED | Active sync dashboard with cancel controls |
 
+## Pre-Milestone Actions
+
+These process improvements should be completed before cycle planning begins:
+
+1. **Promote to Beta maturity** — Evidence score 10/10 (19 specs, 91% coverage, CI/CD, PR workflow, conventional commits, 8 release tags). Run `/add:retro` to formally promote. Beta activates TDD enforcement, agent coordination, and environment-awareness rules.
+2. **Fix CI Docker mount drift** — Switch `docker-compose.dev.yml` to bind-mount the entire project root (or add a pre-commit check) so new top-level directories don't silently break CI tests. This has caused failures twice (`.env.example` and `docs/`/`grafana/`).
+
 ## Dependencies
 
 - M3 must be complete (error handling for sync failures, logging for execution tracking, security for command injection prevention)

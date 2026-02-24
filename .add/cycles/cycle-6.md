@@ -2,9 +2,9 @@
 
 **Milestone:** M6 — Observability
 **Maturity:** alpha
-**Status:** PLANNED
-**Started:** TBD
-**Completed:** TBD
+**Status:** COMPLETE
+**Started:** 2026-02-24
+**Completed:** 2026-02-24
 **Duration Budget:** 4-8 hours (away mode)
 
 ## Work Items

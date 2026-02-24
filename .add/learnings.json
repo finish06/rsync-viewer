@@ -6,7 +6,7 @@
     {
       "id": "L-001",
       "title": "Cycle 1 complete: 2 dashboard features in 1 day",
-      "body": "Cycle 1 delivered Date Range Quick Select and Average Transfer Rate. Both followed spec→plan→implement→test flow. 132 tests passing, 92% coverage. Reviewer caught JS duplication in quick-select — extracting shared functions early saves rework. format_rate filter pattern mirrors format_bytes, confirming the Jinja2 filter approach scales well.",
+      "body": "Cycle 1 delivered Date Range Quick Select and Average Transfer Rate. Both followed spec\u2192plan\u2192implement\u2192test flow. 132 tests passing, 92% coverage. Reviewer caught JS duplication in quick-select \u2014 extracting shared functions early saves rework. format_rate filter pattern mirrors format_bytes, confirming the Jinja2 filter approach scales well.",
       "scope": "project",
       "stack": ["python", "fastapi"],
       "category": "process",
@@ -31,7 +31,7 @@
     },
     {
       "id": "L-003",
-      "title": "Promoted POC → Alpha: evidence score 9/10",
+      "title": "Promoted POC \u2192 Alpha: evidence score 9/10",
       "body": "M1 milestone complete with all 6 features shipped. Promotion backed by: 6 specs, 92% coverage, CI pipeline, 3 PRs merged, conventional commits (15/20), 3 release tags, TDD evidence. Only gap: branch protection not enforced on GitHub (only declared in config). Next target: Beta requires full TDD on all paths and 30+ days stability.",
       "scope": "project",
       "stack": ["python", "fastapi"],
@@ -44,7 +44,7 @@
     },
     {
       "id": "L-004",
-      "title": "Webhook service TDD cycle: clean RED→GREEN→REFACTOR in one away session",
+      "title": "Webhook service TDD cycle: clean RED\u2192GREEN\u2192REFACTOR in one away session",
       "body": "ACs covered: AC-001 through AC-011 (except AC-007 UI). RED: 27 tests across 3 files (unit API, unit dispatcher, integration). GREEN: all passed first implementation attempt. Blockers: none. Mock pattern for httpx.AsyncClient with AsyncMock __aenter__/__aexit__ works well for testing async context managers. Proactively dropping/recreating test DB tables before RED phase avoided schema mismatch issues seen in failure-detection cycle.",
       "scope": "project",
       "stack": ["python", "fastapi"],
@@ -56,22 +56,9 @@
       "checkpoint_type": "post-tdd"
     },
     {
-      "id": "L-005",
-      "title": "httpx AsyncClient mock pattern for webhook testing",
-      "body": "Patch 'module.httpx.AsyncClient' and set mock_client.__aenter__ = AsyncMock(return_value=mock_client), __aexit__ = AsyncMock(return_value=False). For capture tests, replace mock_client.post with a plain async function that captures args. Patch asyncio.sleep with AsyncMock to skip retry delays. This pattern is reusable for any service using httpx async context managers.",
-      "scope": "workstation",
-      "stack": ["python"],
-      "category": "technical",
-      "severity": "medium",
-      "source": "rsync-viewer",
-      "date": "2026-02-21",
-      "classified_by": "agent",
-      "checkpoint_type": "post-tdd"
-    },
-    {
       "id": "L-006",
-      "title": "Cycle 2 complete: M3 Reliability — 3 features, 57 new tests, 92% coverage",
-      "body": "Cycle 2 delivered Structured Logging (15 tests), Error Handling (12 tests), and Security Hardening (30 tests). All 34 ACs verified. Total suite: 294 tests at 92% coverage. Key learnings: slowapi requires headers_enabled=True explicitly; CSRF middleware must be accounted for in all test fixtures; Python 3.13 venv upgrade was needed for dict|None syntax. M3 is the beta promotion gate — all criteria met.",
+      "title": "Cycle 2 complete: M3 Reliability \u2014 3 features, 57 new tests, 92% coverage",
+      "body": "Cycle 2 delivered Structured Logging (15 tests), Error Handling (12 tests), and Security Hardening (30 tests). All 34 ACs verified. Total suite: 294 tests at 92% coverage. Key learnings: slowapi requires headers_enabled=True explicitly; CSRF middleware must be accounted for in all test fixtures; Python 3.13 venv upgrade was needed for dict|None syntax. M3 is the beta promotion gate \u2014 all criteria met.",
       "scope": "project",
       "stack": ["python", "fastapi"],
       "category": "process",
@@ -82,34 +69,8 @@
       "checkpoint_type": "retro"
     },
     {
-      "id": "L-007",
-      "title": "slowapi rate limiting: headers_enabled and middleware interaction",
-      "body": "slowapi defaults headers_enabled=False — set True in Limiter constructor for X-RateLimit-* headers. Using @limiter.limit() decorator with headers_enabled=True requires a Response parameter on the endpoint. SlowAPIMiddleware with default_limits is simpler — applies limits globally without per-route decorators. Don't mix both approaches.",
-      "scope": "workstation",
-      "stack": ["python", "fastapi"],
-      "category": "technical",
-      "severity": "high",
-      "source": "rsync-viewer",
-      "date": "2026-02-23",
-      "classified_by": "agent",
-      "checkpoint_type": "post-tdd"
-    },
-    {
-      "id": "L-008",
-      "title": "CSRF middleware breaks existing test fixtures — plan ahead",
-      "body": "Adding CSRF validation middleware retroactively requires updating ALL test client fixtures to include csrf_token cookie and X-CSRF-Token header. Tests that need to verify CSRF rejection must create a separate client without tokens. Always plan for test fixture impact when adding cross-cutting middleware.",
-      "scope": "workstation",
-      "stack": ["python", "fastapi"],
-      "category": "anti-pattern",
-      "severity": "high",
-      "source": "rsync-viewer",
-      "date": "2026-02-23",
-      "classified_by": "agent",
-      "checkpoint_type": "verification-catch"
-    },
-    {
       "id": "L-009",
-      "title": "Cycle 3 complete: M4 Performance Foundations — 3 features, 25 new tests",
+      "title": "Cycle 3 complete: M4 Performance Foundations \u2014 3 features, 25 new tests",
       "body": "Cycle 3 delivered Database Indexing (6 composite/individual indexes), Query Optimization (lazy file lists, connection pool config), and Cursor Pagination (keyset with offset fallback). 25 new tests, 319 total passing. Also ran deprecation cleanup (utc_now() helper replacing 61 datetime.utcnow() calls, Starlette TemplateResponse fix). Key insight: naive vs tz-aware datetime mismatch with PostgreSQL requires a centralized utc_now() helper returning naive UTC. Production indexes created manually with CREATE INDEX CONCURRENTLY.",
       "scope": "project",
       "stack": ["python", "fastapi"],
@@ -122,8 +83,8 @@
     },
     {
       "id": "L-010",
-      "title": "Cycle 4 complete: M4 Analytics — 3 features, 30+30 tests, 93% coverage",
-      "body": "Cycle 4 delivered Statistics API, Data Export, and Dashboard Charts. 30 unit tests + 30 Playwright E2E tests. All 10 analytics ACs verified. Key findings: (1) live DB schema drift caused 500s — exit_code column was in the model but missing from DB, needed ALTER TABLE; (2) CSV StreamingResponse with Content-Disposition: attachment triggers Playwright download errors, use page.request.get() instead of page.goto(); (3) module-wide pytestmark=pytest.mark.asyncio is unnecessary with asyncio_mode=auto and generates warnings on sync tests. M4 at 8/9 success criteria — only response time benchmark remains.",
+      "title": "Cycle 4 complete: M4 Analytics \u2014 3 features, 30+30 tests, 93% coverage",
+      "body": "Cycle 4 delivered Statistics API, Data Export, and Dashboard Charts. 30 unit tests + 30 Playwright E2E tests. All 10 analytics ACs verified. Key findings: (1) live DB schema drift caused 500s \u2014 exit_code column was in the model but missing from DB, needed ALTER TABLE; (2) CSV StreamingResponse with Content-Disposition: attachment triggers Playwright download errors, use page.request.get() instead of page.goto(); (3) module-wide pytestmark=pytest.mark.asyncio is unnecessary with asyncio_mode=auto and generates warnings on sync tests. M4 at 8/9 success criteria \u2014 only response time benchmark remains.",
       "scope": "project",
       "stack": ["python", "fastapi"],
       "category": "process",
@@ -149,13 +110,39 @@
     {
       "id": "L-012",
       "title": "Retro 2: ruff format drift and E2E CI exclusion",
-      "body": "Period 2026-02-20→23 covered M2-M5 (132→350 tests, 93% coverage). Two process issues: (1) ruff format drift accumulated silently across 9 files — always run ruff format before committing; (2) Playwright E2E adds CI complexity at alpha maturity with marginal gain — defer to beta, keep local-only. Workflow otherwise solid — TDD cycle and quality gates are reliable.",
+      "body": "Period 2026-02-20\u219223 covered M2-M5 (132\u2192350 tests, 93% coverage). Two process issues: (1) ruff format drift accumulated silently across 9 files \u2014 always run ruff format before committing; (2) Playwright E2E adds CI complexity at alpha maturity with marginal gain \u2014 defer to beta, keep local-only. Workflow otherwise solid \u2014 TDD cycle and quality gates are reliable.",
       "scope": "project",
       "stack": ["python", "fastapi"],
       "category": "process",
       "severity": "medium",
       "source": "rsync-viewer",
       "date": "2026-02-23",
+      "classified_by": "agent",
+      "checkpoint_type": "retro"
+    },
+    {
+      "id": "L-013",
+      "title": "Cycle 6 complete: M6 Observability \u2014 docs + Grafana in 1 day",
+      "body": "Cycle 6 delivered 6 documentation files and 2 Grafana dashboard templates, verified by 27 new tests. TDD for documentation (test file existence + content assertions) is lightweight but effective. CI needed explicit Docker volume mounts for docs/ and grafana/. M6 complete: 8/8 success criteria met across 2 cycles.",
+      "scope": "project",
+      "stack": ["python", "fastapi"],
+      "category": "process",
+      "severity": "medium",
+      "source": "rsync-viewer",
+      "date": "2026-02-24",
+      "classified_by": "agent",
+      "checkpoint_type": "retro"
+    },
+    {
+      "id": "L-015",
+      "title": "Retro 3: CI must pass before PR, drop Playwright, promote to Beta",
+      "body": "Period 2026-02-23\u219224 completed M6 Observability (2 cycles, 53 tests). Three agreed changes: (1) verify CI passes before creating PRs \u2014 never create PR with known failures; (2) mount project root in docker-compose.dev.yml to prevent recurring mount drift; (3) drop Playwright e2e entirely \u2014 caused more issues than value. Promoted Alpha\u2192Beta with 7/7 evidence criteria met.",
+      "scope": "project",
+      "stack": ["python", "fastapi"],
+      "category": "process",
+      "severity": "high",
+      "source": "rsync-viewer",
+      "date": "2026-02-24",
       "classified_by": "agent",
       "checkpoint_type": "retro"
     }

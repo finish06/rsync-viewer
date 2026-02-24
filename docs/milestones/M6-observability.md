@@ -1,11 +1,11 @@
 # M6 — Observability
 
 **Goal:** Make the system observable for both machines (Prometheus metrics) and humans (comprehensive documentation)
-**Status:** IN_PROGRESS
+**Status:** COMPLETE
 **Appetite:** 1 week
 **Target Maturity:** beta
 **Started:** 2026-02-23
-**Completed:** —
+**Completed:** 2026-02-24
 
 ## Success Criteria
 
@@ -68,4 +68,18 @@ Project Documentation  ███████████████████
 
 ## Retrospective
 
-—
+**Completed:** 2026-02-24 (2 cycles over 2 days)
+
+**What went well:**
+- TDD for documentation worked cleanly — 27 tests written first, then docs to satisfy them
+- Grafana dashboards were straightforward once metric names were established in cycle-5
+- Prometheus metrics + data retention (cycle-5) and docs + Grafana (cycle-6) parallelized naturally
+
+**What was harder than expected:**
+- Playwright e2e test isolation: sync_api event loop contaminated pytest-asyncio, required custom `pytest_collection_modifyitems` hook to skip e2e by default
+- CI test container needed explicit volume mounts for `docs/` and `grafana/` directories
+
+**Metrics:**
+- 2 cycles, 53 new tests (26 metrics + 27 docs)
+- 6 documentation files, 2 Grafana dashboard templates
+- 403 total tests passing, 93% coverage maintained

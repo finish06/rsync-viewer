@@ -27,9 +27,4 @@ services:
       test-db:
         condition: service_healthy
     volumes:
-      - ./app:/app/app:ro
-      - ./tests:/app/tests:ro
-      - ./docs:/app/docs:ro
-      - ./grafana:/app/grafana:ro
-      - ./pytest.ini:/app/pytest.ini:ro
-      - ./.env.example:/app/.env.example:ro
+      - .:/app:ro
