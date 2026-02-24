@@ -1,0 +1,5 @@
+services:
+  app:
+    volumes:
+      - ./scripts:/app/scripts:ro
+    command: ["sh", "/app/scripts/entrypoint-seed.sh"]
