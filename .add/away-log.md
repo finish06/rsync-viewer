@@ -25,3 +25,9 @@
 
 | Time | Task | Status | Notes |
 |------|------|--------|-------|
+| T+0 | RED: Write 26 failing tests (metrics + retention) | Complete | 18 metrics tests + 8 retention tests |
+| T+1 | GREEN: Implement metrics.py, retention.py, wire endpoints | Complete | All 26 tests passing |
+| T+2 | Fix test issues (created_at, lifespan, SQLAlchemy state) | Complete | 5 test fixes applied |
+| T+3 | VERIFY: ruff check, ruff format, mypy | Complete | All clean, 162 core tests pass |
+| T+4 | Commit + push to feature/m6-observability | Complete | 2 commits pushed |
+| T+5 | Deprecation cleanup check | Complete | No datetime.utcnow() or other deprecation patterns found |
