@@ -46,7 +46,7 @@ Rsync Log Viewer solves this by providing a centralized web dashboard that colle
 ### Future Scope (Post-MVP)
 
 - OIDC single sign-on authentication (M7)
-- Scheduled rsync execution and sync management (M8)
+- Scheduled rsync execution and sync management (M10)
 - Multi-user authentication and role-based access (M9)
 - Prometheus metrics export and Grafana dashboards (M6)
 
@@ -99,7 +99,7 @@ Production deployment is to a self-hosted homelab server. No staging environment
 | M5: API Performance | Debounce API key `last_used_at` writes | alpha | COMPLETE | Configurable debounce, zero regression, fewer DB writes |
 | M6: Observability | Prometheus metrics, Grafana dashboards, project docs | beta | NEXT | /metrics endpoint, Grafana templates, setup/architecture docs |
 | M7: OIDC Authentication | OpenID Connect single sign-on via PocketId or generic provider | beta → ga | LATER | OIDC login, auto-create/link users, provider-branded UI |
-| M8: Sync Management | On-demand sync triggering, cron scheduling, real-time progress | beta → ga | LATER | Run Now button, cron schedules, WebSocket progress, retry |
+| M10: Sync Management | On-demand sync triggering, cron scheduling, real-time progress | beta → ga | LATER | Run Now button, cron schedules, WebSocket progress, retry |
 | M9: Multi-User | User accounts, JWT auth, role-based access control | beta → ga | LATER | Registration/login, Admin/Operator/Viewer roles, per-user API keys |
 
 ### Dependency Chain
@@ -107,10 +107,10 @@ Production deployment is to a self-hosted homelab server. No staging environment
 ```
 M3 (Reliability) → M4 (Analytics & Performance) → M6 (Observability)
                  ↘ M9 (Multi-User) → M7 (OIDC Authentication)
-                 ↘ M8 (Sync Management)
+                 ↘ M10 (Sync Management)
 ```
 
-M3 is the gate to beta promotion. M4 and M6 can partially overlap. M7 (OIDC) depends on M9 (Multi-User) for the User model and JWT infrastructure. M8 is independent.
+M3 is the gate to beta promotion. M4 and M6 can partially overlap. M7 (OIDC) depends on M9 (Multi-User) for the User model and JWT infrastructure. M10 is independent.
 
 ### Milestone Detail
 
@@ -228,7 +228,7 @@ M3 is the gate to beta promotion. M4 and M6 can partially overlap. M7 (OIDC) dep
 - [ ] Existing users auto-linked by email
 - [ ] Local JWT session issued after OIDC login
 
-#### M8: Sync Management [LATER]
+#### M10: Sync Management [LATER]
 **Goal:** Transform viewer into active sync management platform
 **Appetite:** 3 weeks
 **Target maturity:** beta → ga
@@ -270,7 +270,7 @@ M3 is the gate to beta promotion. M4 and M6 can partially overlap. M7 (OIDC) dep
 |------|-----|----------------|-------------|
 | poc | alpha | M1 | CI/CD pipeline, 80% coverage, PRD exists, webhook MVP |
 | alpha | beta | M3 | Structured logging, error handling, security hardening, all specs written |
-| beta | ga | M8 + M9 | 30+ days stability, comprehensive monitoring, multi-user, sync management |
+| beta | ga | M10 + M9 | 30+ days stability, comprehensive monitoring, multi-user, sync management |
 
 ## 7. Key Features
 
@@ -304,4 +304,4 @@ Configurable webhook system that detects failed or anomalous syncs and sends ale
 | Date | Version | Author | Changes |
 |------|---------|--------|---------|
 | 2026-02-19 | 0.1.0 | finish06 | Initial draft from /add:init interview |
-| 2026-02-22 | 0.2.0 | finish06 | Full roadmap with M3-M8 milestones, specs for all features, TODO conversion |
+| 2026-02-22 | 0.2.0 | finish06 | Full roadmap with M3-M10 milestones, specs for all features, TODO conversion |
