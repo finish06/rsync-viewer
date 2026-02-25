@@ -54,7 +54,7 @@ jobs:
 
       - name: Build and run tests
         run: |
-          docker compose -f docker-compose.dev.yml run --rm test \
+          docker compose -f docker-compose.dev.yml run --rm -e COVERAGE_FILE=/tmp/.coverage test \
             pytest tests/ --ignore=tests/e2e --cov=app --cov-report=term-missing --cov-fail-under=80
 
       - name: Cleanup

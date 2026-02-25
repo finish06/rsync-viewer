@@ -8,9 +8,8 @@ import random
 from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
-from sqlmodel import SQLModel, Session, create_engine, select
+from sqlmodel import SQLModel, Session, select
 
-from app.config import get_settings
 from app.database import engine
 
 # Import all models so SQLModel.metadata knows about them
@@ -29,12 +28,8 @@ from app.models.webhook_options import WebhookOptions
 WH_DISCORD_ID = UUID("a1b2c3d4-0001-4000-8000-000000000001")
 WH_HA_ID = UUID("a1b2c3d4-0002-4000-8000-000000000002")
 
-FAIL_IDS = [
-    UUID(f"f1000000-000{i}-4000-8000-000000000001") for i in range(1, 6)
-]
-FE_IDS = [
-    UUID(f"fe000000-000{i}-4000-8000-000000000001") for i in range(1, 6)
-]
+FAIL_IDS = [UUID(f"f1000000-000{i}-4000-8000-000000000001") for i in range(1, 6)]
+FE_IDS = [UUID(f"fe000000-000{i}-4000-8000-000000000001") for i in range(1, 6)]
 
 
 def make_raw_output(
@@ -77,9 +72,7 @@ def make_raw_output(
         f"sent {transferred:,} bytes  received {bytes_recv:,} bytes  {speed:,} bytes/sec"
     )
     dry_suffix = " (DRY RUN)" if is_dry_run else ""
-    lines.append(
-        f"total size is {total_size:,}  speedup is {speedup:.2f}{dry_suffix}"
-    )
+    lines.append(f"total size is {total_size:,}  speedup is {speedup:.2f}{dry_suffix}")
     return "\n".join(lines) + "\n"
 
 
@@ -295,7 +288,7 @@ def seed_database() -> None:
                 "offset_days": 5,
                 "exit_code": 23,
                 "dur": 45,
-                "error": 'rsync: [sender] write error: Broken pipe (32)\nrsync error: some files/attrs were not transferred (code 23) at main.c(1338)',
+                "error": "rsync: [sender] write error: Broken pipe (32)\nrsync error: some files/attrs were not transferred (code 23) at main.c(1338)",
                 "detail": "Exit code 23: partial transfer",
                 "tsize": 524_288_000,
                 "bsent": 6_789_012,
