@@ -73,7 +73,8 @@ Admin Management       ░░░░░░░░░░░░░░░░░░░
 
 | Cycle | Features | Status | Notes |
 |-------|----------|--------|-------|
-| cycle-8 | User Model & Registration (Phase 1) | PLANNED | AC-001, AC-002, AC-005, AC-015 |
+| cycle-8 | User Model & Registration (Phase 1) | COMPLETE | AC-001, AC-002, AC-005, AC-015. PR #13 merged. |
+| cycle-9 | JWT Authentication & Login (Phase 2) | PLANNED | AC-003, AC-004, AC-009 |
 
 ## Retrospective
 
