@@ -1,10 +1,10 @@
 # M9 — Multi-User
 
 **Goal:** Add user accounts, JWT authentication, role-based access control, and per-user API keys to support shared homelab environments
-**Status:** LATER
+**Status:** IN_PROGRESS
 **Appetite:** 2 weeks
 **Target Maturity:** beta → ga
-**Started:** —
+**Started:** 2026-02-24
 **Completed:** —
 
 ## Success Criteria
@@ -73,7 +73,7 @@ Admin Management       ░░░░░░░░░░░░░░░░░░░
 
 | Cycle | Features | Status | Notes |
 |-------|----------|--------|-------|
-| — | — | — | Cycles to be planned when milestone starts |
+| cycle-8 | User Model & Registration (Phase 1) | PLANNED | AC-001, AC-002, AC-005, AC-015 |
 
 ## Retrospective
 
