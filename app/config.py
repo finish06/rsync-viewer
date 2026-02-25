@@ -24,6 +24,10 @@ class Settings(BaseSettings):
     metrics_enabled: bool = True
     data_retention_days: int = 0  # 0 = disabled (keep forever)
     retention_cleanup_interval_hours: int = 24
+    jwt_access_expiry_minutes: int = 1440  # 24 hours
+    jwt_refresh_expiry_days: int = 30
+    jwt_algorithm: str = "HS256"
+    auth_enabled: bool = False  # Auto-enables when first user registers
     app_version: str = "1.7.0"
 
 

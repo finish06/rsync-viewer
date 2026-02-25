@@ -24,7 +24,7 @@ from sqlmodel import SQLModel, Session, select, func
 
 from app.config import get_settings
 from app.database import engine, get_session
-from app.api.endpoints import sync_logs, monitors, failures, webhooks, analytics
+from app.api.endpoints import sync_logs, monitors, failures, webhooks, analytics, auth
 from app.errors import make_error_response, INTERNAL_ERROR, VALIDATION_ERROR
 from app.logging_config import setup_logging
 from app.metrics import PrometheusMiddleware, get_metrics_output, set_app_info
@@ -35,6 +35,9 @@ from app.middleware import (
     SecurityHeadersMiddleware,
 )
 from app.models.sync_log import SyncLog
+from app.models.user import User  # noqa: F401 — ensure table creation
+from app.models.user import RefreshToken  # noqa: F401 — ensure table creation
+from app.models.user import PasswordResetToken  # noqa: F401 — ensure table creation
 from app.services.changelog_parser import parse_changelog
 from app.models.monitor import SyncSourceMonitor  # noqa: F401 — ensure table creation
 from app.models.failure_event import FailureEvent
@@ -276,6 +279,7 @@ app.include_router(monitors.router, prefix="/api/v1")
 app.include_router(failures.router, prefix="/api/v1")
 app.include_router(webhooks.router, prefix="/api/v1")
 app.include_router(analytics.router, prefix="/api/v1")
+app.include_router(auth.router, prefix="/api/v1")
 
 
 @app.get("/")
