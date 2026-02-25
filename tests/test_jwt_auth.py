@@ -158,9 +158,7 @@ class TestLoginEndpoint:
     ):
         """Login to a disabled account returns 403."""
         await _register_user(client)
-        user = db_session.exec(
-            select(User).where(User.username == "testuser")
-        ).first()
+        user = db_session.exec(select(User).where(User.username == "testuser")).first()
         assert user is not None
         user.is_active = False
         db_session.add(user)
@@ -273,9 +271,7 @@ class TestRefreshEndpoint:
         assert response.status_code == 401
 
     @pytest.mark.asyncio
-    async def test_ac004_refresh_with_access_token_rejected(
-        self, client: AsyncClient
-    ):
+    async def test_ac004_refresh_with_access_token_rejected(self, client: AsyncClient):
         """Using an access token as refresh token should be rejected."""
         await _register_user(client)
         login_response = await client.post(
@@ -400,9 +396,7 @@ class TestLoginPage:
         assert "Invalid username or password" in response.text
 
     @pytest.mark.asyncio
-    async def test_ac009_login_form_redirects_to_return_url(
-        self, client: AsyncClient
-    ):
+    async def test_ac009_login_form_redirects_to_return_url(self, client: AsyncClient):
         """POST /login should redirect to return_url after success."""
         await _register_user(client)
         response = await client.post(
@@ -465,9 +459,7 @@ class TestRegisterPage:
         assert "success=registered" in response.headers["location"]
 
     @pytest.mark.asyncio
-    async def test_ac001_register_form_duplicate_shows_error(
-        self, client: AsyncClient
-    ):
+    async def test_ac001_register_form_duplicate_shows_error(self, client: AsyncClient):
         """POST /register with duplicate username shows error."""
         await _register_user(client, username="dupuser", email="dup@example.com")
         response = await client.post(

@@ -120,8 +120,7 @@ async def login(credentials: UserLogin, session: SessionDep) -> TokenResponse:
     refresh_token_record = RefreshToken(
         user_id=user.id,
         token_hash=hash_token(refresh_token_str),
-        expires_at=utc_now()
-        + timedelta(days=get_settings().jwt_refresh_expiry_days),
+        expires_at=utc_now() + timedelta(days=get_settings().jwt_refresh_expiry_days),
     )
     session.add(refresh_token_record)
 
@@ -222,8 +221,7 @@ async def refresh(body: RefreshTokenRequest, session: SessionDep) -> TokenRespon
     new_refresh_record = RefreshToken(
         user_id=user.id,
         token_hash=hash_token(new_refresh_token),
-        expires_at=utc_now()
-        + timedelta(days=settings.jwt_refresh_expiry_days),
+        expires_at=utc_now() + timedelta(days=settings.jwt_refresh_expiry_days),
     )
     session.add(new_refresh_record)
     session.commit()

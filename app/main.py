@@ -39,7 +39,13 @@ from app.models.user import User  # noqa: F401 — ensure table creation
 from app.models.user import RefreshToken  # noqa: F401 — ensure table creation
 from app.models.user import PasswordResetToken  # noqa: F401 — ensure table creation
 from app.schemas.user import UserCreate
-from app.services.auth import create_access_token, hash_password, verify_password, ROLE_ADMIN, ROLE_VIEWER
+from app.services.auth import (
+    create_access_token,
+    hash_password,
+    verify_password,
+    ROLE_ADMIN,
+    ROLE_VIEWER,
+)
 from app.services.changelog_parser import parse_changelog
 from app.models.monitor import SyncSourceMonitor  # noqa: F401 — ensure table creation
 from app.models.failure_event import FailureEvent
@@ -648,9 +654,7 @@ async def login_submit(
     return_url = str(form.get("return_url", "/")).strip() or "/"
 
     # Validate credentials
-    user = session.exec(
-        select(User).where(User.username == username)
-    ).first()
+    user = session.exec(select(User).where(User.username == username)).first()
 
     if not user or not verify_password(password, user.password_hash):
         csrf_token = generate_csrf_token()
@@ -742,7 +746,9 @@ async def register_submit(
             "register.html",
             context={
                 "csrf_token": csrf_token,
-                "error_message": str(e).split("\n")[0] if str(e) else "Validation error",
+                "error_message": str(e).split("\n")[0]
+                if str(e)
+                else "Validation error",
                 "form_username": username,
                 "form_email": email,
             },
