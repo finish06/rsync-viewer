@@ -6,10 +6,16 @@
 
 ## Anti-Patterns
 
+- **[high] CI read-only volume mount breaks pytest-cov — set COVERAGE_FILE=/tmp/.coverage** (L-018, 2026-02-24)
+  When docker-compose.dev.yml mounts the project as :ro, coverage.py cannot write .coverage to /app. Fix: pass -e COVERAGE_FILE=/tmp/.coverage to docker compose run. Also always run ruff format on new files before committing to avoid format check failures in CI.
+
 - **[high] DB schema drift: model changes need manual ALTER TABLE on live DB** (L-011, 2026-02-23)
   SQLModel/Alembic create_all() handles test DBs but the live PostgreSQL DB requires explicit ALTER TABLE for new columns. When adding columns to models (e.g. exit_code on sync_logs), also apply the migration to the running DB. Consider adding Alembic migrations to prevent this class of issue.
 
 ## Technical
+
+- **[high] CSP blocks inline event handlers — use external JS for HTMX interactivity** (L-017, 2026-02-24)
+  Inline onclick and hx-on::before-request attributes violate Content-Security-Policy 'default-src self'. Solution: create external JS files that listen for htmx events (e.g., htmx:configRequest) and manipulate DOM from there. This pattern is CSP-compliant and keeps templates clean.
 
 - **[medium] Webhook service TDD cycle: clean RED→GREEN→REFACTOR in one away session** (L-004, 2026-02-21)
   ACs covered: AC-001 through AC-011 (except AC-007 UI). RED: 27 tests across 3 files. GREEN: all passed first attempt. Mock pattern for httpx.AsyncClient with AsyncMock __aenter__/__aexit__ works well.
@@ -20,6 +26,9 @@
   format_rate(sync) accessing sync fields internally is cleaner than passing individual args. Template usage stays simple: {{ sync | format_rate }}.
 
 ## Process
+
+- **[medium] Cycle 7 complete: Beta promotion, changelog viewer, dev tooling, M7 planning** (L-016, 2026-02-24)
+  First cycle under Beta maturity. Delivered changelog viewer (CSP-compliant HTMX accordion), dev seed data (Python SQLModel script over raw SQL), OIDC spec/plan with M7 milestone, CI fixes, and retention test coverage (65%→96%). 425 tests, 89% coverage.
 
 - **[high] Retro 3: CI must pass before PR, drop Playwright, promote to Beta** (L-015, 2026-02-24)
   Three agreed changes: (1) verify CI passes before creating PRs; (2) mount project root in docker-compose.dev.yml; (3) drop Playwright e2e entirely. Promoted Alpha→Beta with 7/7 evidence criteria met.
@@ -46,5 +55,5 @@
   Date Range Quick Select and Average Transfer Rate. 132 tests, 92% coverage.
 
 ---
-*11 entries. Last updated: 2026-02-24. Source: .add/learnings.json*
+*14 entries. Last updated: 2026-02-24. Source: .add/learnings.json*
 *4 workstation-scope entries promoted to ~/.claude/add/library.json (WL-001 through WL-004)*

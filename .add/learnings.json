@@ -145,6 +145,45 @@
       "date": "2026-02-24",
       "classified_by": "agent",
       "checkpoint_type": "retro"
+    },
+    {
+      "id": "L-016",
+      "title": "Cycle 7 complete: Beta promotion, changelog viewer, dev tooling, M7 planning",
+      "body": "First cycle under Beta maturity. Delivered changelog viewer (CSP-compliant HTMX accordion), dev seed data (Python SQLModel script over raw SQL — tables don't exist at initdb time), OIDC spec/plan with M7 milestone, CI reliability fixes (COVERAGE_FILE for read-only mounts, unused imports), and retention test coverage (65%→96%). 425 tests, 89% coverage. Key insight: inline onclick/hx-on violates CSP — use external JS with htmx:configRequest events. Seed scripts should use the app's own models rather than raw SQL to stay in sync with schema.",
+      "scope": "project",
+      "stack": ["python", "fastapi"],
+      "category": "process",
+      "severity": "medium",
+      "source": "rsync-viewer",
+      "date": "2026-02-24",
+      "classified_by": "agent",
+      "checkpoint_type": "retro"
+    },
+    {
+      "id": "L-017",
+      "title": "CSP blocks inline event handlers — use external JS for HTMX interactivity",
+      "body": "Inline onclick and hx-on::before-request attributes violate Content-Security-Policy 'default-src self'. Solution: create external JS files that listen for htmx events (e.g., htmx:configRequest) and manipulate DOM from there. This pattern is CSP-compliant and keeps templates clean.",
+      "scope": "workstation",
+      "stack": ["python", "fastapi"],
+      "category": "technical",
+      "severity": "high",
+      "source": "rsync-viewer",
+      "date": "2026-02-24",
+      "classified_by": "agent",
+      "checkpoint_type": "verification-catch"
+    },
+    {
+      "id": "L-018",
+      "title": "CI read-only volume mount breaks pytest-cov — set COVERAGE_FILE=/tmp/.coverage",
+      "body": "When docker-compose.dev.yml mounts the project as :ro, coverage.py cannot write .coverage to /app. Fix: pass -e COVERAGE_FILE=/tmp/.coverage to docker compose run. Also always run ruff format on new files before committing to avoid format check failures in CI.",
+      "scope": "project",
+      "stack": ["python"],
+      "category": "anti-pattern",
+      "severity": "high",
+      "source": "rsync-viewer",
+      "date": "2026-02-24",
+      "classified_by": "agent",
+      "checkpoint_type": "verification-catch"
     }
   ]
 }
