@@ -45,8 +45,9 @@ Rsync Log Viewer solves this by providing a centralized web dashboard that colle
 
 ### Future Scope (Post-MVP)
 
-- Multi-user authentication and role-based access (M8)
-- Scheduled rsync execution and sync management (M7)
+- OIDC single sign-on authentication (M7)
+- Scheduled rsync execution and sync management (M8)
+- Multi-user authentication and role-based access (M9)
 - Prometheus metrics export and Grafana dashboards (M6)
 
 ## 5. Architecture
@@ -97,18 +98,19 @@ Production deployment is to a self-hosted homelab server. No staging environment
 | M4: Analytics & Performance | Trend analysis, dashboards, query optimization | beta | NEXT | Statistics API, Chart.js charts, cursor pagination, DB indexes |
 | M5: API Performance | Debounce API key `last_used_at` writes | alpha | COMPLETE | Configurable debounce, zero regression, fewer DB writes |
 | M6: Observability | Prometheus metrics, Grafana dashboards, project docs | beta | NEXT | /metrics endpoint, Grafana templates, setup/architecture docs |
-| M7: Sync Management | On-demand sync triggering, cron scheduling, real-time progress | beta → ga | LATER | Run Now button, cron schedules, WebSocket progress, retry |
-| M8: Multi-User | User accounts, JWT auth, role-based access control | beta → ga | LATER | Registration/login, Admin/Operator/Viewer roles, per-user API keys |
+| M7: OIDC Authentication | OpenID Connect single sign-on via PocketId or generic provider | beta → ga | LATER | OIDC login, auto-create/link users, provider-branded UI |
+| M8: Sync Management | On-demand sync triggering, cron scheduling, real-time progress | beta → ga | LATER | Run Now button, cron schedules, WebSocket progress, retry |
+| M9: Multi-User | User accounts, JWT auth, role-based access control | beta → ga | LATER | Registration/login, Admin/Operator/Viewer roles, per-user API keys |
 
 ### Dependency Chain
 
 ```
 M3 (Reliability) → M4 (Analytics & Performance) → M6 (Observability)
-                 ↘ M7 (Sync Management)
-                 ↘ M8 (Multi-User)
+                 ↘ M9 (Multi-User) → M7 (OIDC Authentication)
+                 ↘ M8 (Sync Management)
 ```
 
-M3 is the gate to beta promotion. M4 and M6 can partially overlap. M7 and M8 are independent of each other but both require M3.
+M3 is the gate to beta promotion. M4 and M6 can partially overlap. M7 (OIDC) depends on M9 (Multi-User) for the User model and JWT infrastructure. M8 is independent.
 
 ### Milestone Detail
 
@@ -210,7 +212,23 @@ M3 is the gate to beta promotion. M4 and M6 can partially overlap. M7 and M8 are
 - [ ] New developers can deploy using only documentation
 - [ ] All environment variables documented
 
-#### M7: Sync Management [LATER]
+#### M7: OIDC Authentication [LATER]
+**Goal:** Add OpenID Connect SSO as optional auth method
+**Appetite:** 1 week
+**Target maturity:** beta → ga
+**Specs:** oidc-authentication
+**Features:**
+- OIDC Authorization Code Flow with state/nonce validation
+- OIDC Discovery (`.well-known/openid-configuration`)
+- Auto-create/link local accounts from OIDC claims
+- Provider-branded login button, optional OIDC-only mode
+**Success criteria:**
+- [ ] OIDC login works with PocketId and generic providers
+- [ ] New users auto-created with Viewer role
+- [ ] Existing users auto-linked by email
+- [ ] Local JWT session issued after OIDC login
+
+#### M8: Sync Management [LATER]
 **Goal:** Transform viewer into active sync management platform
 **Appetite:** 3 weeks
 **Target maturity:** beta → ga
@@ -228,7 +246,7 @@ M3 is the gate to beta promotion. M4 and M6 can partially overlap. M7 and M8 are
 - [ ] Failed syncs retry with backoff
 - [ ] No command injection vulnerabilities
 
-#### M8: Multi-User [LATER]
+#### M9: Multi-User [LATER]
 **Goal:** Multi-user support with authentication and role-based access
 **Appetite:** 2 weeks
 **Target maturity:** beta → ga
@@ -252,7 +270,7 @@ M3 is the gate to beta promotion. M4 and M6 can partially overlap. M7 and M8 are
 |------|-----|----------------|-------------|
 | poc | alpha | M1 | CI/CD pipeline, 80% coverage, PRD exists, webhook MVP |
 | alpha | beta | M3 | Structured logging, error handling, security hardening, all specs written |
-| beta | ga | M7 + M8 | 30+ days stability, comprehensive monitoring, multi-user, sync management |
+| beta | ga | M8 + M9 | 30+ days stability, comprehensive monitoring, multi-user, sync management |
 
 ## 7. Key Features
 

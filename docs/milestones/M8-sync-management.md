@@ -1,4 +1,4 @@
-# M7 — Sync Management
+# M8 — Sync Management
 
 **Goal:** Transform rsync-viewer from a passive log viewer into an active sync management platform with on-demand triggering, cron scheduling, and real-time progress tracking
 **Status:** LATER

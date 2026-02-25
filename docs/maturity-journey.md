@@ -66,4 +66,4 @@ The final milestone before promotion made the system observable for both machine
 
 Beta activates stricter rules: TDD enforcement on all paths (not just critical ones), agent coordination protocols for parallel work, and environment awareness for deployment safety. The bar for code quality, security, and documentation is higher — and the project has the infrastructure to sustain it.
 
-The next milestone is M7 (Sync Management), which will transform rsync-viewer from a passive log viewer into an active sync management platform.
+The next milestone is M7 (OIDC Authentication), which will add OpenID Connect single sign-on via PocketId or generic OIDC providers.

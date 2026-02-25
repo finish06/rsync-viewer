@@ -1,4 +1,4 @@
-# M8 — Multi-User
+# M9 — Multi-User
 
 **Goal:** Add user accounts, JWT authentication, role-based access control, and per-user API keys to support shared homelab environments
 **Status:** LATER
