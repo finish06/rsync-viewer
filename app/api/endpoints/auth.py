@@ -1,12 +1,33 @@
 import logging
+from datetime import timedelta
+from uuid import UUID
 
+import jwt as pyjwt
 from fastapi import APIRouter, HTTPException, status
 from sqlmodel import func, select
 
 from app.api.deps import SessionDep
-from app.models.user import User
-from app.schemas.user import UserCreate, UserResponse
-from app.services.auth import ROLE_ADMIN, ROLE_VIEWER, hash_password
+from app.config import get_settings
+from app.models.user import RefreshToken, User
+from app.schemas.user import (
+    RefreshTokenRequest,
+    TokenResponse,
+    UserCreate,
+    UserLogin,
+    UserResponse,
+)
+from app.services.auth import (
+    ROLE_ADMIN,
+    ROLE_VIEWER,
+    create_access_token,
+    create_refresh_token,
+    decode_token,
+    hash_password,
+    hash_token,
+    verify_password,
+    verify_token,
+)
+from app.utils import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -66,3 +87,155 @@ async def register(user_data: UserCreate, session: SessionDep) -> User:
     )
 
     return user
+
+
+@router.post(
+    "/login",
+    response_model=TokenResponse,
+    summary="Authenticate and receive JWT tokens",
+)
+async def login(credentials: UserLogin, session: SessionDep) -> TokenResponse:
+    """Authenticate with username and password, receive access and refresh tokens."""
+    user = session.exec(
+        select(User).where(User.username == credentials.username)
+    ).first()
+
+    if not user or not verify_password(credentials.password, user.password_hash):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid username or password",
+        )
+
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account is disabled",
+        )
+
+    # Generate tokens
+    access_token = create_access_token(user.id, user.username, user.role)
+    refresh_token_str = create_refresh_token(user.id)
+
+    # Store hashed refresh token in database
+    refresh_token_record = RefreshToken(
+        user_id=user.id,
+        token_hash=hash_token(refresh_token_str),
+        expires_at=utc_now()
+        + timedelta(days=get_settings().jwt_refresh_expiry_days),
+    )
+    session.add(refresh_token_record)
+
+    # Update last login
+    user.last_login_at = utc_now()
+    session.add(user)
+    session.commit()
+
+    settings = get_settings()
+    logger.info(
+        "User logged in",
+        extra={"user_id": str(user.id), "username": user.username},
+    )
+
+    return TokenResponse(
+        access_token=access_token,
+        refresh_token=refresh_token_str,
+        token_type="bearer",
+        expires_in=settings.jwt_access_expiry_minutes * 60,
+    )
+
+
+@router.post(
+    "/refresh",
+    response_model=TokenResponse,
+    summary="Refresh an expired access token",
+)
+async def refresh(body: RefreshTokenRequest, session: SessionDep) -> TokenResponse:
+    """Use a valid refresh token to get a new access token."""
+    try:
+        payload = decode_token(body.refresh_token)
+    except pyjwt.ExpiredSignatureError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token has expired",
+        )
+    except pyjwt.InvalidTokenError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid refresh token",
+        )
+
+    if payload.get("type") != "refresh":
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token type",
+        )
+
+    user_id = payload.get("sub")
+    if not user_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid refresh token",
+        )
+
+    # Verify user still exists and is active
+    user = session.get(User, UUID(user_id))
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User not found",
+        )
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account is disabled",
+        )
+
+    # Verify refresh token exists in database and is not revoked
+    stored_tokens = session.exec(
+        select(RefreshToken).where(
+            RefreshToken.user_id == user.id,
+            RefreshToken.revoked.is_(False),  # type: ignore[attr-defined]
+        )
+    ).all()
+
+    token_valid = False
+    for stored_token in stored_tokens:
+        if verify_token(body.refresh_token, stored_token.token_hash):
+            # Revoke the used refresh token (rotation)
+            stored_token.revoked = True
+            session.add(stored_token)
+            token_valid = True
+            break
+
+    if not token_valid:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token not found or already revoked",
+        )
+
+    # Issue new tokens
+    new_access_token = create_access_token(user.id, user.username, user.role)
+    new_refresh_token = create_refresh_token(user.id)
+
+    # Store new refresh token
+    settings = get_settings()
+    new_refresh_record = RefreshToken(
+        user_id=user.id,
+        token_hash=hash_token(new_refresh_token),
+        expires_at=utc_now()
+        + timedelta(days=settings.jwt_refresh_expiry_days),
+    )
+    session.add(new_refresh_record)
+    session.commit()
+
+    logger.info(
+        "Token refreshed",
+        extra={"user_id": str(user.id), "username": user.username},
+    )
+
+    return TokenResponse(
+        access_token=new_access_token,
+        refresh_token=new_refresh_token,
+        token_type="bearer",
+        expires_in=settings.jwt_access_expiry_minutes * 60,
+    )

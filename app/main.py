@@ -38,6 +38,8 @@ from app.models.sync_log import SyncLog
 from app.models.user import User  # noqa: F401 — ensure table creation
 from app.models.user import RefreshToken  # noqa: F401 — ensure table creation
 from app.models.user import PasswordResetToken  # noqa: F401 — ensure table creation
+from app.schemas.user import UserCreate
+from app.services.auth import create_access_token, hash_password, verify_password, ROLE_ADMIN, ROLE_VIEWER
 from app.services.changelog_parser import parse_changelog
 from app.models.monitor import SyncSourceMonitor  # noqa: F401 — ensure table creation
 from app.models.failure_event import FailureEvent
@@ -603,6 +605,213 @@ async def htmx_notifications(
             "source_names": all_source_names,
         },
     )
+
+
+@app.get("/login")
+async def login_page(
+    request: Request,
+    return_url: Optional[str] = Query(None),
+    success: Optional[str] = Query(None),
+):
+    """Render login page."""
+    from app.csrf import generate_csrf_token
+
+    csrf_token = generate_csrf_token()
+    success_message = None
+    if success == "registered":
+        success_message = "Account created successfully. Please log in."
+
+    response = templates.TemplateResponse(
+        request,
+        "login.html",
+        context={
+            "csrf_token": csrf_token,
+            "return_url": return_url or "",
+            "success_message": success_message,
+        },
+    )
+    response.set_cookie("csrf_token", csrf_token, httponly=True, samesite="lax")
+    return response
+
+
+@app.post("/login")
+async def login_submit(
+    request: Request,
+    session: Session = Depends(get_session),
+):
+    """Handle login form submission. Set JWT in httpOnly cookie."""
+    from app.csrf import generate_csrf_token
+
+    form = await request.form()
+    username = str(form.get("username", "")).strip()
+    password = str(form.get("password", ""))
+    return_url = str(form.get("return_url", "/")).strip() or "/"
+
+    # Validate credentials
+    user = session.exec(
+        select(User).where(User.username == username)
+    ).first()
+
+    if not user or not verify_password(password, user.password_hash):
+        csrf_token = generate_csrf_token()
+        response = templates.TemplateResponse(
+            request,
+            "login.html",
+            context={
+                "csrf_token": csrf_token,
+                "return_url": return_url,
+                "error_message": "Invalid username or password",
+            },
+            status_code=401,
+        )
+        response.set_cookie("csrf_token", csrf_token, httponly=True, samesite="lax")
+        return response
+
+    if not user.is_active:
+        csrf_token = generate_csrf_token()
+        response = templates.TemplateResponse(
+            request,
+            "login.html",
+            context={
+                "csrf_token": csrf_token,
+                "return_url": return_url,
+                "error_message": "Account is disabled",
+            },
+            status_code=403,
+        )
+        response.set_cookie("csrf_token", csrf_token, httponly=True, samesite="lax")
+        return response
+
+    # Generate JWT
+    access_token = create_access_token(user.id, user.username, user.role)
+
+    # Update last login
+    user.last_login_at = utc_now()
+    session.add(user)
+    session.commit()
+
+    # Redirect to return_url with JWT in cookie
+    from fastapi.responses import RedirectResponse
+
+    redirect = RedirectResponse(url=return_url, status_code=302)
+    redirect.set_cookie(
+        "access_token",
+        access_token,
+        httponly=True,
+        samesite="lax",
+        max_age=settings.jwt_access_expiry_minutes * 60,
+    )
+    return redirect
+
+
+@app.get("/register")
+async def register_page(request: Request):
+    """Render registration page."""
+    from app.csrf import generate_csrf_token
+
+    csrf_token = generate_csrf_token()
+    response = templates.TemplateResponse(
+        request,
+        "register.html",
+        context={"csrf_token": csrf_token},
+    )
+    response.set_cookie("csrf_token", csrf_token, httponly=True, samesite="lax")
+    return response
+
+
+@app.post("/register")
+async def register_submit(
+    request: Request,
+    session: Session = Depends(get_session),
+):
+    """Handle registration form submission."""
+    from app.csrf import generate_csrf_token
+
+    form_data = await request.form()
+    username = str(form_data.get("username", "")).strip()
+    email = str(form_data.get("email", "")).strip()
+    password = str(form_data.get("password", ""))
+
+    # Validate via Pydantic schema
+    try:
+        user_data = UserCreate(username=username, email=email, password=password)
+    except Exception as e:
+        csrf_token = generate_csrf_token()
+        response = templates.TemplateResponse(
+            request,
+            "register.html",
+            context={
+                "csrf_token": csrf_token,
+                "error_message": str(e).split("\n")[0] if str(e) else "Validation error",
+                "form_username": username,
+                "form_email": email,
+            },
+            status_code=422,
+        )
+        response.set_cookie("csrf_token", csrf_token, httponly=True, samesite="lax")
+        return response
+
+    # Check duplicates
+    existing_username = session.exec(
+        select(User).where(User.username == user_data.username)
+    ).first()
+    if existing_username:
+        csrf_token = generate_csrf_token()
+        response = templates.TemplateResponse(
+            request,
+            "register.html",
+            context={
+                "csrf_token": csrf_token,
+                "error_message": "Username already exists",
+                "form_username": username,
+                "form_email": email,
+            },
+            status_code=409,
+        )
+        response.set_cookie("csrf_token", csrf_token, httponly=True, samesite="lax")
+        return response
+
+    existing_email = session.exec(
+        select(User).where(User.email == user_data.email)
+    ).first()
+    if existing_email:
+        csrf_token = generate_csrf_token()
+        response = templates.TemplateResponse(
+            request,
+            "register.html",
+            context={
+                "csrf_token": csrf_token,
+                "error_message": "Email already exists",
+                "form_username": username,
+                "form_email": email,
+            },
+            status_code=409,
+        )
+        response.set_cookie("csrf_token", csrf_token, httponly=True, samesite="lax")
+        return response
+
+    # Create user
+    user_count = session.exec(select(func.count()).select_from(User)).one()
+    role = ROLE_ADMIN if user_count == 0 else ROLE_VIEWER
+
+    user = User(
+        username=user_data.username,
+        email=user_data.email,
+        password_hash=hash_password(user_data.password),
+        role=role,
+    )
+    session.add(user)
+    session.commit()
+
+    logger.info(
+        "User registered via UI",
+        extra={"user_id": str(user.id), "username": user.username, "role": user.role},
+    )
+
+    # Redirect to login with success message
+    from fastapi.responses import RedirectResponse
+
+    return RedirectResponse(url="/login?success=registered", status_code=302)
 
 
 @app.get("/settings")
