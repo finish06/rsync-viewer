@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - Rsync Log Viewer</title>
+    <script>
+        (function() {
+            try {
+                var theme = localStorage.getItem('theme') || 'system';
+                var dark = theme === 'dark' || (theme === 'system' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+                if (dark) document.documentElement.setAttribute('data-theme', 'dark');
+            } catch (e) {}
+        })();
+    </script>
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <style>
+        .auth-container {
+            max-width: 400px;
+            margin: 80px auto;
+            padding: 2rem;
+        }
+        .auth-card {
+            background: var(--card-bg, #fff);
+            border: 1px solid var(--border-color, #e0e0e0);
+            border-radius: 8px;
+            padding: 2rem;
+        }
+        .auth-card h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+        .auth-field {
+            margin-bottom: 1rem;
+        }
+        .auth-field label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-bottom: 0.25rem;
+        }
+        .auth-field input {
+            width: 100%;
+            padding: 0.5rem 0.75rem;
+            border: 1px solid var(--border-color, #d0d0d0);
+            border-radius: 4px;
+            font-size: 0.875rem;
+            background: var(--input-bg, #fff);
+            color: var(--text-color, #333);
+            box-sizing: border-box;
+        }
+        .auth-field input:focus {
+            outline: none;
+            border-color: var(--accent-color, #4a90d9);
+            box-shadow: 0 0 0 2px rgba(74, 144, 217, 0.2);
+        }
+        .auth-field .field-hint {
+            font-size: 0.75rem;
+            color: var(--text-muted, #888);
+            margin-top: 0.25rem;
+        }
+        .auth-submit {
+            width: 100%;
+            padding: 0.625rem;
+            background: var(--accent-color, #4a90d9);
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            margin-top: 0.5rem;
+        }
+        .auth-submit:hover {
+            opacity: 0.9;
+        }
+        .auth-error {
+            background: var(--error-bg, #fef2f2);
+            color: var(--error-color, #dc2626);
+            padding: 0.75rem;
+            border-radius: 4px;
+            font-size: 0.875rem;
+            margin-bottom: 1rem;
+        }
+        .auth-links {
+            text-align: center;
+            margin-top: 1rem;
+            font-size: 0.875rem;
+        }
+        .auth-links a {
+            color: var(--accent-color, #4a90d9);
+            text-decoration: none;
+        }
+        .auth-links a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-card">
+            <h1>Create Account</h1>
+
+            {% if error_message %}
+            <div class="auth-error">{{ error_message }}</div>
+            {% endif %}
+
+            <form method="post" action="/register">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+                <div class="auth-field">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" name="username" required
+                           minlength="3" maxlength="50" pattern="[a-zA-Z0-9_]+"
+                           value="{{ form_username | default('', true) }}" autocomplete="username" autofocus>
+                    <div class="field-hint">3-50 characters, letters, numbers, and underscores only</div>
+                </div>
+
+                <div class="auth-field">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" required
+                           value="{{ form_email | default('', true) }}" autocomplete="email">
+                </div>
+
+                <div class="auth-field">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" required
+                           minlength="8" autocomplete="new-password">
+                    <div class="field-hint">Min 8 characters, must include uppercase, lowercase, and digit</div>
+                </div>
+
+                <button type="submit" class="auth-submit">Register</button>
+            </form>
+
+            <div class="auth-links">
+                <p>Already have an account? <a href="/login">Log in</a></p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
