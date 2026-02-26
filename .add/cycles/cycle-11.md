@@ -79,7 +79,7 @@ Single-threaded execution. Solo developer, one agent.
 - [x] mypy clean — 0 errors in 44 source files
 - [x] Coverage >= 80%
 - [x] API key management UI in settings page
-- [ ] PR created on feature branch
+- [x] PR #16 created on feature branch
 
 ## API Contract
 
