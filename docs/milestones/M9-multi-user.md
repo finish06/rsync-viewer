@@ -1,11 +1,11 @@
 # M9 — Multi-User
 
 **Goal:** Add user accounts, JWT authentication, role-based access control, and per-user API keys to support shared homelab environments
-**Status:** IN_PROGRESS
+**Status:** COMPLETE
 **Appetite:** 2 weeks
 **Target Maturity:** beta → ga
 **Started:** 2026-02-24
-**Completed:** —
+**Completed:** 2026-02-26
 
 ## Success Criteria
 
@@ -16,17 +16,19 @@
 - [x] Protected routes redirect unauthenticated users to login
 - [x] Per-user API keys with role-scoped permissions
 - [x] First registered user automatically gets Admin role
-- [ ] Admin user management UI (list users, change roles, enable/disable)
-- [ ] Password reset flow via email
+- [x] Admin user management UI (list users, change roles, enable/disable)
+- [x] Password reset flow (console-logged tokens, no SMTP in MVP)
 
 ## Hill Chart
 
 ```
-User Accounts & Auth   ██████████████████████████████████████  VERIFIED (Phases 1-2 done, tests passing)
-Role-Based Access      ██████████████████████████████████████  VERIFIED (Phase 3 complete, 32 RBAC tests)
-Login & Protected UI   ██████████████████████████████████████  VERIFIED (login, register, middleware, logout)
-Per-User API Keys      ██████████████████████████████████████  VERIFIED (Phase 4 complete, 21 tests, CRUD + role scoping + UI)
-Admin Management       ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  SHAPED
+User Accounts & Auth   ██████████████████████████████████████  DONE (Phases 1-2, PR #13, #14 merged)
+Role-Based Access      ██████████████████████████████████████  DONE (Phase 3, 32 RBAC tests, PR #16 merged)
+Login & Protected UI   ██████████████████████████████████████  DONE (login, register, middleware, logout)
+Per-User API Keys      ██████████████████████████████████████  DONE (Phase 4, 21 tests, PR #17 merged)
+Admin Management       ██████████████████████████████████████  DONE (Phase 5, 20 admin + 11 reset + 2 session tests, PR #18 merged)
+Password Reset         ██████████████████████████████████████  DONE (console-logged tokens, self-service + admin-initiated)
+Session Timeout        ██████████████████████████████████████  DONE (HTMX 401 interceptor with re-login)
 ```
 
 ## Features
@@ -77,7 +79,16 @@ Admin Management       ░░░░░░░░░░░░░░░░░░░
 | cycle-9 | JWT Authentication & Login (Phase 2) | COMPLETE | AC-003, AC-004, AC-009. PR #14 merged. |
 | cycle-10 | RBAC & Protected Routes (Phase 3) | COMPLETE | AC-006, AC-007, AC-008, AC-010. 32 tests, 514 total passing, 91% coverage. |
 | cycle-11 | Per-User API Keys (Phase 4) | COMPLETE | AC-011, AC-012. 21 tests, 535 total passing, CRUD endpoints + role scoping + UI. |
+| cycle-12 | Admin Management, Password Reset, Session Timeout (Phase 5) | COMPLETE | AC-006, AC-013, AC-016. 33 tests, 568 total passing, PR #18 merged. v1.8.0 released. |
 
 ## Retrospective
 
-—
+M9 completed in 5 cycles (cycle-8 through cycle-12) over 3 days. All 9 success criteria met:
+- 5 TDD cycles with 568 total tests passing
+- Full JWT auth with refresh token rotation
+- 3-role RBAC (Admin, Operator, Viewer) with middleware enforcement
+- Per-user API keys with role scoping
+- Admin user management UI with HTMX
+- Password reset via console-logged tokens
+- Session timeout with HTMX 401 interceptor
+- Released as v1.8.0

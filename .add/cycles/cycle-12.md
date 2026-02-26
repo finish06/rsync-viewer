@@ -2,9 +2,9 @@
 
 **Milestone:** M9 — Multi-User
 **Maturity:** beta
-**Status:** PLANNED
-**Started:** TBD
-**Completed:** TBD
+**Status:** COMPLETE
+**Started:** 2026-02-26
+**Completed:** 2026-02-26
 **Duration Budget:** 2 days
 
 ## Work Items
@@ -102,16 +102,16 @@ Single-threaded execution. Solo developer, one agent. Features advance sequentia
   - Re-login preserves current page context
 
 ### Cycle Success Criteria
-- [ ] All three acceptance criteria (AC-006 admin UI, AC-013, AC-016) implemented
-- [ ] Admin user management page functional with HTMX
-- [ ] Password reset flow working (console-logged tokens)
-- [ ] Session timeout re-login modal working
-- [ ] All new tests passing
-- [ ] Full test suite passes (535+ existing + new tests)
-- [ ] ruff check and format clean
-- [ ] mypy clean
-- [ ] Coverage >= 80%
-- [ ] PR created for review
+- [x] All three acceptance criteria (AC-006 admin UI, AC-013, AC-016) implemented
+- [x] Admin user management page functional with HTMX
+- [x] Password reset flow working (console-logged tokens)
+- [x] Session timeout re-login modal working
+- [x] All new tests passing (33 new tests)
+- [x] Full test suite passes (568 total)
+- [x] ruff check and format clean
+- [x] mypy clean
+- [x] Coverage >= 80%
+- [x] PR #18 created and merged
 
 ## Agent Autonomy & Checkpoints
 
