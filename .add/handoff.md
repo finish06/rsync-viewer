@@ -1,36 +1,29 @@
 # Session Handoff
-**Written:** 2026-02-25
+**Written:** 2026-02-26
 
 ## In Progress
-- Nothing currently in progress — cycle-11 is complete and PR submitted
+- Nothing actively in progress — all planned work completed
 
 ## Completed This Session
-- Fixed RBAC test infrastructure (JWT secret key mismatch, auth fixtures, unauth_client)
-- All 514 tests passing → committed as `239ef58`
-- Fixed mypy errors in deps.py (Settings type annotations)
-- Pushed `feature/rbac-protected-routes`, created PR #15 (cycle-10: RBAC & Protected Routes)
-- Planned and executed cycle-11 (Per-User API Keys — AC-011, AC-012):
-  - Added `user_id` FK and `role_override` to ApiKey model
-  - Created API key CRUD endpoints (POST/GET/DELETE /api/v1/api-keys)
-  - Updated `verify_api_key_or_jwt` to load associated user and enforce effective role
-  - Created API key management UI in settings (HTMX)
-  - 21 new tests, 535 total passing
-  - Pushed `feature/per-user-api-keys`, created PR #16
+- Cycle 12 GREEN phase: created 4 templates (admin_users.html, admin_user_list.html, forgot_password.html, reset_password.html), fixed AuthRedirectMiddleware (PUBLIC_PATHS + HTMX 401), all 33 tests passing (568 total)
+- Released v1.8.0: changelog, version bump, PR #18 merged, tag pushed (commit `ac59a5b`)
+- Regenerated `docs/infographic.svg` with v1.8.0 metrics (24 specs, 568 tests, Beta)
+- Created `docs/reddit-share.svg` marketing image for Reddit sharing
+- Committed and pushed: marketing assets (`9061e13`), cycle-12/M9 completion (`f9564e1`), spec milestone metadata (`d8df876`)
+- Marked M9 milestone COMPLETE (9/9 success criteria)
+- Updated config.json: cleared current_milestone/cycle, added cycles 9-12 to history
+- Wrote learning entries L-019 (M9 retro) and L-020 (HTMX 401 pattern)
 
 ## Decisions Made
-- API key prefix: `rsv_` + 32-byte token_urlsafe
-- Legacy keys (no user_id) treated as operator-level access
-- `role_override` validated at key creation (must be <= user's role)
-- API key auth loads user from DB when key has user_id
-- `_get_api_key_effective_role()` priority: role_override > user.role > operator default
-- PR #16 bases on `feature/rbac-protected-routes` (PR #15) to maintain clean history
+- M9 milestone marked complete — all success criteria met
+- Password reset uses console-logged tokens (no SMTP) — acceptable for MVP
+- Spec files got milestone metadata (`**Milestone:**` field) for traceability
 
 ## Blockers
-- PR #15 (cycle-10) needs human review/merge before PR #16 can merge to main
-- Test DB required `DROP TABLE api_keys` + recreate for new columns (production will need ALTER TABLE migration)
+- None
 
 ## Next Steps
-1. Review and merge PR #15 (cycle-10: RBAC)
-2. Review and merge PR #16 (cycle-11: Per-User API Keys)
-3. Plan cycle-12 for Phase 5: Admin User Management + Password Reset (AC-006 admin UI, AC-013 password reset)
-4. Production deployment and DB migration for new columns
+1. Decide next milestone (M10? Or run `/add:retro` for M9 first?)
+2. Untracked spec drafts need review: `specs/smtp-email.md`, `specs/sync-logs-ui-refresh.md`, `specs/oidc-settings.md`
+3. Consider GA promotion assessment — evidence scan recommended
+4. Production deploy of v1.8.0 (requires human approval)

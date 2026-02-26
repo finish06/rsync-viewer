@@ -184,6 +184,32 @@
       "date": "2026-02-24",
       "classified_by": "agent",
       "checkpoint_type": "verification-catch"
+    },
+    {
+      "id": "L-019",
+      "title": "M9 complete: full multi-user auth in 5 cycles, 568 tests",
+      "body": "M9 delivered JWT auth, RBAC (Admin/Operator/Viewer), login/register UI, per-user API keys, admin user management, password reset (console tokens), and session timeout handling. 5 cycles (8-12) over 3 days, 9/9 success criteria met. Key patterns: AuthRedirectMiddleware with PUBLIC_PATHS for unauthenticated routes; HTMX requests get 401 JSON (not 302 redirect) for expired sessions; cookie-based JWT for browser + Bearer header for API; password reset tokens are single-use with 1-hour expiry, hash stored in DB. Released as v1.8.0.",
+      "scope": "project",
+      "stack": ["python", "fastapi"],
+      "category": "process",
+      "severity": "medium",
+      "source": "rsync-viewer",
+      "date": "2026-02-26",
+      "classified_by": "agent",
+      "checkpoint_type": "retro"
+    },
+    {
+      "id": "L-020",
+      "title": "HTMX requests need 401 JSON, not 302 redirect, for session expiry",
+      "body": "AuthRedirectMiddleware must detect HX-Request header and return JSONResponse(status_code=401) instead of RedirectResponse to /login. HTMX handles the 401 via htmx:responseError event listener to show a re-login modal. Without this, HTMX swaps in the full login page HTML into the target element.",
+      "scope": "workstation",
+      "stack": ["python", "fastapi"],
+      "category": "technical",
+      "severity": "high",
+      "source": "rsync-viewer",
+      "date": "2026-02-26",
+      "classified_by": "agent",
+      "checkpoint_type": "verification-catch"
     }
   ]
 }

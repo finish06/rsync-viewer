@@ -14,6 +14,9 @@
 
 ## Technical
 
+- **[high] HTMX requests need 401 JSON, not 302 redirect, for session expiry** (L-020, 2026-02-26)
+  AuthRedirectMiddleware must detect HX-Request header and return JSONResponse(status_code=401) instead of RedirectResponse to /login. HTMX handles the 401 via htmx:responseError event listener to show a re-login modal. Without this, HTMX swaps in the full login page HTML into the target element.
+
 - **[high] CSP blocks inline event handlers — use external JS for HTMX interactivity** (L-017, 2026-02-24)
   Inline onclick and hx-on::before-request attributes violate Content-Security-Policy 'default-src self'. Solution: create external JS files that listen for htmx events (e.g., htmx:configRequest) and manipulate DOM from there. This pattern is CSP-compliant and keeps templates clean.
 
@@ -26,6 +29,9 @@
   format_rate(sync) accessing sync fields internally is cleaner than passing individual args. Template usage stays simple: {{ sync | format_rate }}.
 
 ## Process
+
+- **[medium] M9 complete: full multi-user auth in 5 cycles, 568 tests** (L-019, 2026-02-26)
+  M9 delivered JWT auth, RBAC, login/register UI, per-user API keys, admin user management, password reset, and session timeout. 5 cycles (8-12) over 3 days, 9/9 success criteria. Released as v1.8.0.
 
 - **[medium] Cycle 7 complete: Beta promotion, changelog viewer, dev tooling, M7 planning** (L-016, 2026-02-24)
   First cycle under Beta maturity. Delivered changelog viewer (CSP-compliant HTMX accordion), dev seed data (Python SQLModel script over raw SQL), OIDC spec/plan with M7 milestone, CI fixes, and retention test coverage (65%→96%). 425 tests, 89% coverage.
@@ -55,5 +61,5 @@
   Date Range Quick Select and Average Transfer Rate. 132 tests, 92% coverage.
 
 ---
-*14 entries. Last updated: 2026-02-24. Source: .add/learnings.json*
+*16 entries. Last updated: 2026-02-26. Source: .add/learnings.json*
 *4 workstation-scope entries promoted to ~/.claude/add/library.json (WL-001 through WL-004)*
