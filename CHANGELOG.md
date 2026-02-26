@@ -7,26 +7,47 @@ and this project adheres to [Conventional Commits](https://www.conventionalcommi
 
 ## [Unreleased]
 
+## [1.8.0] - 2026-02-26
+
 ### Added
 
-- CI/CD: Docker image build and push to self-hosted registry with `beta` tag on merge to main
-- CI/CD: SHA-tagged images for traceability (`sha-<commit>`)
-
-### Fixed
-
-- Fix .env.example tests: mount file into test container and use absolute path
-- Fix ruff format issues in app/middleware.py and tests/test_security_hardening.py
-
-### Documentation
-
-- Update README with current features, configuration, CI/CD, and project structure
-- Regenerate infographic with v1.5.0 metrics (19 specs, 294 tests, 92% coverage)
-- Fix infographic: use 3 evenly-centered metrics, remove ADD branding from footer
+- **Multi-user authentication system (M9):**
+  - User model with UUID primary keys, bcrypt password hashing, and role field
+  - JWT authentication with access/refresh token rotation and cookie-based sessions
+  - Login and registration UI pages with dark mode support
+  - RBAC with three roles: admin, operator, viewer
+  - Protected routes with role-based access control middleware
+  - Dual authentication: JWT cookies for browser, API keys for scripts
+  - Per-user API key management with optional role scoping
+  - API key CRUD UI in settings page with HTMX interactions
+- **Admin user management (AC-006):**
+  - Admin API endpoints: list users, change roles, enable/disable, delete
+  - Admin UI page at `/admin/users` with HTMX-powered table
+  - Safety checks: cannot demote/delete self, last-admin protection
+- **Password reset (AC-013):**
+  - Self-service flow: request reset via email, confirm with token
+  - Admin-initiated password reset for any user
+  - Console-logged tokens for MVP (no SMTP)
+  - Forgot password and reset password UI pages
+  - Token single-use enforcement and 1-hour expiry
+- **Session timeout handling (AC-016):**
+  - HTMX requests with expired JWT return 401 (instead of 302 redirect)
+  - Login page includes forgot password link
+- 33 new tests for admin management, password reset, and session timeout
+- 568 total tests passing with 90%+ coverage
 
 ### Changed
 
-- M3 Reliability milestone marked COMPLETE (Structured Logging, Error Handling, Security Hardening)
-- M2 Notifications milestone fully closed: promote 3 features from VERIFIED → DONE, add completion date and retrospective
+- Auth redirect middleware: public path allowlist expanded for forgot/reset password
+- Auth redirect middleware: HTMX requests get 401 JSON response instead of redirect
+
+### Fixed
+
+- Ruff formatting applied to 6 files
+
+### Documentation
+
+- Cycle 9-12 plans and status tracking for M9 milestone phases
 
 ## [1.7.0] - 2026-02-24
 

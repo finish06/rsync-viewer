@@ -8,7 +8,7 @@ from uuid import uuid4
 import jwt as pyjwt
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
-from starlette.responses import Response, RedirectResponse
+from starlette.responses import JSONResponse, Response, RedirectResponse
 
 from app.config import get_settings
 from app.csrf import validate_csrf_token
@@ -138,7 +138,14 @@ class BodySizeLimitMiddleware(BaseHTTPMiddleware):
 
 
 # Paths that don't require authentication
-PUBLIC_PATHS = {"/login", "/register", "/health", "/metrics"}
+PUBLIC_PATHS = {
+    "/login",
+    "/register",
+    "/health",
+    "/metrics",
+    "/forgot-password",
+    "/reset-password",
+}
 PUBLIC_PREFIXES = ("/static/", "/api/")
 
 
@@ -171,7 +178,15 @@ class AuthRedirectMiddleware(BaseHTTPMiddleware):
             except (pyjwt.ExpiredSignatureError, pyjwt.InvalidTokenError):
                 pass
 
-        # Not authenticated — redirect to login with return URL
+        # Not authenticated
+        # For HTMX requests, return 401 so the client can handle re-login
+        if request.headers.get("HX-Request"):
+            return JSONResponse(
+                status_code=401,
+                content={"detail": "Session expired. Please log in again."},
+            )
+
+        # For browser requests, redirect to login with return URL
         return_url = path
         if request.url.query:
             return_url = f"{path}?{request.url.query}"

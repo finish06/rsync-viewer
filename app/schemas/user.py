@@ -94,6 +94,58 @@ class RefreshTokenRequest(BaseModel):
     refresh_token: str
 
 
+class RoleUpdate(BaseModel):
+    """Schema for changing a user's role."""
+
+    role: str = Field(
+        ...,
+        description="New role (admin, operator, or viewer)",
+        examples=["operator"],
+    )
+
+
+class StatusUpdate(BaseModel):
+    """Schema for enabling/disabling a user."""
+
+    is_active: bool = Field(..., description="Whether the user account is active")
+
+
+class PasswordResetRequest(BaseModel):
+    """Schema for requesting a password reset."""
+
+    email: str = Field(..., description="Email address of the account to reset")
+
+
+class PasswordResetConfirm(BaseModel):
+    """Schema for confirming a password reset."""
+
+    token: str = Field(..., description="The reset token")
+    new_password: str = Field(
+        ...,
+        min_length=8,
+        max_length=128,
+        description="New password (min 8 chars, must include uppercase, lowercase, and digit)",
+    )
+
+    @field_validator("new_password")
+    @classmethod
+    def validate_password_strength(cls, v: str) -> str:
+        if not re.search(r"[A-Z]", v):
+            raise ValueError("Password must contain at least one uppercase letter")
+        if not re.search(r"[a-z]", v):
+            raise ValueError("Password must contain at least one lowercase letter")
+        if not re.search(r"[0-9]", v):
+            raise ValueError("Password must contain at least one digit")
+        return v
+
+
+class PasswordResetResponse(BaseModel):
+    """Schema for password reset response."""
+
+    message: str
+    reset_token: Optional[str] = None  # Only in debug/console mode
+
+
 class ApiKeyCreate(BaseModel):
     """Schema for creating a new API key."""
 
