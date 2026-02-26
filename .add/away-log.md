@@ -1,36 +1,25 @@
 # Away Mode Log
 
-**Started:** 2026-02-25 ~19:30
-**Expected Return:** 2026-02-26 ~03:30
-**Duration:** 8 hours
-**Focus:** Finalize cycle-10 PR, plan and execute cycle-11 (Phase 4: Per-User API Keys)
+**Started:** 2026-02-26 ~14:00
+**Expected Return:** 2026-02-26 ~15:00
+**Duration:** 1 hour
 
 ## Work Plan
-
-1. Complete cycle-10 validation (mypy, coverage, all success criteria)
-2. Update cycle-10 status and M9 milestone hill chart
-3. Push branch and create PR for cycle-10
-4. Plan cycle-11 (Phase 4: Per-User API Keys — AC-011, AC-012)
-5. Begin Phase 4 implementation
-
-## Queued for Human Return
-
-1. Review and merge cycle-10 PR
-2. Phase 5 decisions (Admin UI, password reset, session timeout)
-3. Production deployment
+1. Complete Cycle 12 formally (update cycle-12.md, M9 milestone)
+2. Commit docs/marketing assets to main
+3. Assess and complete M9 milestone
+4. Update config.json, write learning checkpoint, session handoff
 
 ## Progress Log
-
 | Time | Task | Status | Notes |
 |------|------|--------|-------|
-| ~19:30 | Cycle-10 validation (mypy, coverage) | Complete | Fixed 6 mypy errors in deps.py |
-| ~19:45 | Update cycle-10 docs, M9 milestone | Complete | Hill chart updated, cycle marked COMPLETE |
-| ~19:50 | Push branch, create PR #15 | Complete | feature/rbac-protected-routes → main |
-| ~20:00 | Plan cycle-11 | Complete | .add/cycles/cycle-11.md created |
-| ~20:05 | Create feature/per-user-api-keys branch | Complete | Based on feature/rbac-protected-routes |
-| ~20:15 | TASK-028: Add user_id FK, role_override to ApiKey | Complete | Model updated |
-| ~20:20 | Write RED tests (21 test cases) | Complete | test_user_api_keys.py — AC-011, AC-012 |
-| ~20:30 | TASK-029: API key CRUD endpoints | Complete | POST/GET/DELETE /api/v1/api-keys |
-| ~20:40 | TASK-030: Update verify_api_key_or_jwt for role scoping | Complete | Loads user, enforces effective role |
-| ~20:50 | TASK-031/032: API key management UI | Complete | Settings page, HTMX routes, form/list/created partials |
-| ~21:00 | All 535 tests passing, ruff/mypy clean | Complete | Cycle-11 complete |
+| 14:05 | Complete Cycle 12 formally | DONE | Updated cycle-12.md to COMPLETE, all success criteria checked |
+| 14:06 | Update M9 milestone | DONE | All features at DONE, 9/9 success criteria, hill chart updated |
+| 14:08 | Commit marketing assets | DONE | infographic.svg + reddit-share.svg committed (9061e13) |
+| 14:09 | Commit cycle/milestone completion | DONE | cycle-12 + M9 updates committed (f9564e1) |
+| 14:10 | Commit spec metadata | DONE | Milestone references added to 20 spec files (d8df876) |
+| 14:12 | Update config + learnings | DONE | Config cleared, L-019 + L-020 added, handoff written (e0a0050) |
+| 14:13 | Push all commits | DONE | 4 commits pushed to origin/main |
+
+## Summary
+All 4 planned tasks completed in ~15 minutes. M9 milestone formally closed, all commits pushed. Project is in a clean state with no active milestone or cycle. Ready for next milestone planning or retrospective.

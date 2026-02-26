@@ -210,6 +210,45 @@
       "date": "2026-02-26",
       "classified_by": "agent",
       "checkpoint_type": "verification-catch"
+    },
+    {
+      "id": "L-021",
+      "title": "Retro 4: enforce ruff before commit, CI before done, proactive releases",
+      "body": "Period 2026-02-24 to 2026-02-26: M9 completed in 5 cycles (403->568 tests). Three agreed changes: (1) Run ruff format + check before EVERY commit — formatting drift was recurring; (2) CI must pass before declaring work done — this was agreed last retro but not enforced, now a hard gate; (3) System must proactively suggest release iteration after merging feature work to main. Previous retro change #1 (CI before PR) was NOT followed through — escalating enforcement.",
+      "scope": "project",
+      "stack": ["python", "fastapi"],
+      "category": "process",
+      "severity": "high",
+      "source": "rsync-viewer",
+      "date": "2026-02-26",
+      "classified_by": "human",
+      "checkpoint_type": "retro"
+    },
+    {
+      "id": "L-022",
+      "title": "Always run ruff format + check before git commit — no exceptions",
+      "body": "Ruff formatting drift has been a recurring issue across multiple retros. Before every git commit, run: ruff format . && ruff check . — even for docs-only or config-only commits. This prevents CI failures from accumulated formatting drift.",
+      "scope": "workstation",
+      "stack": ["python"],
+      "category": "anti-pattern",
+      "severity": "critical",
+      "source": "rsync-viewer",
+      "date": "2026-02-26",
+      "classified_by": "human",
+      "checkpoint_type": "retro"
+    },
+    {
+      "id": "L-023",
+      "title": "Proactively iterate releases after merging feature work to main",
+      "body": "After merging PRs or significant feature work to main, the agent should proactively suggest a version bump + changelog update. Don't wait for the human to ask. Releases must always be iterated when work lands on main.",
+      "scope": "workstation",
+      "stack": [],
+      "category": "process",
+      "severity": "high",
+      "source": "rsync-viewer",
+      "date": "2026-02-26",
+      "classified_by": "human",
+      "checkpoint_type": "retro"
     }
   ]
 }
