@@ -1,0 +1,374 @@
+<svg viewBox="0 0 1200 675" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Background gradient -->
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f0f1a;stop-opacity:1" />
+      <stop offset="40%" style="stop-color:#151528;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0a0a14;stop-opacity:1" />
+    </linearGradient>
+
+    <!-- Accent gradient -->
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#b00149;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#d4326d;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#ff6b9d;stop-opacity:1" />
+    </linearGradient>
+
+    <!-- Accent vertical -->
+    <linearGradient id="accentV" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#b00149;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#ff6b9d;stop-opacity:1" />
+    </linearGradient>
+
+    <!-- Green gradient for metrics -->
+    <linearGradient id="green" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#22c55e;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#10b981;stop-opacity:1" />
+    </linearGradient>
+
+    <!-- Card gradient -->
+    <linearGradient id="card" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:rgba(255,255,255,0.08);stop-opacity:1" />
+      <stop offset="100%" style="stop-color:rgba(255,255,255,0.02);stop-opacity:1" />
+    </linearGradient>
+
+    <!-- Terminal gradient -->
+    <linearGradient id="termBg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a1a2e;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0d0d18;stop-opacity:1" />
+    </linearGradient>
+
+    <!-- Glass filter -->
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="6"/>
+      <feOffset dx="0" dy="4" result="offsetblur"/>
+      <feComponentTransfer>
+        <feFuncA type="linear" slope="0.15"/>
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- Accent glow -->
+    <filter id="accentGlow" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="20"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="675" fill="url(#bg)"/>
+
+  <!-- Decorative orbs -->
+  <ellipse cx="100" cy="100" rx="250" ry="250" fill="#b00149" opacity="0.04"/>
+  <ellipse cx="1100" cy="550" rx="300" ry="300" fill="#b00149" opacity="0.03"/>
+  <ellipse cx="600" cy="350" rx="400" ry="200" fill="#b00149" opacity="0.015"/>
+
+  <!-- Subtle grid lines for tech feel -->
+  <line x1="0" y1="168" x2="1200" y2="168" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>
+  <line x1="0" y1="340" x2="1200" y2="340" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>
+  <line x1="600" y1="0" x2="600" y2="675" stroke="rgba(255,255,255,0.02)" stroke-width="1"/>
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- LEFT SIDE: Hero content                             -->
+  <!-- ═══════════════════════════════════════════════════ -->
+
+  <!-- Version badge -->
+  <g transform="translate(60, 48)">
+    <rect x="0" y="0" width="64" height="26" rx="13" fill="url(#accent)" opacity="0.15"/>
+    <rect x="0" y="0" width="64" height="26" rx="13" fill="none" stroke="url(#accent)" stroke-width="1.2"/>
+    <text x="32" y="17" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="700" fill="url(#accent)" text-anchor="middle">v1.8.0</text>
+  </g>
+
+  <!-- Open source badge -->
+  <g transform="translate(134, 48)">
+    <rect x="0" y="0" width="100" height="26" rx="13" fill="rgba(34,197,94,0.1)"/>
+    <rect x="0" y="0" width="100" height="26" rx="13" fill="none" stroke="rgba(34,197,94,0.3)" stroke-width="1"/>
+    <text x="50" y="17" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="600" fill="#22c55e" text-anchor="middle">Open Source</text>
+  </g>
+
+  <!-- Main headline -->
+  <text x="60" y="128" font-family="system-ui, -apple-system, sans-serif" font-size="48" font-weight="800" fill="#ffffff" letter-spacing="-1.5">Rsync Log Viewer</text>
+
+  <!-- Accent underline -->
+  <rect x="60" y="142" width="180" height="3" rx="1.5" fill="url(#accent)" opacity="0.6"/>
+
+  <!-- Subheadline -->
+  <text x="60" y="186" font-family="system-ui, -apple-system, sans-serif" font-size="18" font-weight="400" fill="rgba(255,255,255,0.7)">A self-hosted dashboard for monitoring rsync backups.</text>
+  <text x="60" y="212" font-family="system-ui, -apple-system, sans-serif" font-size="18" font-weight="400" fill="rgba(255,255,255,0.7)">Ingest logs via API, get alerts on failures, track trends.</text>
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- FEATURE PILLS ROW                                   -->
+  <!-- ═══════════════════════════════════════════════════ -->
+
+  <g transform="translate(60, 248)">
+    <!-- Pill 1 -->
+    <rect x="0" y="0" width="130" height="32" rx="16" fill="rgba(255,255,255,0.06)"/>
+    <rect x="0" y="0" width="130" height="32" rx="16" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+    <circle cx="18" cy="16" r="4" fill="#22c55e"/>
+    <text x="30" y="21" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="500" fill="rgba(255,255,255,0.8)">FastAPI + HTMX</text>
+
+    <!-- Pill 2 -->
+    <rect x="142" y="0" width="110" height="32" rx="16" fill="rgba(255,255,255,0.06)"/>
+    <rect x="142" y="0" width="110" height="32" rx="16" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+    <circle cx="160" cy="16" r="4" fill="#0ea5e9"/>
+    <text x="172" y="21" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="500" fill="rgba(255,255,255,0.8)">PostgreSQL</text>
+
+    <!-- Pill 3 -->
+    <rect x="264" y="0" width="120" height="32" rx="16" fill="rgba(255,255,255,0.06)"/>
+    <rect x="264" y="0" width="120" height="32" rx="16" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+    <circle cx="282" cy="16" r="4" fill="#eab308"/>
+    <text x="294" y="21" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="500" fill="rgba(255,255,255,0.8)">Docker Deploy</text>
+
+    <!-- Pill 4 -->
+    <rect x="396" y="0" width="90" height="32" rx="16" fill="rgba(255,255,255,0.06)"/>
+    <rect x="396" y="0" width="90" height="32" rx="16" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+    <circle cx="414" cy="16" r="4" fill="#b00149"/>
+    <text x="426" y="21" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="500" fill="rgba(255,255,255,0.8)">JWT Auth</text>
+  </g>
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- FEATURE CARDS (2x2 grid, left side)                 -->
+  <!-- ═══════════════════════════════════════════════════ -->
+
+  <g transform="translate(60, 310)">
+    <!-- Card 1: Multi-User -->
+    <g>
+      <rect x="0" y="0" width="244" height="88" rx="10" fill="url(#card)" filter="url(#glow)"/>
+      <rect x="0" y="0" width="244" height="88" rx="10" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+      <text x="16" y="28" font-family="system-ui, -apple-system, sans-serif" font-size="20" font-weight="400" fill="rgba(255,255,255,0.9)">&#x1F512;</text>
+      <text x="42" y="30" font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="600" fill="#ffffff">Multi-User RBAC</text>
+      <text x="16" y="52" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="400" fill="rgba(255,255,255,0.5)">Admin / Operator / Viewer roles</text>
+      <text x="16" y="70" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="400" fill="rgba(255,255,255,0.5)">Per-user API keys with scoping</text>
+    </g>
+
+    <!-- Card 2: Discord Alerts -->
+    <g transform="translate(258, 0)">
+      <rect x="0" y="0" width="244" height="88" rx="10" fill="url(#card)" filter="url(#glow)"/>
+      <rect x="0" y="0" width="244" height="88" rx="10" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+      <text x="16" y="28" font-family="system-ui, -apple-system, sans-serif" font-size="20" font-weight="400" fill="rgba(255,255,255,0.9)">&#x1F514;</text>
+      <text x="42" y="30" font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="600" fill="#ffffff">Discord Alerts</text>
+      <text x="16" y="52" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="400" fill="rgba(255,255,255,0.5)">Webhook notifications on failure</text>
+      <text x="16" y="70" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="400" fill="rgba(255,255,255,0.5)">Rich embeds with source filters</text>
+    </g>
+
+    <!-- Card 3: Charts -->
+    <g transform="translate(0, 100)">
+      <rect x="0" y="0" width="244" height="88" rx="10" fill="url(#card)" filter="url(#glow)"/>
+      <rect x="0" y="0" width="244" height="88" rx="10" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+      <text x="16" y="28" font-family="system-ui, -apple-system, sans-serif" font-size="20" font-weight="400" fill="rgba(255,255,255,0.9)">&#x1F4CA;</text>
+      <text x="42" y="30" font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="600" fill="#ffffff">Interactive Charts</text>
+      <text x="16" y="52" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="400" fill="rgba(255,255,255,0.5)">Duration, bytes, file count trends</text>
+      <text x="16" y="70" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="400" fill="rgba(255,255,255,0.5)">Date range filters and CSV export</text>
+    </g>
+
+    <!-- Card 4: Observability -->
+    <g transform="translate(258, 100)">
+      <rect x="0" y="0" width="244" height="88" rx="10" fill="url(#card)" filter="url(#glow)"/>
+      <rect x="0" y="0" width="244" height="88" rx="10" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+      <text x="16" y="28" font-family="system-ui, -apple-system, sans-serif" font-size="20" font-weight="400" fill="rgba(255,255,255,0.9)">&#x1F50D;</text>
+      <text x="42" y="30" font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="600" fill="#ffffff">Prometheus + Grafana</text>
+      <text x="16" y="52" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="400" fill="rgba(255,255,255,0.5)">/metrics endpoint built in</text>
+      <text x="16" y="70" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="400" fill="rgba(255,255,255,0.5)">Pre-built Grafana dashboards</text>
+    </g>
+  </g>
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- Terminal + CTA (bottom left)                        -->
+  <!-- ═══════════════════════════════════════════════════ -->
+
+  <g transform="translate(60, 530)">
+    <!-- Terminal -->
+    <rect x="0" y="0" width="502" height="56" rx="8" fill="#0a0a14"/>
+    <rect x="0" y="0" width="502" height="56" rx="8" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+    <circle cx="18" cy="16" r="5" fill="#ff5f56"/>
+    <circle cx="34" cy="16" r="5" fill="#ffbd2e"/>
+    <circle cx="50" cy="16" r="5" fill="#27c93f"/>
+    <text x="72" y="22" font-family="Menlo, Monaco, Consolas, monospace" font-size="13" font-weight="400" fill="#22c55e">$</text>
+    <text x="88" y="22" font-family="Menlo, Monaco, Consolas, monospace" font-size="13" font-weight="400" fill="#ffffff">docker-compose up -d</text>
+    <text x="72" y="42" font-family="Menlo, Monaco, Consolas, monospace" font-size="11" font-weight="400" fill="rgba(255,255,255,0.4)"># Up and running on localhost:8000</text>
+  </g>
+
+  <!-- GitHub link -->
+  <g transform="translate(60, 610)">
+    <text x="0" y="0" font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="500" fill="rgba(255,255,255,0.5)">github.com/finish06/rsync-viewer</text>
+    <text x="310" y="0" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="400" fill="rgba(255,255,255,0.3)">Python + FastAPI + HTMX + PostgreSQL</text>
+  </g>
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- RIGHT SIDE: Dashboard mockup                        -->
+  <!-- ═══════════════════════════════════════════════════ -->
+
+  <g transform="translate(620, 48)">
+    <!-- Dashboard frame -->
+    <rect x="0" y="0" width="530" height="396" rx="12" fill="#0d0d18" filter="url(#glow)"/>
+    <rect x="0" y="0" width="530" height="396" rx="12" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+
+    <!-- Title bar -->
+    <rect x="0" y="0" width="530" height="36" rx="12" fill="rgba(255,255,255,0.05)"/>
+    <rect x="0" y="24" width="530" height="12" fill="rgba(255,255,255,0.05)"/>
+    <circle cx="18" cy="18" r="5" fill="#ff5f56"/>
+    <circle cx="34" cy="18" r="5" fill="#ffbd2e"/>
+    <circle cx="50" cy="18" r="5" fill="#27c93f"/>
+    <text x="265" y="22" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="500" fill="rgba(255,255,255,0.4)" text-anchor="middle">Rsync Log Viewer - Dashboard</text>
+
+    <!-- Nav bar -->
+    <rect x="0" y="36" width="530" height="28" fill="rgba(255,255,255,0.03)"/>
+    <line x1="0" y1="64" x2="530" y2="64" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+    <text x="16" y="55" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="600" fill="#ffffff">Rsync Log Viewer</text>
+    <text x="440" y="55" font-family="system-ui, -apple-system, sans-serif" font-size="10" font-weight="500" fill="rgba(255,255,255,0.4)">admin</text>
+    <rect x="470" y="46" width="44" height="16" rx="3" fill="url(#accent)" opacity="0.3"/>
+    <text x="492" y="57" font-family="system-ui, -apple-system, sans-serif" font-size="9" font-weight="600" fill="url(#accent)" text-anchor="middle">admin</text>
+
+    <!-- Stat cards row -->
+    <g transform="translate(16, 76)">
+      <!-- Stat 1 -->
+      <rect x="0" y="0" width="118" height="50" rx="6" fill="rgba(255,255,255,0.04)"/>
+      <rect x="0" y="0" width="118" height="50" rx="6" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="0.5"/>
+      <text x="10" y="18" font-family="system-ui, -apple-system, sans-serif" font-size="9" font-weight="400" fill="rgba(255,255,255,0.4)">Total Syncs</text>
+      <text x="10" y="38" font-family="system-ui, -apple-system, sans-serif" font-size="18" font-weight="700" fill="#22c55e">1,247</text>
+
+      <!-- Stat 2 -->
+      <rect x="128" y="0" width="118" height="50" rx="6" fill="rgba(255,255,255,0.04)"/>
+      <rect x="128" y="0" width="118" height="50" rx="6" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="0.5"/>
+      <text x="138" y="18" font-family="system-ui, -apple-system, sans-serif" font-size="9" font-weight="400" fill="rgba(255,255,255,0.4)">Success Rate</text>
+      <text x="138" y="38" font-family="system-ui, -apple-system, sans-serif" font-size="18" font-weight="700" fill="#22c55e">98.7%</text>
+
+      <!-- Stat 3 -->
+      <rect x="256" y="0" width="118" height="50" rx="6" fill="rgba(255,255,255,0.04)"/>
+      <rect x="256" y="0" width="118" height="50" rx="6" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="0.5"/>
+      <text x="266" y="18" font-family="system-ui, -apple-system, sans-serif" font-size="9" font-weight="400" fill="rgba(255,255,255,0.4)">Transferred</text>
+      <text x="266" y="38" font-family="system-ui, -apple-system, sans-serif" font-size="18" font-weight="700" fill="#22c55e">2.4 TB</text>
+
+      <!-- Stat 4 -->
+      <rect x="384" y="0" width="118" height="50" rx="6" fill="rgba(255,255,255,0.04)"/>
+      <rect x="384" y="0" width="118" height="50" rx="6" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="0.5"/>
+      <text x="394" y="18" font-family="system-ui, -apple-system, sans-serif" font-size="9" font-weight="400" fill="rgba(255,255,255,0.4)">Sources</text>
+      <text x="394" y="38" font-family="system-ui, -apple-system, sans-serif" font-size="18" font-weight="700" fill="#22c55e">8</text>
+    </g>
+
+    <!-- Mock chart area -->
+    <g transform="translate(16, 140)">
+      <rect x="0" y="0" width="498" height="120" rx="6" fill="rgba(255,255,255,0.02)"/>
+      <rect x="0" y="0" width="498" height="120" rx="6" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="0.5"/>
+      <text x="10" y="18" font-family="system-ui, -apple-system, sans-serif" font-size="10" font-weight="600" fill="rgba(255,255,255,0.5)">Sync Duration (7 days)</text>
+
+      <!-- Chart grid lines -->
+      <line x1="10" y1="35" x2="488" y2="35" stroke="rgba(255,255,255,0.04)" stroke-width="0.5"/>
+      <line x1="10" y1="55" x2="488" y2="55" stroke="rgba(255,255,255,0.04)" stroke-width="0.5"/>
+      <line x1="10" y1="75" x2="488" y2="75" stroke="rgba(255,255,255,0.04)" stroke-width="0.5"/>
+      <line x1="10" y1="95" x2="488" y2="95" stroke="rgba(255,255,255,0.04)" stroke-width="0.5"/>
+
+      <!-- Chart line (accent colored) -->
+      <polyline points="30,80 98,55 166,65 234,45 302,50 370,35 438,42 478,38" fill="none" stroke="url(#accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+
+      <!-- Area fill under line -->
+      <polygon points="30,80 98,55 166,65 234,45 302,50 370,35 438,42 478,38 478,105 30,105" fill="url(#accent)" opacity="0.08"/>
+
+      <!-- Data points -->
+      <circle cx="30" cy="80" r="3" fill="#d4326d"/>
+      <circle cx="98" cy="55" r="3" fill="#d4326d"/>
+      <circle cx="166" cy="65" r="3" fill="#d4326d"/>
+      <circle cx="234" cy="45" r="3" fill="#d4326d"/>
+      <circle cx="302" cy="50" r="3" fill="#d4326d"/>
+      <circle cx="370" cy="35" r="3" fill="#d4326d"/>
+      <circle cx="438" cy="42" r="3" fill="#d4326d"/>
+      <circle cx="478" cy="38" r="3" fill="#d4326d"/>
+
+      <!-- X-axis labels -->
+      <text x="30" y="115" font-family="system-ui, -apple-system, sans-serif" font-size="8" fill="rgba(255,255,255,0.3)" text-anchor="middle">Mon</text>
+      <text x="166" y="115" font-family="system-ui, -apple-system, sans-serif" font-size="8" fill="rgba(255,255,255,0.3)" text-anchor="middle">Wed</text>
+      <text x="302" y="115" font-family="system-ui, -apple-system, sans-serif" font-size="8" fill="rgba(255,255,255,0.3)" text-anchor="middle">Fri</text>
+      <text x="438" y="115" font-family="system-ui, -apple-system, sans-serif" font-size="8" fill="rgba(255,255,255,0.3)" text-anchor="middle">Sun</text>
+    </g>
+
+    <!-- Mock table -->
+    <g transform="translate(16, 272)">
+      <rect x="0" y="0" width="498" height="112" rx="6" fill="rgba(255,255,255,0.02)"/>
+      <rect x="0" y="0" width="498" height="112" rx="6" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="0.5"/>
+
+      <!-- Table header -->
+      <rect x="0" y="0" width="498" height="22" rx="6" fill="rgba(255,255,255,0.04)"/>
+      <rect x="0" y="12" width="498" height="10" fill="rgba(255,255,255,0.04)"/>
+      <text x="12" y="15" font-family="system-ui, -apple-system, sans-serif" font-size="9" font-weight="600" fill="rgba(255,255,255,0.5)">Source</text>
+      <text x="140" y="15" font-family="system-ui, -apple-system, sans-serif" font-size="9" font-weight="600" fill="rgba(255,255,255,0.5)">Status</text>
+      <text x="240" y="15" font-family="system-ui, -apple-system, sans-serif" font-size="9" font-weight="600" fill="rgba(255,255,255,0.5)">Duration</text>
+      <text x="340" y="15" font-family="system-ui, -apple-system, sans-serif" font-size="9" font-weight="600" fill="rgba(255,255,255,0.5)">Files</text>
+      <text x="420" y="15" font-family="system-ui, -apple-system, sans-serif" font-size="9" font-weight="600" fill="rgba(255,255,255,0.5)">Size</text>
+
+      <!-- Row 1 -->
+      <text x="12" y="38" font-family="Menlo, Monaco, Consolas, monospace" font-size="9" fill="rgba(255,255,255,0.7)">nas-backup</text>
+      <rect x="140" y="29" width="42" height="14" rx="3" fill="rgba(34,197,94,0.15)"/>
+      <text x="161" y="39" font-family="system-ui, -apple-system, sans-serif" font-size="8" font-weight="600" fill="#22c55e" text-anchor="middle">OK</text>
+      <text x="240" y="38" font-family="system-ui, -apple-system, sans-serif" font-size="9" fill="rgba(255,255,255,0.5)">4m 32s</text>
+      <text x="340" y="38" font-family="system-ui, -apple-system, sans-serif" font-size="9" fill="rgba(255,255,255,0.5)">2,847</text>
+      <text x="420" y="38" font-family="system-ui, -apple-system, sans-serif" font-size="9" fill="rgba(255,255,255,0.5)">14.2 GB</text>
+
+      <!-- Row 2 -->
+      <line x1="10" y1="46" x2="488" y2="46" stroke="rgba(255,255,255,0.04)" stroke-width="0.5"/>
+      <text x="12" y="60" font-family="Menlo, Monaco, Consolas, monospace" font-size="9" fill="rgba(255,255,255,0.7)">media-sync</text>
+      <rect x="140" y="51" width="42" height="14" rx="3" fill="rgba(34,197,94,0.15)"/>
+      <text x="161" y="61" font-family="system-ui, -apple-system, sans-serif" font-size="8" font-weight="600" fill="#22c55e" text-anchor="middle">OK</text>
+      <text x="240" y="60" font-family="system-ui, -apple-system, sans-serif" font-size="9" fill="rgba(255,255,255,0.5)">12m 08s</text>
+      <text x="340" y="60" font-family="system-ui, -apple-system, sans-serif" font-size="9" fill="rgba(255,255,255,0.5)">891</text>
+      <text x="420" y="60" font-family="system-ui, -apple-system, sans-serif" font-size="9" fill="rgba(255,255,255,0.5)">82.6 GB</text>
+
+      <!-- Row 3 -->
+      <line x1="10" y1="68" x2="488" y2="68" stroke="rgba(255,255,255,0.04)" stroke-width="0.5"/>
+      <text x="12" y="82" font-family="Menlo, Monaco, Consolas, monospace" font-size="9" fill="rgba(255,255,255,0.7)">config-backup</text>
+      <rect x="140" y="73" width="42" height="14" rx="3" fill="rgba(239,68,68,0.15)"/>
+      <text x="161" y="83" font-family="system-ui, -apple-system, sans-serif" font-size="8" font-weight="600" fill="#ef4444" text-anchor="middle">FAIL</text>
+      <text x="240" y="82" font-family="system-ui, -apple-system, sans-serif" font-size="9" fill="rgba(255,255,255,0.5)">0m 03s</text>
+      <text x="340" y="82" font-family="system-ui, -apple-system, sans-serif" font-size="9" fill="rgba(255,255,255,0.5)">0</text>
+      <text x="420" y="82" font-family="system-ui, -apple-system, sans-serif" font-size="9" fill="rgba(255,255,255,0.5)">0 B</text>
+
+      <!-- Row 4 -->
+      <line x1="10" y1="90" x2="488" y2="90" stroke="rgba(255,255,255,0.04)" stroke-width="0.5"/>
+      <text x="12" y="104" font-family="Menlo, Monaco, Consolas, monospace" font-size="9" fill="rgba(255,255,255,0.7)">photos-offsite</text>
+      <rect x="140" y="95" width="42" height="14" rx="3" fill="rgba(34,197,94,0.15)"/>
+      <text x="161" y="105" font-family="system-ui, -apple-system, sans-serif" font-size="8" font-weight="600" fill="#22c55e" text-anchor="middle">OK</text>
+      <text x="240" y="104" font-family="system-ui, -apple-system, sans-serif" font-size="9" fill="rgba(255,255,255,0.5)">8m 41s</text>
+      <text x="340" y="104" font-family="system-ui, -apple-system, sans-serif" font-size="9" fill="rgba(255,255,255,0.5)">4,102</text>
+      <text x="420" y="104" font-family="system-ui, -apple-system, sans-serif" font-size="9" fill="rgba(255,255,255,0.5)">28.9 GB</text>
+    </g>
+  </g>
+
+  <!-- Metrics row at bottom right -->
+  <g transform="translate(620, 470)">
+    <rect x="0" y="0" width="530" height="60" rx="10" fill="url(#card)"/>
+    <rect x="0" y="0" width="530" height="60" rx="10" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+
+    <g transform="translate(66, 30)">
+      <text x="0" y="-6" font-family="system-ui, -apple-system, sans-serif" font-size="22" font-weight="700" fill="url(#green)" text-anchor="middle">568</text>
+      <text x="0" y="14" font-family="system-ui, -apple-system, sans-serif" font-size="10" font-weight="500" fill="rgba(255,255,255,0.4)" text-anchor="middle">Tests</text>
+    </g>
+
+    <line x1="133" y1="12" x2="133" y2="48" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+
+    <g transform="translate(200, 30)">
+      <text x="0" y="-6" font-family="system-ui, -apple-system, sans-serif" font-size="22" font-weight="700" fill="url(#green)" text-anchor="middle">90%</text>
+      <text x="0" y="14" font-family="system-ui, -apple-system, sans-serif" font-size="10" font-weight="500" fill="rgba(255,255,255,0.4)" text-anchor="middle">Coverage</text>
+    </g>
+
+    <line x1="265" y1="12" x2="265" y2="48" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+
+    <g transform="translate(332, 30)">
+      <text x="0" y="-6" font-family="system-ui, -apple-system, sans-serif" font-size="22" font-weight="700" fill="url(#green)" text-anchor="middle">24</text>
+      <text x="0" y="14" font-family="system-ui, -apple-system, sans-serif" font-size="10" font-weight="500" fill="rgba(255,255,255,0.4)" text-anchor="middle">Specs</text>
+    </g>
+
+    <line x1="398" y1="12" x2="398" y2="48" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+
+    <g transform="translate(464, 30)">
+      <text x="0" y="-6" font-family="system-ui, -apple-system, sans-serif" font-size="22" font-weight="700" fill="url(#green)" text-anchor="middle">8</text>
+      <text x="0" y="14" font-family="system-ui, -apple-system, sans-serif" font-size="10" font-weight="500" fill="rgba(255,255,255,0.4)" text-anchor="middle">Milestones</text>
+    </g>
+  </g>
+
+  <!-- Right side bottom: tagline -->
+  <g transform="translate(620, 560)">
+    <text x="0" y="0" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="400" fill="rgba(255,255,255,0.35)">Built with FastAPI, HTMX, and PostgreSQL. Self-hosted for your homelab.</text>
+    <text x="0" y="22" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="400" fill="rgba(255,255,255,0.35)">No cloud dependency. Your data stays on your hardware.</text>
+  </g>
+</svg>

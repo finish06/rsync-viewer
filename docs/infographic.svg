@@ -52,14 +52,14 @@
     <text x="0" y="0" font-family="system-ui, -apple-system, sans-serif" font-size="28" font-weight="700" fill="#ffffff">Rsync Log Viewer</text>
     <rect x="0" y="15" width="80" height="28" rx="14" fill="url(#accentGrad)" opacity="0.2"/>
     <rect x="0" y="15" width="80" height="28" rx="14" fill="none" stroke="url(#accentGrad)" stroke-width="1.5"/>
-    <text x="40" y="35" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="600" fill="url(#accentGrad)" text-anchor="middle">v1.5.0</text>
+    <text x="40" y="35" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="600" fill="url(#accentGrad)" text-anchor="middle">v1.8.0</text>
   </g>
 
   <!-- Section 2: Hero -->
   <g transform="translate(60, 120)">
-    <text x="0" y="0" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="600" fill="url(#accentGrad)" letter-spacing="2" style="text-transform:uppercase">ALPHA RELEASE</text>
-    <text x="0" y="50" font-family="system-ui, -apple-system, sans-serif" font-size="56" font-weight="700" fill="#ffffff" style="line-height:1.1">Track Every Sync, Miss Nothing</text>
-    <text x="0" y="100" font-family="system-ui, -apple-system, sans-serif" font-size="20" font-weight="400" fill="rgba(255,255,255,0.7)">Centralized rsync monitoring with alerts for your homelab</text>
+    <text x="0" y="0" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="600" fill="url(#accentGrad)" letter-spacing="2" style="text-transform:uppercase">BETA RELEASE</text>
+    <text x="0" y="50" font-family="system-ui, -apple-system, sans-serif" font-size="56" font-weight="700" fill="#ffffff" style="line-height:1.1">Monitor Every Sync in One Place</text>
+    <text x="0" y="100" font-family="system-ui, -apple-system, sans-serif" font-size="20" font-weight="400" fill="rgba(255,255,255,0.7)">Collect, parse, and visualize rsync logs with real-time alerts and role-based access</text>
   </g>
 
   <!-- Section 3: Metrics Bar -->
@@ -70,7 +70,7 @@
 
     <!-- Metric 1 (centered at 180) -->
     <g transform="translate(180, 45)">
-      <text x="0" y="-10" font-family="system-ui, -apple-system, sans-serif" font-size="32" font-weight="700" fill="url(#metricGrad)" text-anchor="middle" dominant-baseline="middle">19</text>
+      <text x="0" y="-10" font-family="system-ui, -apple-system, sans-serif" font-size="32" font-weight="700" fill="url(#metricGrad)" text-anchor="middle" dominant-baseline="middle">24</text>
       <text x="0" y="20" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="500" fill="rgba(255,255,255,0.6)" text-anchor="middle" dominant-baseline="middle">Specs</text>
     </g>
 
@@ -79,7 +79,7 @@
 
     <!-- Metric 2 (centered at 540) -->
     <g transform="translate(540, 45)">
-      <text x="0" y="-10" font-family="system-ui, -apple-system, sans-serif" font-size="32" font-weight="700" fill="url(#metricGrad)" text-anchor="middle" dominant-baseline="middle">294</text>
+      <text x="0" y="-10" font-family="system-ui, -apple-system, sans-serif" font-size="32" font-weight="700" fill="url(#metricGrad)" text-anchor="middle" dominant-baseline="middle">568</text>
       <text x="0" y="20" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="500" fill="rgba(255,255,255,0.6)" text-anchor="middle" dominant-baseline="middle">Tests</text>
     </g>
 
@@ -88,8 +88,8 @@
 
     <!-- Metric 3 (centered at 900) -->
     <g transform="translate(900, 45)">
-      <text x="0" y="-10" font-family="system-ui, -apple-system, sans-serif" font-size="32" font-weight="700" fill="url(#metricGrad)" text-anchor="middle" dominant-baseline="middle">92%</text>
-      <text x="0" y="20" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="500" fill="rgba(255,255,255,0.6)" text-anchor="middle" dominant-baseline="middle">Coverage</text>
+      <text x="0" y="-10" font-family="system-ui, -apple-system, sans-serif" font-size="32" font-weight="700" fill="url(#metricGrad)" text-anchor="middle" dominant-baseline="middle">Beta</text>
+      <text x="0" y="20" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="500" fill="rgba(255,255,255,0.6)" text-anchor="middle" dominant-baseline="middle">Maturity</text>
     </g>
   </g>
 
@@ -148,15 +148,15 @@
     <g>
       <rect x="0" y="0" width="340" height="100" rx="12" fill="url(#cardGrad)" filter="url(#glass)"/>
       <rect x="0" y="0" width="340" height="100" rx="12" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
-      <text x="20" y="35" font-family="system-ui, -apple-system, sans-serif" font-size="16" font-weight="600" fill="#ffffff">100% Log Capture</text>
-      <text x="20" y="60" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="400" fill="rgba(255,255,255,0.6)">Every rsync run parsed and stored automatically</text>
+      <text x="20" y="35" font-family="system-ui, -apple-system, sans-serif" font-size="16" font-weight="600" fill="#ffffff">Multi-User Auth</text>
+      <text x="20" y="60" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="400" fill="rgba(255,255,255,0.6)">JWT + RBAC roles + per-user API keys</text>
     </g>
 
     <!-- Card 2 -->
     <g transform="translate(370, 0)">
       <rect x="0" y="0" width="340" height="100" rx="12" fill="url(#cardGrad)" filter="url(#glass)"/>
       <rect x="0" y="0" width="340" height="100" rx="12" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
-      <text x="20" y="35" font-family="system-ui, -apple-system, sans-serif" font-size="16" font-weight="600" fill="#ffffff">Instant Failure Alerts</text>
+      <text x="20" y="35" font-family="system-ui, -apple-system, sans-serif" font-size="16" font-weight="600" fill="#ffffff">Smart Failure Alerts</text>
       <text x="20" y="60" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="400" fill="rgba(255,255,255,0.6)">Discord and webhook notifications within 60 seconds</text>
     </g>
 
@@ -164,8 +164,8 @@
     <g transform="translate(740, 0)">
       <rect x="0" y="0" width="340" height="100" rx="12" fill="url(#cardGrad)" filter="url(#glass)"/>
       <rect x="0" y="0" width="340" height="100" rx="12" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
-      <text x="20" y="35" font-family="system-ui, -apple-system, sans-serif" font-size="16" font-weight="600" fill="#ffffff">One-Command Deploy</text>
-      <text x="20" y="60" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="400" fill="rgba(255,255,255,0.6)">Docker Compose up and running in seconds</text>
+      <text x="20" y="35" font-family="system-ui, -apple-system, sans-serif" font-size="16" font-weight="600" fill="#ffffff">Full Observability</text>
+      <text x="20" y="60" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="400" fill="rgba(255,255,255,0.6)">Prometheus metrics + Grafana dashboards built in</text>
     </g>
   </g>
 
@@ -189,6 +189,6 @@
   <!-- Section 7: Footer -->
   <g transform="translate(60, 750)">
     <text x="0" y="0" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="500" fill="rgba(255,255,255,0.6)">Rsync Log Viewer</text>
-    <text x="1080" y="0" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="400" fill="rgba(255,255,255,0.5)" text-anchor="end">2026-02-23</text>
+    <text x="1080" y="0" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="400" fill="rgba(255,255,255,0.5)" text-anchor="end">2026-02-26</text>
   </g>
 </svg>
