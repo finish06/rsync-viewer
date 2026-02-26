@@ -4,6 +4,7 @@
 **Created:** 2026-02-22
 **PRD Reference:** docs/prd.md — M2: Notifications
 **Status:** Approved
+**Milestone:** M2 — Notifications
 
 ## 1. Overview
 

@@ -4,6 +4,7 @@
 **Created:** 2026-02-20
 **PRD Reference:** docs/prd.md
 **Status:** Draft
+**Milestone:** M1 — Foundation
 
 ## 1. Overview
 

@@ -1,13 +1,17 @@
 # Spec: OIDC Authentication
 
-**Version:** 0.1.0
+**Version:** 0.2.0
 **Created:** 2026-02-24
 **PRD Reference:** docs/prd.md
 **Status:** Draft
+**Milestone:** M7 — OIDC Authentication
+**Note:** OIDC provider configuration (AC-009) has been superseded by specs/oidc-settings.md. This spec now covers only the OIDC login flow, user creation/linking, and session handling. See specs/oidc-settings.md for how OIDC gets configured.
 
 ## 1. Overview
 
-Add OpenID Connect (OIDC) authentication as an additional login method alongside local username/password auth. Supports a single OIDC provider at a time (e.g., PocketId or any generic OIDC-compliant provider), configured via environment variables. Users who authenticate via OIDC get a local account auto-created or auto-linked by email, with a default Viewer role.
+Add OpenID Connect (OIDC) authentication as an additional login method alongside local username/password auth. Supports a single OIDC provider at a time (e.g., PocketId or any generic OIDC-compliant provider). Users who authenticate via OIDC get a local account auto-created or auto-linked by email, with a default Viewer role.
+
+> **Configuration:** OIDC provider details (issuer URL, client ID, client secret, etc.) are managed via the admin Settings UI. See [specs/oidc-settings.md](oidc-settings.md) for configuration details.
 
 ### User Story
 
@@ -17,7 +21,7 @@ As a homelab administrator, I want to authenticate via my existing OIDC provider
 
 | ID | Criterion | Priority |
 |----|-----------|----------|
-| AC-001 | OIDC login is available when `OIDC_ISSUER_URL`, `OIDC_CLIENT_ID`, and `OIDC_CLIENT_SECRET` env vars are set | Must |
+| AC-001 | OIDC login is available when OIDC is configured and enabled via the admin Settings UI (see specs/oidc-settings.md) | Must |
 | AC-002 | Login page shows a provider-branded "Login with {provider_name}" button below the local login form when OIDC is configured | Must |
 | AC-003 | Clicking the OIDC button initiates the Authorization Code Flow, redirecting to the provider's authorize endpoint | Must |
 | AC-004 | After successful OIDC auth, the callback endpoint exchanges the code for tokens and validates the ID token | Must |
@@ -25,13 +29,13 @@ As a homelab administrator, I want to authenticate via my existing OIDC provider
 | AC-006 | If a local user exists with a matching email, the OIDC identity is auto-linked to that account | Must |
 | AC-007 | OIDC-created users cannot set a local password — they are strictly OIDC-only | Must |
 | AC-008 | After OIDC login, a local JWT session is issued (same as local auth) so existing session handling works unchanged | Must |
-| AC-009 | OIDC configuration is read from environment variables: `OIDC_ISSUER_URL`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET`, `OIDC_PROVIDER_NAME`, `OIDC_HIDE_LOCAL_LOGIN` | Must |
+| AC-009 | ~~SUPERSEDED~~ — OIDC configuration is managed via admin Settings UI. See specs/oidc-settings.md | ~~Must~~ |
 | AC-010 | The app performs OIDC Discovery (fetches `/.well-known/openid-configuration`) to resolve authorize, token, and userinfo endpoints | Must |
 | AC-011 | OIDC login requests `openid email profile` scopes | Must |
-| AC-012 | When `OIDC_HIDE_LOCAL_LOGIN=true`, the local username/password form is hidden (OIDC-only mode) | Should |
+| AC-012 | When "Hide Local Login" is enabled in OIDC settings, the local username/password form is hidden (OIDC-only mode). `FORCE_LOCAL_LOGIN=true` env var overrides this. See specs/oidc-settings.md | Should |
 | AC-013 | OIDC state parameter is validated to prevent CSRF attacks on the callback | Must |
 | AC-014 | OIDC nonce is validated in the ID token to prevent replay attacks | Must |
-| AC-015 | When OIDC env vars are not set, the login page shows only the local login form (no OIDC button) | Must |
+| AC-015 | When OIDC is not configured or is disabled in Settings, the login page shows only the local login form (no OIDC button) | Must |
 | AC-016 | Logging out of rsync-viewer destroys the local session only (no OIDC provider logout) | Must |
 | AC-017 | An OIDC-linked user's display name and email are updated from OIDC claims on each login | Should |
 
@@ -200,10 +204,11 @@ As a homelab administrator, I want to authenticate via my existing OIDC provider
 - `authlib` or `httpx` (OIDC client library for Authorization Code Flow + Discovery)
 - User Management spec (specs/user-management.md) — provides User model, JWT session, roles
 - Security Hardening spec — rate limiting on auth endpoints
-- `.env.example` updated with all new OIDC env vars
+- **OIDC Settings spec (specs/oidc-settings.md)** — provides OIDC configuration via admin UI, DB storage, and Fernet encryption of client secret
 
 ## 9. Revision History
 
 | Date | Version | Author | Changes |
 |------|---------|--------|---------|
 | 2026-02-24 | 0.1.0 | finish06 | Initial spec from /add:spec interview |
+| 2026-02-26 | 0.2.0 | finish06 | Superseded AC-009 (env var config) with specs/oidc-settings.md; updated AC-001, AC-012, AC-015 to reference DB config |

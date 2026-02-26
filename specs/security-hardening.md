@@ -4,6 +4,7 @@
 **Created:** 2026-02-22
 **PRD Reference:** docs/prd.md
 **Status:** Draft
+**Milestone:** M3 — Reliability
 
 ## 1. Overview
 

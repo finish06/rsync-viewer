@@ -4,6 +4,7 @@
 **Created:** 2026-02-24
 **PRD Reference:** docs/prd.md
 **Status:** Complete
+**Milestone:** M9 — Multi-User
 
 ## 1. Overview
 
