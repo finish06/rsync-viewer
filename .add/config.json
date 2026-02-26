@@ -144,7 +144,7 @@
   },
   "planning": {
     "current_milestone": "M9",
-    "current_cycle": "cycle-9",
+    "current_cycle": "cycle-10",
     "wip_limit": 1,
     "parallel_agents": 1,
     "cycle_history": [
