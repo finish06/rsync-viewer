@@ -95,18 +95,19 @@ Production deployment is to a self-hosted homelab server. No staging environment
 | M1: Foundation | Stabilize existing features, add CI/CD | poc → alpha | COMPLETE | CI pipeline, 80% coverage, conventional commits |
 | M2: Notifications | Webhook alerts for failed syncs | alpha | COMPLETE | HA/Discord webhooks, settings UI, notification history |
 | M3: Reliability | Error handling, logging, security hardening | alpha → beta | COMPLETE | Structured logging, input validation, rate limiting, key hashing |
-| M4: Analytics & Performance | Trend analysis, dashboards, query optimization | beta | NEXT | Statistics API, Chart.js charts, cursor pagination, DB indexes |
+| M4: Analytics & Performance | Trend analysis, dashboards, query optimization | beta | COMPLETE | Statistics API, Chart.js charts, cursor pagination, DB indexes |
 | M5: API Performance | Debounce API key `last_used_at` writes | alpha | COMPLETE | Configurable debounce, zero regression, fewer DB writes |
-| M6: Observability | Prometheus metrics, Grafana dashboards, project docs | beta | NEXT | /metrics endpoint, Grafana templates, setup/architecture docs |
-| M7: OIDC Authentication | OpenID Connect single sign-on via PocketId or generic provider | beta → ga | LATER | OIDC login, auto-create/link users, provider-branded UI |
+| M6: Observability | Prometheus metrics, Grafana dashboards, project docs | beta | COMPLETE | /metrics endpoint, Grafana templates, setup/architecture docs |
+| M9: Multi-User | User accounts, JWT auth, role-based access control | beta → ga | COMPLETE | Registration/login, Admin/Operator/Viewer roles, per-user API keys |
+| M11: Polish & Infrastructure | UI consistency, SMTP email, codebase cleanup | beta | NEXT | SMTP settings UI, sync logs responsive, deprecation cleanup |
+| M7: OIDC Authentication | OpenID Connect single sign-on via PocketId or generic provider | beta → ga | LATER | OIDC login, OIDC settings UI, auto-create/link users |
 | M10: Sync Management | On-demand sync triggering, cron scheduling, real-time progress | beta → ga | LATER | Run Now button, cron schedules, WebSocket progress, retry |
-| M9: Multi-User | User accounts, JWT auth, role-based access control | beta → ga | LATER | Registration/login, Admin/Operator/Viewer roles, per-user API keys |
 
 ### Dependency Chain
 
 ```
 M3 (Reliability) → M4 (Analytics & Performance) → M6 (Observability)
-                 ↘ M9 (Multi-User) → M7 (OIDC Authentication)
+                 ↘ M9 (Multi-User) → M11 (Polish & Infrastructure) → M7 (OIDC Authentication)
                  ↘ M10 (Sync Management)
 ```
 

@@ -4,7 +4,7 @@
 **Created:** 2026-02-26
 **PRD Reference:** docs/prd.md
 **Status:** Draft
-**Milestone:** M9 — Multi-User
+**Milestone:** M11 — Polish & Infrastructure
 
 ## 1. Overview
 

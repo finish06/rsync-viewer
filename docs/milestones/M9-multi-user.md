@@ -35,13 +35,13 @@ Session Timeout        ███████████████████
 
 | Feature | Spec | Position | Notes |
 |---------|------|----------|-------|
-| User Registration & Login | specs/user-management.md | SHAPED | User model, password hashing, JWT tokens |
-| Role-Based Access Control | specs/user-management.md | SHAPED | Admin/Operator/Viewer, permission middleware |
-| Login UI & Protected Routes | specs/user-management.md | SHAPED | Login page, auth redirect, session timeout |
-| Per-User API Keys | specs/user-management.md | SHAPED | Key generation, role scoping, revocation |
-| Admin User Management | specs/user-management.md | SHAPED | User list, role changes, enable/disable |
-| Password Reset | specs/user-management.md | SHAPED | Email-based reset flow with token |
-| OAuth Login | specs/user-management.md | SHAPED | GitHub OAuth as alternative auth (stretch) |
+| User Registration & Login | specs/user-management.md | DONE | User model, password hashing, JWT tokens (PR #13) |
+| Role-Based Access Control | specs/user-management.md | DONE | Admin/Operator/Viewer, permission middleware (PR #16) |
+| Login UI & Protected Routes | specs/user-management.md | DONE | Login page, auth redirect, session timeout (PR #14) |
+| Per-User API Keys | specs/user-management.md | DONE | Key generation, role scoping, revocation (PR #17) |
+| Admin User Management | specs/user-management.md | DONE | User list, role changes, enable/disable (PR #18) |
+| Password Reset | specs/user-management.md | DONE | Console-logged tokens, self-service + admin-initiated (PR #18) |
+| ~~OAuth Login~~ | ~~specs/user-management.md~~ | DROPPED | Superseded by M7 OIDC Authentication |
 
 ## Dependencies
 
