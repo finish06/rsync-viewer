@@ -243,7 +243,9 @@ async def _try_verify_api_key(
             matched_key = api_key
             break
 
-    if not matched_key and not (settings.debug and x_api_key == settings.default_api_key):
+    if not matched_key and not (
+        settings.debug and x_api_key == settings.default_api_key
+    ):
         logger.warning("Invalid or inactive API key", extra={"endpoint": "dual-auth"})
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -252,8 +254,9 @@ async def _try_verify_api_key(
 
     if matched_key:
         now = utc_now()
-        if matched_key.last_used_at is None or now - matched_key.last_used_at > timedelta(
-            minutes=5
+        if (
+            matched_key.last_used_at is None
+            or now - matched_key.last_used_at > timedelta(minutes=5)
         ):
             matched_key.last_used_at = now
             session.add(matched_key)

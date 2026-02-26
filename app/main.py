@@ -25,7 +25,15 @@ from sqlmodel import SQLModel, Session, select, func
 from app.config import get_settings
 from app.database import engine, get_session
 from app.api.deps import OptionalUserDep
-from app.api.endpoints import sync_logs, monitors, failures, webhooks, analytics, auth, api_keys
+from app.api.endpoints import (
+    sync_logs,
+    monitors,
+    failures,
+    webhooks,
+    analytics,
+    auth,
+    api_keys,
+)
 from app.errors import make_error_response, INTERNAL_ERROR, VALIDATION_ERROR
 from app.logging_config import setup_logging
 from app.metrics import PrometheusMiddleware, get_metrics_output, set_app_info
@@ -902,10 +910,14 @@ async def htmx_api_keys_list(
     if not user:
         raise HTTPException(status_code=403, detail="Not authenticated")
 
-    statement = select(ApiKeyModel).where(
-        ApiKeyModel.is_active.is_(True),  # type: ignore[attr-defined]
-        ApiKeyModel.user_id == user.id,
-    ).order_by(ApiKeyModel.created_at.desc())  # type: ignore[attr-defined]
+    statement = (
+        select(ApiKeyModel)
+        .where(
+            ApiKeyModel.is_active.is_(True),  # type: ignore[attr-defined]
+            ApiKeyModel.user_id == user.id,
+        )
+        .order_by(ApiKeyModel.created_at.desc())
+    )  # type: ignore[attr-defined]
     api_keys = session.exec(statement).all()
 
     return templates.TemplateResponse(
@@ -954,7 +966,11 @@ async def htmx_api_key_create(
         return templates.TemplateResponse(
             request,
             "partials/api_key_form.html",
-            context={"user_role": user.role, "user": user, "error": "Name is required."},
+            context={
+                "user_role": user.role,
+                "user": user,
+                "error": "Name is required.",
+            },
         )
 
     # Validate role override
@@ -964,7 +980,11 @@ async def htmx_api_key_create(
             return templates.TemplateResponse(
                 request,
                 "partials/api_key_form.html",
-                context={"user_role": user.role, "user": user, "error": f"Cannot create key with role '{role_override}'."},
+                context={
+                    "user_role": user.role,
+                    "user": user,
+                    "error": f"Cannot create key with role '{role_override}'.",
+                },
             )
         effective_role = role_override
 
@@ -1017,10 +1037,14 @@ async def htmx_api_key_revoke(
     session.commit()
 
     # Return updated list
-    statement = select(ApiKeyModel).where(
-        ApiKeyModel.is_active.is_(True),  # type: ignore[attr-defined]
-        ApiKeyModel.user_id == user.id,
-    ).order_by(ApiKeyModel.created_at.desc())  # type: ignore[attr-defined]
+    statement = (
+        select(ApiKeyModel)
+        .where(
+            ApiKeyModel.is_active.is_(True),  # type: ignore[attr-defined]
+            ApiKeyModel.user_id == user.id,
+        )
+        .order_by(ApiKeyModel.created_at.desc())
+    )  # type: ignore[attr-defined]
     api_keys = session.exec(statement).all()
 
     return templates.TemplateResponse(

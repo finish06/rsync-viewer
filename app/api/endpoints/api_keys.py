@@ -29,7 +29,9 @@ def _generate_raw_key() -> str:
     return KEY_PREFIX + secrets.token_urlsafe(32)
 
 
-@router.post("", status_code=status.HTTP_201_CREATED, response_model=ApiKeyCreatedResponse)
+@router.post(
+    "", status_code=status.HTTP_201_CREATED, response_model=ApiKeyCreatedResponse
+)
 async def create_api_key(
     body: ApiKeyCreate,
     user: CurrentUserDep,
@@ -78,7 +80,9 @@ async def create_api_key(
 async def list_api_keys(
     user: CurrentUserDep,
     session: SessionDep,
-    all: Optional[bool] = Query(default=False, description="Admin: list all users' keys"),
+    all: Optional[bool] = Query(
+        default=False, description="Admin: list all users' keys"
+    ),
 ):
     """List API keys for the authenticated user (or all if admin with ?all=true)."""
     statement = select(ApiKey).where(

@@ -415,4 +415,6 @@ async def delete_sync_log(
         )
     session.delete(sync_log)
     session.commit()
-    logger.info("Sync log deleted", extra={"sync_id": str(sync_id), "deleted_by": user.username})
+    logger.info(
+        "Sync log deleted", extra={"sync_id": str(sync_id), "deleted_by": user.username}
+    )

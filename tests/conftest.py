@@ -84,9 +84,11 @@ async def mock_verify_api_key(
     )
 
 
-def _make_test_jwt(user_id: str = "00000000-0000-0000-0000-000000000000",
-                   username: str = "test-user",
-                   role: str = "operator") -> str:
+def _make_test_jwt(
+    user_id: str = "00000000-0000-0000-0000-000000000000",
+    username: str = "test-user",
+    role: str = "operator",
+) -> str:
     """Create a JWT token signed with the test secret key.
 
     Used by the client fixture so the AuthRedirectMiddleware passes.

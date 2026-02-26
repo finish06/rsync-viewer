@@ -297,9 +297,7 @@ class TestApiKeyRevocation:
         operator = _create_user(db_session, "op-target", ROLE_OPERATOR)
 
         async with _make_client(operator) as client:
-            create_resp = await client.post(
-                "/api/v1/api-keys", json={"name": "Op Key"}
-            )
+            create_resp = await client.post("/api/v1/api-keys", json={"name": "Op Key"})
             key_id = create_resp.json()["id"]
 
         async with _make_client(admin) as client:
@@ -408,9 +406,7 @@ class TestApiKeyRoleScoping:
         assert response.status_code == 403
 
     @pytest.mark.anyio
-    async def test_ac012_role_override_enforced_on_auth(
-        self, test_engine, db_session
-    ):
+    async def test_ac012_role_override_enforced_on_auth(self, test_engine, db_session):
         """When a key has role_override, that role is used for permission checks."""
         _setup_overrides(db_session)
         admin = _create_user(db_session, "admin-override", ROLE_ADMIN)
@@ -502,9 +498,7 @@ class TestApiKeyAuth:
             base_url="http://test",
         )
         async with unauthenticated_client as client:
-            response = await client.post(
-                "/api/v1/api-keys", json={"name": "No Auth"}
-            )
+            response = await client.post("/api/v1/api-keys", json={"name": "No Auth"})
         _cleanup()
 
         assert response.status_code == 401
