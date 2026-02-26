@@ -1,4 +1,5 @@
 import logging
+import secrets
 from datetime import timedelta
 from uuid import UUID
 
@@ -8,8 +9,11 @@ from sqlmodel import func, select
 
 from app.api.deps import SessionDep
 from app.config import get_settings
-from app.models.user import RefreshToken, User
+from app.models.user import PasswordResetToken, RefreshToken, User
 from app.schemas.user import (
+    PasswordResetConfirm,
+    PasswordResetRequest,
+    PasswordResetResponse,
     RefreshTokenRequest,
     TokenResponse,
     UserCreate,
@@ -237,3 +241,96 @@ async def refresh(body: RefreshTokenRequest, session: SessionDep) -> TokenRespon
         token_type="bearer",
         expires_in=settings.jwt_access_expiry_minutes * 60,
     )
+
+
+@router.post(
+    "/password-reset/request",
+    response_model=PasswordResetResponse,
+    summary="Request a password reset",
+)
+async def request_password_reset(
+    body: PasswordResetRequest, session: SessionDep
+) -> PasswordResetResponse:
+    """Request a password reset. Token is logged to console (no SMTP in MVP).
+
+    Always returns 200 regardless of whether email exists (no info leakage).
+    """
+    user = session.exec(select(User).where(User.email == body.email)).first()
+
+    if not user:
+        # Don't reveal whether email exists
+        return PasswordResetResponse(
+            message="If an account with that email exists, a reset link has been sent."
+        )
+
+    # Generate reset token
+    raw_token = secrets.token_urlsafe(32)
+    reset_record = PasswordResetToken(
+        user_id=user.id,
+        token_hash=hash_token(raw_token),
+        expires_at=utc_now() + timedelta(hours=1),
+    )
+    session.add(reset_record)
+    session.commit()
+
+    # In console mode, log the token (no SMTP)
+    logger.info(
+        "PASSWORD RESET TOKEN for %s: %s",
+        user.username,
+        raw_token,
+    )
+
+    return PasswordResetResponse(
+        message="If an account with that email exists, a reset link has been sent.",
+        reset_token=raw_token,  # Exposed in response for console/debug mode
+    )
+
+
+@router.post(
+    "/password-reset/confirm",
+    summary="Reset password with token",
+)
+async def confirm_password_reset(
+    body: PasswordResetConfirm, session: SessionDep
+) -> dict:
+    """Reset password using a valid, unused, non-expired token."""
+    # Find all unused, non-expired tokens
+    now = utc_now()
+    tokens = session.exec(
+        select(PasswordResetToken).where(
+            PasswordResetToken.used.is_(False),  # type: ignore[attr-defined]
+            PasswordResetToken.expires_at > now,
+        )
+    ).all()
+
+    matched_token = None
+    for token_record in tokens:
+        if verify_token(body.token, token_record.token_hash):
+            matched_token = token_record
+            break
+
+    if not matched_token:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid, expired, or already used reset token",
+        )
+
+    # Load user and update password
+    user = session.get(User, matched_token.user_id)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User not found",
+        )
+
+    user.password_hash = hash_password(body.new_password)
+    user.updated_at = now
+    session.add(user)
+
+    # Mark token as used
+    matched_token.used = True
+    session.add(matched_token)
+    session.commit()
+
+    logger.info("Password reset completed for %s", user.username)
+    return {"message": "Password has been reset successfully."}

@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}Admin - User Management{% endblock %}
+
+{% block content %}
+<div class="settings-page">
+    <h1 style="font-size: 1.5rem; font-weight: 600; margin-bottom: 1.5rem;">User Management</h1>
+
+    <div class="settings-section">
+        <div class="settings-section-header">
+            <h2>All Users</h2>
+        </div>
+        <div class="settings-section-body">
+            <div id="admin-user-list"
+                 hx-get="/htmx/admin/users"
+                 hx-trigger="load"
+                 hx-swap="innerHTML">
+                {% include "partials/admin_user_list.html" %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
