@@ -24,6 +24,27 @@
 
             <div class="settings-section">
                 <div class="settings-section-header settings-section-header-flex">
+                    <h2>API Keys</h2>
+                    <button class="theme-option"
+                            hx-get="/htmx/api-keys/add"
+                            hx-target="#modal-container"
+                            hx-swap="innerHTML"
+                            type="button">
+                        Generate Key
+                    </button>
+                </div>
+                <div class="settings-section-body">
+                    <div id="api-keys-list"
+                         hx-get="/htmx/api-keys"
+                         hx-trigger="load"
+                         hx-swap="innerHTML">
+                        <div class="loading">Loading API keys...</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <div class="settings-section-header settings-section-header-flex">
                     <h2>Webhooks</h2>
                     <button class="theme-option"
                             hx-get="/htmx/webhooks/add"

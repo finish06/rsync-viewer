@@ -1,0 +1,45 @@
+<div class="modal-backdrop" onclick="this.remove()">
+    <div class="modal webhook-modal" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <h2>Generate API Key</h2>
+            <button class="modal-close" onclick="this.closest('.modal-backdrop').remove()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="api-key-form"
+                  hx-post="/htmx/api-keys"
+                  hx-target="#modal-container"
+                  hx-swap="innerHTML">
+                <div class="form-group">
+                    <label class="settings-label" for="key-name">Name</label>
+                    <input type="text" id="key-name" name="name"
+                           placeholder="e.g., Backup Script, CI Pipeline"
+                           required maxlength="100"
+                           class="form-input">
+                </div>
+                <div class="form-group">
+                    <label class="settings-label" for="role-override">Role (optional)</label>
+                    <select id="role-override" name="role_override" class="form-input">
+                        <option value="">Inherit my role ({{ user_role }})</option>
+                        {% if user_role == 'admin' %}
+                        <option value="operator">Operator</option>
+                        {% endif %}
+                        {% if user_role in ['admin', 'operator'] %}
+                        <option value="viewer">Viewer</option>
+                        {% endif %}
+                    </select>
+                    <p class="hint" style="margin-top: 0.25rem;">Limit this key's permissions below your role.</p>
+                </div>
+                {% if error %}
+                <div class="alert alert-error" style="margin-bottom: 1rem; padding: 0.75rem; color: #dc2626; background: #fef2f2; border-radius: 0.375rem;">
+                    {{ error }}
+                </div>
+                {% endif %}
+                <div class="form-actions" style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1rem;">
+                    <button type="button" class="btn btn-small"
+                            onclick="this.closest('.modal-backdrop').remove()">Cancel</button>
+                    <button type="submit" class="btn btn-small btn-test">Generate</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

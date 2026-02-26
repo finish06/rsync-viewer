@@ -1,0 +1,45 @@
+{% if api_keys %}
+<table class="sync-table webhook-table">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Prefix</th>
+            <th>Role</th>
+            <th>Created</th>
+            <th>Last Used</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for key in api_keys %}
+        <tr>
+            <td>{{ key.name }}</td>
+            <td><code>{{ key.key_prefix }}...</code></td>
+            <td>
+                {% if key.role_override %}
+                <span class="role-badge role-{{ key.role_override }}">{{ key.role_override }}</span>
+                {% else %}
+                <span class="text-muted">inherited</span>
+                {% endif %}
+            </td>
+            <td>{{ key.created_at.strftime('%Y-%m-%d %H:%M') if key.created_at else '-' }}</td>
+            <td>{{ key.last_used_at.strftime('%Y-%m-%d %H:%M') if key.last_used_at else 'Never' }}</td>
+            <td class="webhook-actions">
+                <button class="btn btn-small btn-danger"
+                        hx-delete="/htmx/api-keys/{{ key.id }}"
+                        hx-target="#api-keys-list"
+                        hx-swap="innerHTML"
+                        hx-confirm="Revoke API key '{{ key.name }}'? This cannot be undone.">
+                    Revoke
+                </button>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<div class="empty-state">
+    <p>No API keys</p>
+    <p class="hint">Generate an API key to authenticate scripts and external tools.</p>
+</div>
+{% endif %}
