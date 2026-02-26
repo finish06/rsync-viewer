@@ -28,7 +28,7 @@ class Settings(BaseSettings):
     jwt_refresh_expiry_days: int = 30
     jwt_algorithm: str = "HS256"
     auth_enabled: bool = False  # Auto-enables when first user registers
-    app_version: str = "1.7.0"
+    app_version: str = "1.8.0"
 
 
 @lru_cache
