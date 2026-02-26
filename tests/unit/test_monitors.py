@@ -141,9 +141,9 @@ async def test_ac007_delete_nonexistent_returns_404(client: AsyncClient):
 
 
 @pytest.mark.anyio
-async def test_ac007_create_requires_api_key(client: AsyncClient):
-    """Monitor endpoints should require API key authentication."""
-    response = await client.post(
+async def test_ac007_create_requires_api_key(unauth_client: AsyncClient):
+    """Monitor endpoints should require authentication."""
+    response = await unauth_client.post(
         "/api/v1/monitors",
         json={"source_name": "test", "expected_interval_hours": 24},
     )

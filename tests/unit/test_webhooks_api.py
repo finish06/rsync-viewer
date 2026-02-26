@@ -124,9 +124,9 @@ async def test_ac002_delete_nonexistent_returns_404(client: AsyncClient):
 
 
 @pytest.mark.anyio
-async def test_ac002_requires_auth(client: AsyncClient):
-    """Webhook endpoints require API key authentication."""
-    response = await client.get("/api/v1/webhooks")
+async def test_ac002_requires_auth(unauth_client: AsyncClient):
+    """Webhook endpoints require authentication."""
+    response = await unauth_client.get("/api/v1/webhooks")
     assert response.status_code == 401
 
 

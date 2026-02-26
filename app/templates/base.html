@@ -22,7 +22,17 @@
         <div class="header-content">
             <h1><a href="/" style="text-decoration: none; color: inherit;">Rsync Log Viewer</a></h1>
             <nav class="header-nav">
-                <a href="/settings">Settings</a>
+                {% if user %}
+                    {% if user.role in ['admin', 'operator'] %}
+                    <a href="/settings">Settings</a>
+                    {% endif %}
+                    <span class="user-info">{{ user.username }} <span class="role-badge role-{{ user.role }}">{{ user.role }}</span></span>
+                    <form method="post" action="/logout" style="display:inline;">
+                        <button type="submit" class="logout-btn">Logout</button>
+                    </form>
+                {% else %}
+                    <a href="/login">Login</a>
+                {% endif %}
             </nav>
         </div>
     </header>

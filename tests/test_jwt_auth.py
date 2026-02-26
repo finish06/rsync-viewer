@@ -120,10 +120,10 @@ class TestLoginEndpoint:
         assert data["expires_in"] > 0
 
     @pytest.mark.asyncio
-    async def test_ac003_login_returns_valid_jwt(self, client: AsyncClient):
+    async def test_ac003_login_returns_valid_jwt(self, unauth_client: AsyncClient):
         """Access token from login should be a valid JWT with correct claims."""
-        await _register_user(client)
-        response = await client.post(
+        await _register_user(unauth_client)
+        response = await unauth_client.post(
             "/api/v1/auth/login",
             json={"username": "testuser", "password": "SecurePass123!"},
         )

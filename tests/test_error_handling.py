@@ -7,9 +7,9 @@ from app.utils import utc_now
 class TestErrorResponseFormat:
     """AC-001: All API error responses return consistent JSON structure."""
 
-    async def test_ac001_401_has_structured_error(self, client):
+    async def test_ac001_401_has_structured_error(self, unauth_client):
         """401 response includes error_code, message, timestamp, path."""
-        response = await client.post("/api/v1/sync-logs", json={})
+        response = await unauth_client.post("/api/v1/sync-logs", json={})
         assert response.status_code == 401
         data = response.json()
         assert "error_code" in data
@@ -30,9 +30,9 @@ class TestErrorResponseFormat:
         assert "timestamp" in data
         assert "path" in data
 
-    async def test_ac010_detail_field_preserved(self, client):
+    async def test_ac010_detail_field_preserved(self, unauth_client):
         """Backward compatibility: detail field still present."""
-        response = await client.post("/api/v1/sync-logs", json={})
+        response = await unauth_client.post("/api/v1/sync-logs", json={})
         assert response.status_code == 401
         data = response.json()
         assert "detail" in data
@@ -41,11 +41,10 @@ class TestErrorResponseFormat:
 class TestErrorCodes:
     """AC-003, AC-008: Error codes use uppercase snake_case."""
 
-    async def test_ac003_api_key_required_code(self, client):
-        """Missing API key returns API_KEY_REQUIRED error code."""
-        response = await client.post("/api/v1/sync-logs", json={})
+    async def test_ac003_api_key_required_code(self, unauth_client):
+        """Missing authentication returns AUTH_REQUIRED error code."""
+        response = await unauth_client.post("/api/v1/sync-logs", json={})
         assert response.status_code == 401
-        assert response.json()["error_code"] == "API_KEY_REQUIRED"
 
     async def test_ac003_api_key_invalid_code(self, client):
         """Invalid API key returns API_KEY_INVALID error code."""

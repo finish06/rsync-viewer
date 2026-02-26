@@ -267,9 +267,9 @@ class TestFirstUserAdmin:
     """AC-015: First registered user is automatically assigned the Admin role."""
 
     @pytest.mark.asyncio
-    async def test_ac015_first_user_gets_admin(self, client: AsyncClient):
+    async def test_ac015_first_user_gets_admin(self, unauth_client: AsyncClient):
         """First registered user should be admin."""
-        response = await client.post(
+        response = await unauth_client.post(
             "/api/v1/auth/register",
             json={
                 "username": "firstadmin",

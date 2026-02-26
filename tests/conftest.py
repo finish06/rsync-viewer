@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 from typing import Annotated, Generator, Optional as TypingOptional
 from uuid import uuid4
 
+import jwt as pyjwt
 import pytest
 from fastapi import Header, HTTPException, status
 from httpx import ASGITransport, AsyncClient
@@ -20,6 +21,10 @@ from app.models.webhook import WebhookEndpoint  # noqa: F401 — ensure table cr
 from app.models.notification_log import NotificationLog  # noqa: F401 — ensure table creation
 from app.models.webhook_options import WebhookOptions  # noqa: F401 — ensure table creation
 from app.utils import utc_now
+
+# Test secret key — must match get_test_settings().secret_key
+_TEST_SECRET = "test-secret-key"
+_TEST_ALGORITHM = "HS256"
 
 
 # Get database URL from environment or use default test database
@@ -79,9 +84,52 @@ async def mock_verify_api_key(
     )
 
 
+def _make_test_jwt(user_id: str = "00000000-0000-0000-0000-000000000000",
+                   username: str = "test-user",
+                   role: str = "operator") -> str:
+    """Create a JWT token signed with the test secret key.
+
+    Used by the client fixture so the AuthRedirectMiddleware passes.
+    """
+    now = utc_now()
+    payload = {
+        "sub": user_id,
+        "username": username,
+        "role": role,
+        "type": "access",
+        "iat": now,
+        "exp": now + timedelta(minutes=30),
+    }
+    return pyjwt.encode(payload, _TEST_SECRET, algorithm=_TEST_ALGORITHM)
+
+
 @pytest.fixture(scope="function")
 def client(test_engine, db_session) -> Generator[AsyncClient, None, None]:
-    """Create an async test client with overridden dependencies"""
+    """Create an async test client with overridden dependencies.
+
+    Provides both:
+    - JWT cookie (operator-level, backed by a real user) for UI routes
+    - X-API-Key header so dual-auth API endpoints work
+    """
+    from app.models.user import User
+    from app.services.auth import hash_password, ROLE_OPERATOR
+
+    # Set env vars so get_settings() rebuilds with test values
+    # (middleware and deps that call get_settings() directly need this)
+    os.environ["SECRET_KEY"] = _TEST_SECRET
+    os.environ["DEBUG"] = "true"
+    os.environ["DEFAULT_API_KEY"] = "test-api-key"
+    get_settings.cache_clear()
+
+    # Create a real operator user so JWT-based auth can look up the user
+    test_user = User(
+        username="test-operator",
+        email="operator@test.local",
+        password_hash=hash_password("TestPass1!"),
+        role=ROLE_OPERATOR,
+    )
+    db_session.add(test_user)
+    db_session.flush()  # Assign ID without committing (rolled back by fixture)
 
     def get_test_session():
         yield db_session
@@ -91,15 +139,47 @@ def client(test_engine, db_session) -> Generator[AsyncClient, None, None]:
     app.dependency_overrides[verify_api_key] = mock_verify_api_key
 
     csrf_token = generate_csrf_token()
+    jwt_token = _make_test_jwt(
+        user_id=str(test_user.id),
+        username=test_user.username,
+        role=test_user.role,
+    )
 
     yield AsyncClient(
         transport=ASGITransport(app=app),
         base_url="http://test",
-        headers={"X-CSRF-Token": csrf_token},
-        cookies={"csrf_token": csrf_token},
+        headers={"X-API-Key": "test-api-key", "X-CSRF-Token": csrf_token},
+        cookies={"csrf_token": csrf_token, "access_token": jwt_token},
     )
 
     app.dependency_overrides.clear()
+    get_settings.cache_clear()
+
+
+@pytest.fixture(scope="function")
+def unauth_client(test_engine, db_session) -> Generator[AsyncClient, None, None]:
+    """Create an unauthenticated test client (no API key, no JWT).
+
+    Use this fixture for tests that verify auth-required behavior (401).
+    """
+    os.environ["SECRET_KEY"] = _TEST_SECRET
+    os.environ["DEBUG"] = "true"
+    os.environ["DEFAULT_API_KEY"] = "test-api-key"
+    get_settings.cache_clear()
+
+    def get_test_session():
+        yield db_session
+
+    app.dependency_overrides[get_session] = get_test_session
+    app.dependency_overrides[get_settings] = get_test_settings
+
+    yield AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    )
+
+    app.dependency_overrides.clear()
+    get_settings.cache_clear()
 
 
 # Sample rsync output fixtures

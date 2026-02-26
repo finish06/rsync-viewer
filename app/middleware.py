@@ -5,9 +5,10 @@ import time
 from contextvars import ContextVar
 from uuid import uuid4
 
+import jwt as pyjwt
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
-from starlette.responses import Response
+from starlette.responses import Response, RedirectResponse
 
 from app.config import get_settings
 from app.csrf import validate_csrf_token
@@ -134,6 +135,47 @@ class BodySizeLimitMiddleware(BaseHTTPMiddleware):
             )
 
         return await call_next(request)
+
+
+# Paths that don't require authentication
+PUBLIC_PATHS = {"/login", "/register", "/health", "/metrics"}
+PUBLIC_PREFIXES = ("/static/", "/api/")
+
+
+class AuthRedirectMiddleware(BaseHTTPMiddleware):
+    """Redirect unauthenticated browser requests to /login.
+
+    API routes (/api/*) are excluded — they return 401 via their own deps.
+    Public paths (login, register, health, metrics, static) are excluded.
+    """
+
+    async def dispatch(self, request: Request, call_next):
+        path = request.url.path
+
+        # Skip public paths and API routes
+        if path in PUBLIC_PATHS or any(path.startswith(p) for p in PUBLIC_PREFIXES):
+            return await call_next(request)
+
+        # Check JWT cookie
+        token = request.cookies.get("access_token")
+        if token:
+            settings = get_settings()
+            try:
+                payload = pyjwt.decode(
+                    token,
+                    settings.secret_key,
+                    algorithms=[settings.jwt_algorithm],
+                )
+                if payload.get("type") == "access":
+                    return await call_next(request)
+            except (pyjwt.ExpiredSignatureError, pyjwt.InvalidTokenError):
+                pass
+
+        # Not authenticated — redirect to login with return URL
+        return_url = path
+        if request.url.query:
+            return_url = f"{path}?{request.url.query}"
+        return RedirectResponse(f"/login?return_url={return_url}", status_code=302)
 
 
 # Paths where CSRF validation is enforced for form POSTs

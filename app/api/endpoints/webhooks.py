@@ -1,11 +1,13 @@
 import logging
+from typing import Annotated
 from uuid import UUID
 
 import httpx
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import select
 
-from app.api.deps import SessionDep, ApiKeyDep
+from app.api.deps import SessionDep, require_role_or_api_key
+from app.services.auth import ROLE_OPERATOR, ROLE_VIEWER
 from app.utils import utc_now
 from app.models.webhook import WebhookEndpoint
 from app.models.webhook_options import WebhookOptions
@@ -47,7 +49,10 @@ def _get_options_dict(session, webhook_id: UUID) -> dict | None:
     response_model=list[WebhookRead],
     summary="List webhook endpoints",
 )
-async def list_webhooks(session: SessionDep, api_key: ApiKeyDep):
+async def list_webhooks(
+    session: SessionDep,
+    auth: Annotated[tuple, Depends(require_role_or_api_key(ROLE_VIEWER))],
+):
     """List all configured webhook endpoints."""
     statement = select(WebhookEndpoint).order_by(WebhookEndpoint.name)
     webhooks = session.exec(statement).all()
@@ -72,7 +77,11 @@ async def list_webhooks(session: SessionDep, api_key: ApiKeyDep):
     status_code=status.HTTP_201_CREATED,
     summary="Create a webhook endpoint",
 )
-async def create_webhook(data: WebhookCreate, session: SessionDep, api_key: ApiKeyDep):
+async def create_webhook(
+    data: WebhookCreate,
+    session: SessionDep,
+    auth: Annotated[tuple, Depends(require_role_or_api_key(ROLE_OPERATOR))],
+):
     """Create a new webhook endpoint for failure notifications."""
     webhook = WebhookEndpoint(
         name=data.name,
@@ -114,7 +123,7 @@ async def update_webhook(
     webhook_id: UUID,
     data: WebhookUpdate,
     session: SessionDep,
-    api_key: ApiKeyDep,
+    auth: Annotated[tuple, Depends(require_role_or_api_key(ROLE_OPERATOR))],
 ):
     """Update an existing webhook endpoint."""
     webhook = session.get(WebhookEndpoint, webhook_id)
@@ -168,7 +177,11 @@ async def update_webhook(
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete a webhook endpoint",
 )
-async def delete_webhook(webhook_id: UUID, session: SessionDep, api_key: ApiKeyDep):
+async def delete_webhook(
+    webhook_id: UUID,
+    session: SessionDep,
+    auth: Annotated[tuple, Depends(require_role_or_api_key(ROLE_OPERATOR))],
+):
     """Delete a webhook endpoint."""
     webhook = session.get(WebhookEndpoint, webhook_id)
     if not webhook:
@@ -188,7 +201,11 @@ async def delete_webhook(webhook_id: UUID, session: SessionDep, api_key: ApiKeyD
     "/{webhook_id}/test",
     summary="Send a test notification",
 )
-async def test_webhook(webhook_id: UUID, session: SessionDep, api_key: ApiKeyDep):
+async def test_webhook(
+    webhook_id: UUID,
+    session: SessionDep,
+    auth: Annotated[tuple, Depends(require_role_or_api_key(ROLE_OPERATOR))],
+):
     """Send a test notification to a webhook endpoint."""
     webhook = session.get(WebhookEndpoint, webhook_id)
     if not webhook:

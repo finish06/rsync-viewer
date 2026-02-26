@@ -22,10 +22,10 @@
 ## Hill Chart
 
 ```
-User Accounts & Auth   ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  SHAPED
-Role-Based Access      ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  SHAPED
-Login & Protected UI   ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  SHAPED
-Per-User API Keys      ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  SHAPED
+User Accounts & Auth   ██████████████████████████████████████  VERIFIED (Phases 1-2 done, tests passing)
+Role-Based Access      ██████████████████████████████████████  VERIFIED (Phase 3 complete, 32 RBAC tests)
+Login & Protected UI   ██████████████████████████████████████  VERIFIED (login, register, middleware, logout)
+Per-User API Keys      ████████████░░░░░░░░░░░░░░░░░░░░░░░░░  SPECCED (Phase 4 next)
 Admin Management       ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  SHAPED
 ```
 
@@ -74,7 +74,9 @@ Admin Management       ░░░░░░░░░░░░░░░░░░░
 | Cycle | Features | Status | Notes |
 |-------|----------|--------|-------|
 | cycle-8 | User Model & Registration (Phase 1) | COMPLETE | AC-001, AC-002, AC-005, AC-015. PR #13 merged. |
-| cycle-9 | JWT Authentication & Login (Phase 2) | PLANNED | AC-003, AC-004, AC-009 |
+| cycle-9 | JWT Authentication & Login (Phase 2) | COMPLETE | AC-003, AC-004, AC-009. PR #14 merged. |
+| cycle-10 | RBAC & Protected Routes (Phase 3) | COMPLETE | AC-006, AC-007, AC-008, AC-010. 32 tests, 514 total passing, 91% coverage. |
+| cycle-11 | Per-User API Keys (Phase 4) | PLANNED | AC-011, AC-012 |
 
 ## Retrospective
 

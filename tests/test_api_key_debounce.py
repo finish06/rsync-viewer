@@ -210,13 +210,13 @@ class TestDebounceNoAuthRegression:
     async def test_ac004_missing_key_still_rejected(
         self, real_auth_client, sample_sync_data
     ):
-        """Missing API key still returns 401."""
+        """Missing authentication still returns 401."""
         response = await real_auth_client.post(
             "/api/v1/sync-logs",
             json=sample_sync_data,
         )
         assert response.status_code == 401
-        assert "API key required" in response.json()["detail"]
+        assert "required" in response.json()["detail"].lower()
 
     async def test_ac004_invalid_key_still_rejected(
         self, real_auth_client, sample_sync_data

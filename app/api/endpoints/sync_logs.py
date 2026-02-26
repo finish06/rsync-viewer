@@ -2,13 +2,14 @@ import base64
 import json
 import logging
 from datetime import datetime
-from typing import Optional
+from typing import Annotated, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlmodel import select, func
 
-from app.api.deps import SessionDep, ApiKeyDep
+from app.api.deps import SessionDep, AdminDep, require_role_or_api_key
+from app.services.auth import ROLE_OPERATOR, ROLE_VIEWER
 from app.models.sync_log import SyncLog
 from app.models.failure_event import FailureEvent
 from app.models.monitor import SyncSourceMonitor
@@ -64,7 +65,7 @@ router = APIRouter(prefix="/sync-logs", tags=["sync-logs"])
 async def create_sync_log(
     data: SyncLogCreate,
     session: SessionDep,
-    api_key: ApiKeyDep,
+    auth: Annotated[tuple, Depends(require_role_or_api_key(ROLE_OPERATOR))],
 ):
     """
     Create a new sync log entry by submitting raw rsync output.
@@ -166,6 +167,7 @@ async def create_sync_log(
 )
 async def list_sync_logs(
     session: SessionDep,
+    auth: Annotated[tuple, Depends(require_role_or_api_key(ROLE_VIEWER))],
     source_name: Optional[str] = Query(None, description="Filter by source name"),
     start_date: Optional[datetime] = Query(
         None, description="Filter syncs after this date (ISO 8601)"
@@ -342,7 +344,10 @@ async def list_sync_logs(
         200: {"description": "List of unique source names"},
     },
 )
-async def list_sources(session: SessionDep):
+async def list_sources(
+    session: SessionDep,
+    auth: Annotated[tuple, Depends(require_role_or_api_key(ROLE_VIEWER))],
+):
     """
     List all unique source names that have submitted sync logs.
 
@@ -362,7 +367,11 @@ async def list_sources(session: SessionDep):
         404: {"model": ErrorResponse, "description": "Sync log not found"},
     },
 )
-async def get_sync_log(sync_id: UUID, session: SessionDep):
+async def get_sync_log(
+    sync_id: UUID,
+    session: SessionDep,
+    auth: Annotated[tuple, Depends(require_role_or_api_key(ROLE_VIEWER))],
+):
     """
     Get detailed information about a specific sync log.
 
@@ -378,3 +387,32 @@ async def get_sync_log(sync_id: UUID, session: SessionDep):
             detail="Sync log not found",
         )
     return sync_log
+
+
+@router.delete(
+    "/{sync_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete a sync log",
+    responses={
+        204: {"description": "Sync log deleted successfully"},
+        403: {"model": ErrorResponse, "description": "Insufficient permissions"},
+        404: {"model": ErrorResponse, "description": "Sync log not found"},
+    },
+)
+async def delete_sync_log(
+    sync_id: UUID,
+    session: SessionDep,
+    user: AdminDep,
+):
+    """
+    Delete a sync log entry. Requires Admin role.
+    """
+    sync_log = session.get(SyncLog, sync_id)
+    if not sync_log:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Sync log not found",
+        )
+    session.delete(sync_log)
+    session.commit()
+    logger.info("Sync log deleted", extra={"sync_id": str(sync_id), "deleted_by": user.username})

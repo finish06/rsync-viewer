@@ -125,7 +125,7 @@ async def test_ac008_filter_by_since(client: AsyncClient, create_failure_event):
 
 
 @pytest.mark.anyio
-async def test_ac008_requires_api_key(client: AsyncClient):
-    """Failures endpoint should require API key."""
-    response = await client.get("/api/v1/failures")
+async def test_ac008_requires_api_key(unauth_client: AsyncClient):
+    """Failures endpoint should require authentication."""
+    response = await unauth_client.get("/api/v1/failures")
     assert response.status_code == 401

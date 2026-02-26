@@ -21,15 +21,17 @@ class TestCreateSyncLog:
         assert data["bytes_sent"] == int(100)
         assert data["bytes_received"] == int(1.00 * 1024)
 
-    async def test_create_sync_log_missing_api_key(self, client, sample_sync_log_data):
-        """Test that API key is required"""
-        response = await client.post(
+    async def test_create_sync_log_missing_api_key(
+        self, unauth_client, sample_sync_log_data
+    ):
+        """Test that authentication is required"""
+        response = await unauth_client.post(
             "/api/v1/sync-logs",
             json=sample_sync_log_data,
         )
 
         assert response.status_code == 401
-        assert "API key required" in response.json()["detail"]
+        assert "required" in response.json()["detail"].lower()
 
     async def test_create_sync_log_invalid_api_key(self, client, sample_sync_log_data):
         """Test that invalid API key is rejected"""
