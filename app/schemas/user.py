@@ -92,3 +92,46 @@ class RefreshTokenRequest(BaseModel):
     """Schema for token refresh request."""
 
     refresh_token: str
+
+
+class ApiKeyCreate(BaseModel):
+    """Schema for creating a new API key."""
+
+    name: str = Field(
+        ...,
+        min_length=1,
+        max_length=100,
+        description="Human-readable name for this key",
+        examples=["My Script Key"],
+    )
+    role_override: Optional[str] = Field(
+        default=None,
+        description="Optional role override (must be <= user's role)",
+        examples=["viewer"],
+    )
+
+
+class ApiKeyResponse(BaseModel):
+    """Schema for API key response (list view — no raw key)."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    name: str
+    key_prefix: str
+    is_active: bool
+    role_override: Optional[str] = None
+    created_at: datetime
+    last_used_at: Optional[datetime] = None
+    user_id: Optional[UUID] = None
+
+
+class ApiKeyCreatedResponse(BaseModel):
+    """Schema for newly created API key (includes raw key, shown once)."""
+
+    id: UUID
+    name: str
+    key: str  # plaintext key — shown ONCE at creation
+    key_prefix: str
+    role: str  # effective role (role_override or user's role)
+    created_at: datetime
