@@ -25,7 +25,7 @@ from sqlmodel import SQLModel, Session, select, func
 from app.config import get_settings
 from app.database import engine, get_session
 from app.api.deps import OptionalUserDep
-from app.api.endpoints import sync_logs, monitors, failures, webhooks, analytics, auth
+from app.api.endpoints import sync_logs, monitors, failures, webhooks, analytics, auth, api_keys
 from app.errors import make_error_response, INTERNAL_ERROR, VALIDATION_ERROR
 from app.logging_config import setup_logging
 from app.metrics import PrometheusMiddleware, get_metrics_output, set_app_info
@@ -291,6 +291,7 @@ app.include_router(failures.router, prefix="/api/v1")
 app.include_router(webhooks.router, prefix="/api/v1")
 app.include_router(analytics.router, prefix="/api/v1")
 app.include_router(auth.router, prefix="/api/v1")
+app.include_router(api_keys.router, prefix="/api/v1")
 
 
 @app.get("/")

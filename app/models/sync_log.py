@@ -48,3 +48,5 @@ class ApiKey(SQLModel, table=True):
     created_at: datetime = Field(default_factory=utc_now)
     last_used_at: Optional[datetime] = None
     expires_at: Optional[datetime] = None
+    user_id: Optional[UUID] = Field(default=None, foreign_key="users.id", index=True)
+    role_override: Optional[str] = Field(default=None, max_length=20)
