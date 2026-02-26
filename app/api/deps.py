@@ -8,7 +8,7 @@ import jwt as pyjwt
 from fastapi import Cookie, Depends, HTTPException, Header, Request, status
 from sqlmodel import Session, select
 
-from app.config import get_settings
+from app.config import Settings, get_settings
 from app.database import get_session
 from app.models.sync_log import ApiKey
 from app.models.user import User
@@ -221,7 +221,7 @@ def require_role(minimum_role: str) -> Callable:
 async def _try_verify_api_key(
     x_api_key: str,
     session: Session,
-    settings: object,
+    settings: "Settings",
 ) -> Optional[ApiKey]:
     """Try to verify API key. Raises HTTPException on invalid key."""
     if not x_api_key:
@@ -269,7 +269,7 @@ _API_KEY_NOT_PROVIDED = object()
 async def verify_api_key_or_jwt(
     request: Request,
     session: Session = Depends(get_session),
-    settings: object = Depends(get_settings),
+    settings: "Settings" = Depends(get_settings),
     x_api_key: Annotated[Optional[str], Header()] = None,
     authorization: Annotated[Optional[str], Header()] = None,
     access_token: Annotated[Optional[str], Cookie()] = None,
