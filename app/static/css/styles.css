@@ -1221,6 +1221,42 @@ main {
     color: var(--danger-color);
 }
 
+/* User info and auth controls */
+.user-info {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: var(--text-muted);
+}
+
+.role-badge {
+    display: inline-block;
+    padding: 0.125rem 0.5rem;
+    border-radius: 9999px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+.role-admin { background: var(--danger-color); color: #fff; }
+.role-operator { background: var(--primary-color); color: #fff; }
+.role-viewer { background: var(--border-color); color: var(--text-color); }
+
+.logout-btn {
+    background: none;
+    border: 1px solid var(--border-color);
+    color: var(--text-muted);
+    padding: 0.25rem 0.75rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.8rem;
+}
+.logout-btn:hover {
+    color: var(--danger-color);
+    border-color: var(--danger-color);
+}
+
 /* Print: force light theme */
 @media print {
     :root {

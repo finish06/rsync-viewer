@@ -24,11 +24,13 @@ from sqlmodel import SQLModel, Session, select, func
 
 from app.config import get_settings
 from app.database import engine, get_session
+from app.api.deps import OptionalUserDep
 from app.api.endpoints import sync_logs, monitors, failures, webhooks, analytics, auth
 from app.errors import make_error_response, INTERNAL_ERROR, VALIDATION_ERROR
 from app.logging_config import setup_logging
 from app.metrics import PrometheusMiddleware, get_metrics_output, set_app_info
 from app.middleware import (
+    AuthRedirectMiddleware,
     BodySizeLimitMiddleware,
     CsrfMiddleware,
     RequestLoggingMiddleware,
@@ -214,8 +216,9 @@ app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # type: ignore[arg-type]
 
 # Middleware order: outermost runs first
-# SecurityHeaders → BodySizeLimit → Prometheus → RequestLogging → CSRF → (rate limiting)
+# SecurityHeaders → BodySizeLimit → Prometheus → RequestLogging → AuthRedirect → CSRF → (rate limiting)
 app.add_middleware(RequestLoggingMiddleware)
+app.add_middleware(AuthRedirectMiddleware)
 app.add_middleware(CsrfMiddleware)
 app.add_middleware(SlowAPIMiddleware)
 app.add_middleware(PrometheusMiddleware)
@@ -291,7 +294,11 @@ app.include_router(auth.router, prefix="/api/v1")
 
 
 @app.get("/")
-async def index(request: Request, session: Session = Depends(get_session)):
+async def index(
+    request: Request,
+    session: Session = Depends(get_session),
+    user: OptionalUserDep = None,
+):
     """Main dashboard page"""
 
     # Get unique sources for filter dropdown
@@ -302,7 +309,7 @@ async def index(request: Request, session: Session = Depends(get_session)):
     return templates.TemplateResponse(
         request,
         "index.html",
-        context={"sources": sources},
+        context={"sources": sources, "user": user},
     )
 
 
@@ -329,6 +336,7 @@ def _parse_date(value: str) -> datetime:
 async def htmx_sync_table(
     request: Request,
     session: Session = Depends(get_session),
+    user: OptionalUserDep = None,
     source_name: Optional[str] = Query(None),
     start_date: Optional[str] = Query(None),
     end_date: Optional[str] = Query(None),
@@ -708,6 +716,16 @@ async def login_submit(
     return redirect
 
 
+@app.post("/logout")
+async def logout():
+    """Clear access token cookie and redirect to login."""
+    from fastapi.responses import RedirectResponse
+
+    response = RedirectResponse(url="/login", status_code=302)
+    response.delete_cookie("access_token")
+    return response
+
+
 @app.get("/register")
 async def register_page(request: Request):
     """Render registration page."""
@@ -821,13 +839,17 @@ async def register_submit(
 
 
 @app.get("/settings")
-async def settings_page(request: Request):
-    """Settings page"""
+async def settings_page(request: Request, user: OptionalUserDep = None):
+    """Settings page — requires Operator+ role."""
+    from app.services.auth import role_at_least, ROLE_OPERATOR
+
+    if user and not role_at_least(user.role, ROLE_OPERATOR):
+        raise HTTPException(status_code=403, detail="Requires operator role")
     changelog_versions = parse_changelog(path=Path("CHANGELOG.md"))
     return templates.TemplateResponse(
         request,
         "settings.html",
-        context={"changelog_available": len(changelog_versions) > 0},
+        context={"changelog_available": len(changelog_versions) > 0, "user": user},
     )
 
 
@@ -865,7 +887,11 @@ async def htmx_changelog_detail(request: Request, version: str):
 
 
 @app.get("/htmx/webhooks")
-async def htmx_webhooks_list(request: Request, session: Session = Depends(get_session)):
+async def htmx_webhooks_list(
+    request: Request,
+    session: Session = Depends(get_session),
+    user: OptionalUserDep = None,
+):
     """HTMX partial: webhook list table."""
     webhooks_list = session.exec(
         select(WebhookEndpoint).order_by(WebhookEndpoint.name)
@@ -904,9 +930,15 @@ async def htmx_webhook_add_form(request: Request):
 
 @app.post("/htmx/webhooks")
 async def htmx_webhook_create(
-    request: Request, session: Session = Depends(get_session)
+    request: Request,
+    session: Session = Depends(get_session),
+    user: OptionalUserDep = None,
 ):
-    """HTMX: create a new webhook endpoint."""
+    """HTMX: create a new webhook endpoint. Requires Operator+ role."""
+    from app.services.auth import role_at_least, ROLE_OPERATOR as _OP
+
+    if not user or not role_at_least(user.role, _OP):
+        raise HTTPException(status_code=403, detail="Requires operator role")
     form = await request.form()
     errors: dict[str, str] = {}
 
@@ -1020,9 +1052,16 @@ async def htmx_webhook_edit_form(
 
 @app.put("/htmx/webhooks/{webhook_id}")
 async def htmx_webhook_update(
-    request: Request, webhook_id: UUID, session: Session = Depends(get_session)
+    request: Request,
+    webhook_id: UUID,
+    session: Session = Depends(get_session),
+    user: OptionalUserDep = None,
 ):
-    """HTMX: update an existing webhook endpoint."""
+    """HTMX: update an existing webhook endpoint. Requires Operator+ role."""
+    from app.services.auth import role_at_least, ROLE_OPERATOR as _OP
+
+    if not user or not role_at_least(user.role, _OP):
+        raise HTTPException(status_code=403, detail="Requires operator role")
     webhook = session.get(WebhookEndpoint, webhook_id)
     if not webhook:
         return HTMLResponse("<p>Webhook not found.</p>", status_code=404)
@@ -1140,9 +1179,16 @@ async def htmx_webhook_update(
 
 @app.delete("/htmx/webhooks/{webhook_id}")
 async def htmx_webhook_delete(
-    request: Request, webhook_id: UUID, session: Session = Depends(get_session)
+    request: Request,
+    webhook_id: UUID,
+    session: Session = Depends(get_session),
+    user: OptionalUserDep = None,
 ):
-    """HTMX: delete a webhook endpoint."""
+    """HTMX: delete a webhook endpoint. Requires Operator+ role."""
+    from app.services.auth import role_at_least, ROLE_OPERATOR as _OP
+
+    if not user or not role_at_least(user.role, _OP):
+        raise HTTPException(status_code=403, detail="Requires operator role")
     webhook = session.get(WebhookEndpoint, webhook_id)
     if not webhook:
         return HTMLResponse("<p>Webhook not found.</p>", status_code=404)
@@ -1157,9 +1203,16 @@ async def htmx_webhook_delete(
 
 @app.post("/htmx/webhooks/{webhook_id}/toggle")
 async def htmx_webhook_toggle(
-    request: Request, webhook_id: UUID, session: Session = Depends(get_session)
+    request: Request,
+    webhook_id: UUID,
+    session: Session = Depends(get_session),
+    user: OptionalUserDep = None,
 ):
-    """HTMX: toggle webhook enabled/disabled."""
+    """HTMX: toggle webhook enabled/disabled. Requires Operator+ role."""
+    from app.services.auth import role_at_least, ROLE_OPERATOR as _OP
+
+    if not user or not role_at_least(user.role, _OP):
+        raise HTTPException(status_code=403, detail="Requires operator role")
     webhook = session.get(WebhookEndpoint, webhook_id)
     if not webhook:
         return HTMLResponse("<p>Webhook not found.</p>", status_code=404)
@@ -1174,9 +1227,16 @@ async def htmx_webhook_toggle(
 
 @app.post("/htmx/webhooks/{webhook_id}/test")
 async def htmx_webhook_test(
-    request: Request, webhook_id: UUID, session: Session = Depends(get_session)
+    request: Request,
+    webhook_id: UUID,
+    session: Session = Depends(get_session),
+    user: OptionalUserDep = None,
 ):
-    """HTMX: send a test notification to a webhook endpoint."""
+    """HTMX: send a test notification. Requires Operator+ role."""
+    from app.services.auth import role_at_least, ROLE_OPERATOR as _OP
+
+    if not user or not role_at_least(user.role, _OP):
+        raise HTTPException(status_code=403, detail="Requires operator role")
     webhook = session.get(WebhookEndpoint, webhook_id)
     if not webhook:
         return HTMLResponse("<p>Webhook not found.</p>", status_code=404)
