@@ -1,31 +1,36 @@
 # Session Handoff
-**Written:** 2026-02-23
+**Written:** 2026-02-25
 
 ## In Progress
-- Nothing actively in progress — M3 closure complete
+- Nothing currently in progress — cycle-11 is complete and PR submitted
 
 ## Completed This Session
-- Security Hardening (M3 Phase 3) implemented: rate limiting, bcrypt, security headers, CSRF, input validation — 30 tests (v1.5.0)
-- Architecture diagram: docs/architecture.mmd
-- Deprecation cleanup spec: specs/deprecation-cleanup.md (deferred)
-- M3 milestone closed: all 3 features DONE, 8/8 success criteria met
-- Cycle-2 closed: all success criteria checked
-- PRD updated: M3 → COMPLETE
-- Learnings: L-006 (cycle retro), L-007 (slowapi), L-008 (CSRF fixtures)
-- Beta promotion assessment: 10/10 technical score, waiting on 30-day stability (eligible 2026-03-21)
+- Fixed RBAC test infrastructure (JWT secret key mismatch, auth fixtures, unauth_client)
+- All 514 tests passing → committed as `239ef58`
+- Fixed mypy errors in deps.py (Settings type annotations)
+- Pushed `feature/rbac-protected-routes`, created PR #15 (cycle-10: RBAC & Protected Routes)
+- Planned and executed cycle-11 (Per-User API Keys — AC-011, AC-012):
+  - Added `user_id` FK and `role_override` to ApiKey model
+  - Created API key CRUD endpoints (POST/GET/DELETE /api/v1/api-keys)
+  - Updated `verify_api_key_or_jwt` to load associated user and enforce effective role
+  - Created API key management UI in settings (HTMX)
+  - 21 new tests, 535 total passing
+  - Pushed `feature/per-user-api-keys`, created PR #16
 
 ## Decisions Made
-- Used slowapi with SlowAPIMiddleware + default_limits instead of per-route @limiter.limit decorators
-- CSRF protection scoped to /htmx/webhooks/* only (state-changing form POSTs)
-- CSP deployed in report-only mode (not enforcing)
-- Python venv upgraded from 3.9 → 3.13 for dict|None syntax support
-- Deprecation cleanup (datetime.utcnow → datetime.now(UTC)) deferred per user request
+- API key prefix: `rsv_` + 32-byte token_urlsafe
+- Legacy keys (no user_id) treated as operator-level access
+- `role_override` validated at key creation (must be <= user's role)
+- API key auth loads user from DB when key has user_id
+- `_get_api_key_effective_role()` priority: role_override > user.role > operator default
+- PR #16 bases on `feature/rbac-protected-routes` (PR #15) to maintain clean history
 
 ## Blockers
-- Beta promotion requires 30 days of Alpha stability (eligible 2026-03-21)
+- PR #15 (cycle-10) needs human review/merge before PR #16 can merge to main
+- Test DB required `DROP TABLE api_keys` + recreate for new columns (production will need ALTER TABLE migration)
 
 ## Next Steps
-1. Commit M3 closure docs (milestone, cycle, PRD, learnings updates)
-2. Deprecation cleanup (specs/deprecation-cleanup.md) — when user is ready
-3. Plan M4 (Analytics & Performance) or M6 (Observability) — needs interview
-4. Schedule beta promotion assessment for 2026-03-21
+1. Review and merge PR #15 (cycle-10: RBAC)
+2. Review and merge PR #16 (cycle-11: Per-User API Keys)
+3. Plan cycle-12 for Phase 5: Admin User Management + Password Reset (AC-006 admin UI, AC-013 password reset)
+4. Production deployment and DB migration for new columns

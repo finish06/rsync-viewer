@@ -287,6 +287,16 @@ async def verify_api_key_or_jwt(
         api_key_obj = await _try_verify_api_key(
             x_api_key=x_api_key, session=session, settings=settings
         )
+        # If the API key has a user_id, load the associated user
+        if api_key_obj and api_key_obj.user_id:
+            key_user = session.get(User, api_key_obj.user_id)
+            if key_user and key_user.is_active:
+                return (key_user, api_key_obj)
+            elif key_user and not key_user.is_active:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Account is disabled",
+                )
         return (None, api_key_obj)
 
     # Try JWT (Bearer header or cookie)
@@ -343,10 +353,26 @@ async def verify_api_key_or_jwt(
     )
 
 
+def _get_api_key_effective_role(user: Optional[User], api_key: Optional[ApiKey]) -> str:
+    """Determine the effective role for an API key authentication.
+
+    Priority:
+    1. If api_key has role_override, use it (already validated <= user's role at creation)
+    2. If api_key has a user (loaded via user_id), use user's role
+    3. Legacy keys (no user_id) default to operator
+    """
+    if api_key and api_key.role_override:
+        return api_key.role_override
+    if user:
+        return user.role
+    return ROLE_OPERATOR  # Legacy key default
+
+
 def require_role_or_api_key(minimum_role: str) -> Callable:
     """Dependency factory for endpoints accepting API key OR JWT with role check.
 
-    API keys are treated as operator-level access.
+    Per-user API keys use the key's effective role (role_override or user's role).
+    Legacy API keys (no user_id) are treated as operator-level access.
     """
 
     async def _check(
@@ -356,18 +382,20 @@ def require_role_or_api_key(minimum_role: str) -> Callable:
         ],
     ) -> tuple[Optional[User], Optional[ApiKey]]:
         user, api_key = auth
-        if user:
+        if user and not api_key:
+            # Pure JWT auth — check user's role
             if not role_at_least(user.role, minimum_role):
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail=f"Requires {minimum_role} role",
                 )
-        elif api_key is not None or api_key is None:
-            # API key auth — treated as operator level
-            if not role_at_least(ROLE_OPERATOR, minimum_role):
+        else:
+            # API key auth (with or without user)
+            effective_role = _get_api_key_effective_role(user, api_key)
+            if not role_at_least(effective_role, minimum_role):
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
-                    detail=f"API key access is operator-level; requires {minimum_role}",
+                    detail=f"API key role '{effective_role}' insufficient; requires {minimum_role}",
                 )
         return auth
 
