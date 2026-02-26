@@ -9,13 +9,13 @@
 
 ## Success Criteria
 
-- [ ] User registration and login with bcrypt/argon2 password hashing
-- [ ] JWT access tokens with configurable expiry and refresh token support
-- [ ] Three roles (Admin, Operator, Viewer) with enforced permission boundaries
-- [ ] Login page at `/login` with redirect to original URL after auth
-- [ ] Protected routes redirect unauthenticated users to login
-- [ ] Per-user API keys with role-scoped permissions
-- [ ] First registered user automatically gets Admin role
+- [x] User registration and login with bcrypt/argon2 password hashing
+- [x] JWT access tokens with configurable expiry and refresh token support
+- [x] Three roles (Admin, Operator, Viewer) with enforced permission boundaries
+- [x] Login page at `/login` with redirect to original URL after auth
+- [x] Protected routes redirect unauthenticated users to login
+- [x] Per-user API keys with role-scoped permissions
+- [x] First registered user automatically gets Admin role
 - [ ] Admin user management UI (list users, change roles, enable/disable)
 - [ ] Password reset flow via email
 
@@ -25,7 +25,7 @@
 User Accounts & Auth   ██████████████████████████████████████  VERIFIED (Phases 1-2 done, tests passing)
 Role-Based Access      ██████████████████████████████████████  VERIFIED (Phase 3 complete, 32 RBAC tests)
 Login & Protected UI   ██████████████████████████████████████  VERIFIED (login, register, middleware, logout)
-Per-User API Keys      ████████████░░░░░░░░░░░░░░░░░░░░░░░░░  SPECCED (Phase 4 next)
+Per-User API Keys      ██████████████████████████████████████  VERIFIED (Phase 4 complete, 21 tests, CRUD + role scoping + UI)
 Admin Management       ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  SHAPED
 ```
 
@@ -76,7 +76,7 @@ Admin Management       ░░░░░░░░░░░░░░░░░░░
 | cycle-8 | User Model & Registration (Phase 1) | COMPLETE | AC-001, AC-002, AC-005, AC-015. PR #13 merged. |
 | cycle-9 | JWT Authentication & Login (Phase 2) | COMPLETE | AC-003, AC-004, AC-009. PR #14 merged. |
 | cycle-10 | RBAC & Protected Routes (Phase 3) | COMPLETE | AC-006, AC-007, AC-008, AC-010. 32 tests, 514 total passing, 91% coverage. |
-| cycle-11 | Per-User API Keys (Phase 4) | PLANNED | AC-011, AC-012 |
+| cycle-11 | Per-User API Keys (Phase 4) | COMPLETE | AC-011, AC-012. 21 tests, 535 total passing, CRUD endpoints + role scoping + UI. |
 
 ## Retrospective
 
