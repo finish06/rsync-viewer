@@ -39,6 +39,17 @@ docker-compose up -d
 
 The application will be available at http://localhost:8000
 
+### Getting Started
+
+Once the application is running:
+
+1. **Register the first user** — Navigate to http://localhost:8000/register and create an account. The first registered user is automatically granted the **Admin** role.
+2. **Log in** — Go to http://localhost:8000/login with the credentials you just created.
+3. **Generate an API key** — Navigate to Settings > API Keys and click "Generate Key". Use this key in the `X-API-Key` header when submitting sync logs via the API.
+4. **Submit your first sync log** — Use the curl example in [API Usage](#api-usage) below with your new API key.
+
+> **Note:** There is no default username or password. Authentication is disabled until the first user registers, at which point it activates automatically.
+
 ### Local Development
 
 ```bash
