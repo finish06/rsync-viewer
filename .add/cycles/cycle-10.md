@@ -2,9 +2,9 @@
 
 **Milestone:** M9 — Multi-User
 **Maturity:** beta
-**Status:** PLANNED
-**Started:** TBD
-**Completed:** TBD
+**Status:** COMPLETE
+**Started:** 2026-02-25
+**Completed:** 2026-02-25
 **Duration Budget:** 1 day (6+ hours autonomous)
 
 ## Work Items
@@ -74,17 +74,17 @@ Single-threaded execution. Solo developer, one agent.
   - Logout clears cookie and redirects to `/login`
 
 ### Cycle Success Criteria
-- [ ] All 4 acceptance criteria (AC-006, AC-007, AC-008, AC-010) implemented
-- [ ] `require_role()` dependency factory working
-- [ ] All API endpoints have appropriate role checks
-- [ ] All HTMX routes redirect unauthenticated users to `/login`
-- [ ] Permission matrix fully tested (3 roles × key endpoints)
-- [ ] 25+ RBAC tests written and passing
-- [ ] Full test suite passes (no regressions)
-- [ ] ruff check clean
-- [ ] mypy clean
-- [ ] Coverage >= 80%
-- [ ] PR created on feature branch
+- [x] All 4 acceptance criteria (AC-006, AC-007, AC-008, AC-010) implemented
+- [x] `require_role()` dependency factory working
+- [x] All API endpoints have appropriate role checks
+- [x] All HTMX routes redirect unauthenticated users to `/login`
+- [x] Permission matrix fully tested (3 roles × key endpoints)
+- [x] 32 RBAC tests written and passing (target was 25+)
+- [x] Full test suite passes — 514 tests, 0 failures
+- [x] ruff check clean
+- [x] mypy clean — 0 errors in 43 source files
+- [x] Coverage 91% (threshold 80%)
+- [x] PR created on feature branch
 
 ## Implementation Details
 
