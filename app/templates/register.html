@@ -103,6 +103,12 @@
         <div class="auth-card">
             <h1>Create Account</h1>
 
+            {% if registration_disabled %}
+            <div class="auth-error">Registration is currently disabled. Contact your administrator for access.</div>
+            <div class="auth-links">
+                <p><a href="/login">Back to login</a></p>
+            </div>
+            {% else %}
             {% if error_message %}
             <div class="auth-error">{{ error_message }}</div>
             {% endif %}
@@ -137,6 +143,7 @@
             <div class="auth-links">
                 <p>Already have an account? <a href="/login">Log in</a></p>
             </div>
+            {% endif %}
         </div>
     </div>
 </body>

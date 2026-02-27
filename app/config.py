@@ -28,6 +28,7 @@ class Settings(BaseSettings):
     jwt_refresh_expiry_days: int = 30
     jwt_algorithm: str = "HS256"
     auth_enabled: bool = False  # Auto-enables when first user registers
+    registration_enabled: bool = True  # Set to false to disable new user registration
     app_version: str = "1.8.0"
 
 

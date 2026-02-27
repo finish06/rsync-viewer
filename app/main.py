@@ -740,6 +740,14 @@ async def logout():
 @app.get("/register")
 async def register_page(request: Request):
     """Render registration page."""
+    settings = get_settings()
+    if not settings.registration_enabled:
+        return templates.TemplateResponse(
+            request,
+            "register.html",
+            context={"registration_disabled": True},
+        )
+
     from app.csrf import generate_csrf_token
 
     csrf_token = generate_csrf_token()
@@ -758,6 +766,15 @@ async def register_submit(
     session: Session = Depends(get_session),
 ):
     """Handle registration form submission."""
+    settings = get_settings()
+    if not settings.registration_enabled:
+        return templates.TemplateResponse(
+            request,
+            "register.html",
+            context={"registration_disabled": True},
+            status_code=403,
+        )
+
     from app.csrf import generate_csrf_token
 
     form_data = await request.form()

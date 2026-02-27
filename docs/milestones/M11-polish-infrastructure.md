@@ -22,6 +22,7 @@
 SMTP Email Config      ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  SHAPED
 Sync Logs UI Refresh   ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  SHAPED
 Deprecation Cleanup    ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  SHAPED
+Dev Seed Data          ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  SHAPED
 ```
 
 ## Features
@@ -31,6 +32,7 @@ Deprecation Cleanup    ░░░░░░░░░░░░░░░░░░░
 | SMTP Email Configuration | specs/smtp-email.md | SHAPED | Admin UI for SMTP setup, encrypted credentials, test email |
 | Sync Logs UI Refresh | specs/sync-logs-ui-refresh.md | SHAPED | Integrated filter box, mobile card layout, responsive |
 | Deprecation Cleanup | specs/deprecation-cleanup.md | SHAPED | Remove deprecated code, clean up patterns |
+| Dev Seed Data | specs/dev-seed-data.md | SHAPED | Seed data tooling for development and testing |
 
 ## Dependencies
 

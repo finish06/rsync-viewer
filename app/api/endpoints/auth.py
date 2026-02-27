@@ -46,6 +46,13 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 )
 async def register(user_data: UserCreate, session: SessionDep) -> User:
     """Register a new user. First registered user gets Admin role."""
+    settings = get_settings()
+    if not settings.registration_enabled:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Registration is currently disabled",
+        )
+
     # Check for duplicate username
     existing_username = session.exec(
         select(User).where(User.username == user_data.username)

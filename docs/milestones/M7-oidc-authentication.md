@@ -1,6 +1,6 @@
 # M7 — OIDC Authentication
 
-**Goal:** Add OpenID Connect single sign-on as an optional authentication method, supporting PocketId and generic OIDC providers configured via environment variables
+**Goal:** Add OpenID Connect single sign-on as an optional authentication method, supporting PocketId and generic OIDC providers configured via admin Settings UI
 **Status:** LATER
 **Appetite:** 1 week
 **Target Maturity:** beta → ga
@@ -23,6 +23,7 @@
 
 ```
 OIDC Config & Discovery  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  SHAPED
+OIDC Settings UI         ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  SHAPED
 Auth Code Flow           ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  SHAPED
 User Account Integration ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  SHAPED
 Login UI                 ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  SHAPED
@@ -33,6 +34,7 @@ Login UI                 ░░░░░░░░░░░░░░░░░░�
 | Feature | Spec | Position | Notes |
 |---------|------|----------|-------|
 | OIDC Configuration | specs/oidc-authentication.md | SHAPED | Env var config, discovery endpoint |
+| OIDC Settings UI | specs/oidc-settings.md | SHAPED | Admin UI for provider config, encrypted secret storage |
 | Authorization Code Flow | specs/oidc-authentication.md | SHAPED | Login redirect, callback, token exchange |
 | User Auto-Create/Link | specs/oidc-authentication.md | SHAPED | Create or link local accounts from OIDC claims |
 | Login UI Integration | specs/oidc-authentication.md | SHAPED | Provider-branded button, hide local form option |
@@ -58,7 +60,7 @@ Login UI                 ░░░░░░░░░░░░░░░░░░�
 
 | Risk | Probability | Impact | Mitigation |
 |------|-------------|--------|------------|
-| M9 (Multi-User) not yet implemented | High | High | OIDC client core can be built independently; user integration waits |
+| ~~M9 (Multi-User) not yet implemented~~ | ~~High~~ | ~~High~~ | Resolved — M9 complete as of 2026-02-26 |
 | PocketId-specific OIDC quirks | Medium | Medium | Test with generic OIDC first; PocketId is standards-compliant |
 | Token validation edge cases | Medium | Medium | Use authlib's built-in JWT validation |
 | In-memory state storage lost on restart | Low | Low | Acceptable for homelab; users just retry login |

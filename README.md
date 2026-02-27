@@ -81,8 +81,48 @@ Environment variables (see `.env.example`):
 | `RATE_LIMIT_AUTHENTICATED` | Rate limit for authenticated requests | `60/minute` |
 | `RATE_LIMIT_UNAUTHENTICATED` | Rate limit for unauthenticated requests | `20/minute` |
 | `MAX_REQUEST_BODY_SIZE` | Max request body in bytes | `10485760` (10 MB) |
+| `REGISTRATION_ENABLED` | Allow new user registration | `true` |
 | `HSTS_ENABLED` | Enable Strict-Transport-Security header | `false` |
 | `CSP_REPORT_ONLY` | Use CSP in report-only mode | `true` |
+
+## Authentication
+
+### Local Authentication
+
+By default, the application uses local username/password authentication with JWT tokens. The first registered user is automatically granted the **Admin** role; subsequent users get the **Viewer** role.
+
+### Disabling Registration
+
+After creating your initial users, you can disable new user registration:
+
+```env
+REGISTRATION_ENABLED=false
+```
+
+When disabled, the `/register` page shows a "Registration is currently disabled" message and the API rejects registration attempts with a 403 error. Admins can still create users directly in the database if needed.
+
+### OIDC Single Sign-On (Planned)
+
+> **Status:** Not yet implemented — coming in a future release (M7 milestone). See [specs/oidc-authentication.md](specs/oidc-authentication.md) for the full specification.
+
+OIDC authentication will allow users to log in via an external identity provider (e.g., PocketId, Authelia, Keycloak) alongside or instead of local credentials.
+
+**Planned capabilities:**
+
+- **Authorization Code Flow** with PKCE, state, and nonce validation
+- **Auto-discovery** via `/.well-known/openid-configuration`
+- **Auto-provisioning** — new OIDC users get a local account with Viewer role
+- **Email linking** — existing local users are linked by matching email
+- **OIDC-only mode** — option to hide the local login form (`FORCE_LOCAL_LOGIN=true` env var overrides this for emergency access)
+- **Admin Settings UI** — configure the OIDC provider (issuer URL, client ID/secret) from the web interface with encrypted secret storage
+
+**Planned environment variables:**
+
+| Variable | Description |
+|----------|-------------|
+| `FORCE_LOCAL_LOGIN` | Always show the local login form, even when OIDC is in "hide local login" mode |
+
+All other OIDC settings (issuer URL, client ID, client secret, provider name, scopes) will be configured via the admin Settings UI rather than environment variables.
 
 ## API Usage
 
