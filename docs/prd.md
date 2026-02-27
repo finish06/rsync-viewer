@@ -99,7 +99,7 @@ Production deployment is to a self-hosted homelab server. No staging environment
 | M5: API Performance | Debounce API key `last_used_at` writes | alpha | COMPLETE | Configurable debounce, zero regression, fewer DB writes |
 | M6: Observability | Prometheus metrics, Grafana dashboards, project docs | beta | COMPLETE | /metrics endpoint, Grafana templates, setup/architecture docs |
 | M9: Multi-User | User accounts, JWT auth, role-based access control | beta → ga | COMPLETE | Registration/login, Admin/Operator/Viewer roles, per-user API keys |
-| M11: Polish & Infrastructure | UI consistency, SMTP email, codebase cleanup | beta | NEXT | SMTP settings UI, sync logs responsive, deprecation cleanup |
+| M11: Polish & Infrastructure | UI consistency, SMTP email, codebase cleanup | beta | IN_PROGRESS | SMTP settings UI, sync logs responsive, deprecation cleanup |
 | M7: OIDC Authentication | OpenID Connect single sign-on via PocketId or generic provider | beta → ga | LATER | OIDC login, OIDC settings UI, auto-create/link users |
 | M10: Sync Management | On-demand sync triggering, cron scheduling, real-time progress | beta → ga | LATER | Run Now button, cron schedules, WebSocket progress, retry |
 
@@ -178,7 +178,7 @@ M3 is the gate to beta promotion. M4 and M6 can partially overlap. M7 (OIDC) dep
 - [x] Security headers on all responses
 - [x] No secrets in codebase
 
-#### M4: Analytics & Performance [NEXT]
+#### M4: Analytics & Performance [COMPLETE]
 **Goal:** Trend analysis, statistics, data export, interactive charts — with DB optimizations
 **Appetite:** 2 weeks
 **Target maturity:** beta
@@ -197,7 +197,7 @@ M3 is the gate to beta promotion. M4 and M6 can partially overlap. M7 (OIDC) dep
 - [x] API responses < 200ms with 10,000+ records (benchmarked at 10,501 records)
 - [x] Cursor pagination on sync logs endpoint
 
-#### M6: Observability [NEXT]
+#### M6: Observability [COMPLETE]
 **Goal:** Prometheus metrics for monitoring, Grafana dashboards, comprehensive project docs
 **Appetite:** 1 week
 **Target maturity:** beta
@@ -208,10 +208,10 @@ M3 is the gate to beta promotion. M4 and M6 can partially overlap. M7 (OIDC) dep
 - Configurable data retention with automatic cleanup
 - Setup guide, architecture docs, env var reference, troubleshooting guide
 **Success criteria:**
-- [ ] /metrics returns valid Prometheus format
-- [ ] Grafana dashboards visualize sync and API metrics
-- [ ] New developers can deploy using only documentation
-- [ ] All environment variables documented
+- [x] /metrics returns valid Prometheus format
+- [x] Grafana dashboards visualize sync and API metrics
+- [x] New developers can deploy using only documentation
+- [x] All environment variables documented
 
 #### M7: OIDC Authentication [LATER]
 **Goal:** Add OpenID Connect SSO as optional auth method
@@ -247,7 +247,7 @@ M3 is the gate to beta promotion. M4 and M6 can partially overlap. M7 (OIDC) dep
 - [ ] Failed syncs retry with backoff
 - [ ] No command injection vulnerabilities
 
-#### M9: Multi-User [LATER]
+#### M9: Multi-User [COMPLETE]
 **Goal:** Multi-user support with authentication and role-based access
 **Appetite:** 2 weeks
 **Target maturity:** beta → ga
@@ -260,10 +260,10 @@ M3 is the gate to beta promotion. M4 and M6 can partially overlap. M7 (OIDC) dep
 - Admin user management UI
 - Password reset via email
 **Success criteria:**
-- [ ] Users can register and log in securely
-- [ ] Roles correctly restrict access
-- [ ] Per-user API keys inherit role permissions
-- [ ] First registered user gets Admin role
+- [x] Users can register and log in securely
+- [x] Roles correctly restrict access
+- [x] Per-user API keys inherit role permissions
+- [x] First registered user gets Admin role
 
 ### Maturity Promotion Path
 
