@@ -11,6 +11,7 @@ from uuid import UUID
 from sqlmodel import SQLModel, Session, select
 
 from app.database import engine
+from app.services.auth import hash_password, hash_token
 
 # Import all models so SQLModel.metadata knows about them
 import app.models.sync_log  # noqa: F401
@@ -18,15 +19,25 @@ import app.models.webhook  # noqa: F401
 import app.models.webhook_options  # noqa: F401
 import app.models.failure_event  # noqa: F401
 import app.models.notification_log  # noqa: F401
+import app.models.user  # noqa: F401
 from app.models.failure_event import FailureEvent
 from app.models.notification_log import NotificationLog
-from app.models.sync_log import SyncLog
+from app.models.sync_log import ApiKey, SyncLog
+from app.models.user import User
 from app.models.webhook import WebhookEndpoint
 from app.models.webhook_options import WebhookOptions
 
 # Fixed UUIDs for cross-referencing
 WH_DISCORD_ID = UUID("a1b2c3d4-0001-4000-8000-000000000001")
 WH_HA_ID = UUID("a1b2c3d4-0002-4000-8000-000000000002")
+USER_ADMIN_ID = UUID("00000000-0001-4000-8000-000000000001")
+USER_VIEWER_ID = UUID("00000000-0002-4000-8000-000000000002")
+API_KEY_ID = UUID("00000000-0003-4000-8000-000000000001")
+
+# Known dev credentials (printed at end of seed for convenience)
+DEV_ADMIN_PASSWORD = "Admin123!"
+DEV_VIEWER_PASSWORD = "Viewer123!"
+DEV_API_KEY = "rsv_dev_seed_key_for_testing_only"
 
 FAIL_IDS = [UUID(f"f1000000-000{i}-4000-8000-000000000001") for i in range(1, 6)]
 FE_IDS = [UUID(f"fe000000-000{i}-4000-8000-000000000001") for i in range(1, 6)]
@@ -91,6 +102,46 @@ def seed_database() -> None:
         now = datetime.now(timezone.utc)
         base = now - timedelta(days=30)
         random.seed(42)  # Reproducible data
+
+        # ==================================================================
+        # Users
+        # ==================================================================
+        admin_user = User(
+            id=USER_ADMIN_ID,
+            username="admin",
+            email="admin@example.com",
+            password_hash=hash_password(DEV_ADMIN_PASSWORD),
+            role="admin",
+            is_active=True,
+            created_at=base,
+            updated_at=base,
+        )
+        viewer_user = User(
+            id=USER_VIEWER_ID,
+            username="viewer",
+            email="viewer@example.com",
+            password_hash=hash_password(DEV_VIEWER_PASSWORD),
+            role="viewer",
+            is_active=True,
+            created_at=base,
+            updated_at=base,
+        )
+        session.add(admin_user)
+        session.add(viewer_user)
+
+        # ==================================================================
+        # API Key
+        # ==================================================================
+        api_key = ApiKey(
+            id=API_KEY_ID,
+            key_hash=hash_token(DEV_API_KEY),
+            key_prefix=DEV_API_KEY[:12],
+            name="dev-seed-key",
+            is_active=True,
+            user_id=USER_ADMIN_ID,
+            created_at=base,
+        )
+        session.add(api_key)
 
         # ==================================================================
         # Webhooks
@@ -452,8 +503,15 @@ def seed_database() -> None:
         # Summary
         total_logs = 18 + 14 + 13 + 5
         print(f"Seeded {total_logs} sync logs (3 dry runs, 5 failures)")
+        print("Seeded 2 users (admin + viewer)")
+        print("Seeded 1 API key")
         print("Seeded 2 webhook endpoints (Discord + Home Assistant)")
         print("Seeded 5 failure events with 10 notification logs")
+        print()
+        print("Dev credentials:")
+        print(f"  Admin: admin / {DEV_ADMIN_PASSWORD}")
+        print(f"  Viewer: viewer / {DEV_VIEWER_PASSWORD}")
+        print(f"  API Key: {DEV_API_KEY}")
         print("Done!")
 
 

@@ -14,15 +14,15 @@
 - [ ] SMTP credentials encrypted at rest (Fernet)
 - [ ] Sync Logs filter box integrates quick-select date range buttons (matches Analytics pattern)
 - [ ] Sync Logs page responsive down to phone with card layout below 768px
-- [ ] Deprecated code and patterns cleaned up
+- [x] Deprecated code and patterns cleaned up
 
 ## Hill Chart
 
 ```
 SMTP Email Config      ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  SHAPED
 Sync Logs UI Refresh   ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  SHAPED
-Deprecation Cleanup    ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  SHAPED
-Dev Seed Data          ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  SHAPED
+Deprecation Cleanup    ████████████████████████████████████  DONE
+Dev Seed Data          ██████████████████████████████░░░░░░  VERIFIED
 ```
 
 ## Features
@@ -31,8 +31,8 @@ Dev Seed Data          ░░░░░░░░░░░░░░░░░░░
 |---------|------|----------|-------|
 | SMTP Email Configuration | specs/smtp-email.md | SHAPED | Admin UI for SMTP setup, encrypted credentials, test email |
 | Sync Logs UI Refresh | specs/sync-logs-ui-refresh.md | SHAPED | Integrated filter box, mobile card layout, responsive |
-| Deprecation Cleanup | specs/deprecation-cleanup.md | SHAPED | Remove deprecated code, clean up patterns |
-| Dev Seed Data | specs/dev-seed-data.md | SHAPED | Seed data tooling for development and testing |
+| Deprecation Cleanup | specs/deprecation-cleanup.md | DONE | All datetime.utcnow() replaced with utc_now() helper |
+| Dev Seed Data | specs/dev-seed-data.md | VERIFIED | Seed data with users, API key, sync logs, webhooks, notifications |
 
 ## Dependencies
 
