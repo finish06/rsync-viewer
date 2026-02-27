@@ -46,14 +46,21 @@ async def verify_api_key(
     if settings.debug and x_api_key == settings.default_api_key:
         return None  # Allow dev key without DB lookup
 
-    # Use key_prefix to narrow candidates before expensive bcrypt comparison
-    # API keys are formatted as "rsv_<random>" — prefix is first 8 chars
+    # Use key_prefix to narrow candidates before expensive bcrypt comparison.
+    # Falls back to scanning all active keys if prefix filter finds nothing
+    # (handles legacy keys created without a stored prefix).
     prefix = x_api_key[:8] if len(x_api_key) >= 8 else x_api_key
     statement = select(ApiKey).where(
         ApiKey.is_active.is_(True),  # type: ignore[attr-defined]
         ApiKey.key_prefix == prefix,
     )
     api_keys = session.exec(statement).all()
+
+    if not api_keys:
+        # Fallback: scan all active keys (legacy keys without prefix)
+        api_keys = session.exec(
+            select(ApiKey).where(ApiKey.is_active.is_(True))  # type: ignore[attr-defined]
+        ).all()
 
     matched_key: Optional[ApiKey] = None
     for api_key in api_keys:
@@ -240,6 +247,12 @@ async def _try_verify_api_key(
         ApiKey.key_prefix == prefix,
     )
     api_keys = session.exec(statement).all()
+
+    if not api_keys:
+        # Fallback: scan all active keys (legacy keys without prefix)
+        api_keys = session.exec(
+            select(ApiKey).where(ApiKey.is_active.is_(True))  # type: ignore[attr-defined]
+        ).all()
 
     matched_key: Optional[ApiKey] = None
     for api_key in api_keys:
