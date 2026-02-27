@@ -5,7 +5,7 @@ Covers: AC-001, AC-002, AC-003, AC-006, AC-007, AC-009, AC-010
 
 import os
 from datetime import timedelta
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 import jwt as pyjwt
 import pytest
@@ -327,7 +327,7 @@ class TestSmtpTestEmail:
         assert "email address" in response.text.lower()
 
     @pytest.mark.anyio
-    @patch("app.services.email.send_test_email")
+    @patch("app.services.email.send_test_email_async", new_callable=AsyncMock)
     async def test_ac003_test_email_success(self, mock_send, test_engine, db_session):
         """Successful test email returns success message."""
         _setup_overrides(db_session)
@@ -347,7 +347,8 @@ class TestSmtpTestEmail:
 
     @pytest.mark.anyio
     @patch(
-        "app.services.email.send_test_email",
+        "app.services.email.send_test_email_async",
+        new_callable=AsyncMock,
         side_effect=ValueError("SMTP is not configured"),
     )
     async def test_ac010_test_email_shows_error_on_failure(

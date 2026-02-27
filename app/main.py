@@ -392,7 +392,7 @@ async def htmx_sync_table(
 
     # Apply pagination and ordering
     if load_all:
-        statement = statement.order_by(SyncLog.start_time.desc())  # type: ignore[attr-defined]
+        statement = statement.order_by(SyncLog.start_time.desc()).limit(10000)  # type: ignore[attr-defined]
     else:
         statement = (
             statement.order_by(SyncLog.start_time.desc()).offset(offset).limit(limit)  # type: ignore[attr-defined]
@@ -1186,7 +1186,7 @@ async def htmx_smtp_test_email(
 ):
     """HTMX: Send a test email."""
     from app.services.auth import ROLE_ADMIN, role_at_least
-    from app.services.email import send_test_email
+    from app.services.email import send_test_email_async
 
     if not user or not role_at_least(user.role, ROLE_ADMIN):
         raise HTTPException(status_code=403, detail="Admin only")
@@ -1200,7 +1200,7 @@ async def htmx_smtp_test_email(
         )
 
     try:
-        send_test_email(session, to_address=test_email)
+        await send_test_email_async(session, to_address=test_email)
         return HTMLResponse(
             f'<div class="settings-success">Test email sent successfully to {test_email}.</div>'
         )

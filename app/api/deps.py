@@ -46,9 +46,12 @@ async def verify_api_key(
     if settings.debug and x_api_key == settings.default_api_key:
         return None  # Allow dev key without DB lookup
 
-    # Find all active keys and check with bcrypt
+    # Use key_prefix to narrow candidates before expensive bcrypt comparison
+    # API keys are formatted as "rsv_<random>" — prefix is first 8 chars
+    prefix = x_api_key[:8] if len(x_api_key) >= 8 else x_api_key
     statement = select(ApiKey).where(
-        ApiKey.is_active.is_(True)  # type: ignore[attr-defined]
+        ApiKey.is_active.is_(True),  # type: ignore[attr-defined]
+        ApiKey.key_prefix == prefix,
     )
     api_keys = session.exec(statement).all()
 
@@ -230,8 +233,11 @@ async def _try_verify_api_key(
     if settings.debug and x_api_key == settings.default_api_key:
         return None  # Valid dev key — returns None (no ApiKey model)
 
+    # Use key_prefix to narrow candidates before expensive bcrypt comparison
+    prefix = x_api_key[:8] if len(x_api_key) >= 8 else x_api_key
     statement = select(ApiKey).where(
-        ApiKey.is_active.is_(True)  # type: ignore[attr-defined]
+        ApiKey.is_active.is_(True),  # type: ignore[attr-defined]
+        ApiKey.key_prefix == prefix,
     )
     api_keys = session.exec(statement).all()
 

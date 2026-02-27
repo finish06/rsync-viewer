@@ -1,5 +1,6 @@
 """SMTP email service with Fernet encryption for stored credentials."""
 
+import asyncio
 import logging
 import smtplib
 import ssl
@@ -89,6 +90,28 @@ def send_email(
     )
 
 
+async def send_email_async(
+    session: Session,
+    *,
+    to_address: str,
+    subject: str,
+    body_html: str,
+    body_text: Optional[str] = None,
+) -> None:
+    """Async wrapper for send_email — runs blocking SMTP in a thread pool."""
+    loop = asyncio.get_event_loop()
+    await loop.run_in_executor(
+        None,
+        lambda: send_email(
+            session,
+            to_address=to_address,
+            subject=subject,
+            body_html=body_html,
+            body_text=body_text,
+        ),
+    )
+
+
 def send_test_email(session: Session, *, to_address: str) -> None:
     """Send a test email to verify SMTP configuration."""
     send_email(
@@ -105,6 +128,15 @@ def send_test_email(session: Session, *, to_address: str) -> None:
             "This is a test email from Rsync Viewer.\n"
             "If you received this, your SMTP configuration is working correctly."
         ),
+    )
+
+
+async def send_test_email_async(session: Session, *, to_address: str) -> None:
+    """Async wrapper for send_test_email — runs blocking SMTP in a thread pool."""
+    loop = asyncio.get_event_loop()
+    await loop.run_in_executor(
+        None,
+        lambda: send_test_email(session, to_address=to_address),
     )
 
 

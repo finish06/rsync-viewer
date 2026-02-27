@@ -6,7 +6,7 @@ Handles automatic cleanup of old sync logs based on configurable retention perio
 import asyncio
 import logging
 
-from sqlmodel import Session, select, delete
+from sqlmodel import Session, func, select, delete
 
 from app.models.failure_event import FailureEvent
 from app.models.notification_log import NotificationLog
@@ -36,46 +36,41 @@ def cleanup_old_sync_logs(session: Session, retention_days: int) -> int:
 
     cutoff = utc_now() - __import__("datetime").timedelta(days=retention_days)
 
-    # Find old sync log IDs
-    old_sync_ids = session.exec(
-        select(SyncLog.id).where(SyncLog.created_at < cutoff)
-    ).all()
+    # Count before deleting (for logging)
+    count = session.exec(
+        select(func.count()).select_from(SyncLog).where(SyncLog.created_at < cutoff)
+    ).one()
 
-    if not old_sync_ids:
+    if not count:
         return 0
 
-    old_sync_id_list = list(old_sync_ids)
+    # Use correlated subqueries to avoid materializing large ID lists in Python
+    old_sync_subq = select(SyncLog.id).where(SyncLog.created_at < cutoff).subquery()
+    old_failure_subq = (
+        select(FailureEvent.id)
+        .where(FailureEvent.sync_log_id.in_(select(old_sync_subq.c.id)))  # type: ignore[union-attr]
+        .subquery()
+    )
 
-    # Step 1: Find failure events referencing old sync logs
-    old_failure_ids = session.exec(
-        select(FailureEvent.id).where(
-            FailureEvent.sync_log_id.in_(old_sync_id_list)  # type: ignore[union-attr]
+    # Step 1: Delete notification logs via correlated subquery
+    session.exec(
+        delete(NotificationLog).where(
+            NotificationLog.failure_event_id.in_(select(old_failure_subq.c.id))  # type: ignore[union-attr,attr-defined]
         )
-    ).all()
+    )
 
-    if old_failure_ids:
-        old_failure_id_list = list(old_failure_ids)
-
-        # Step 2: Delete notification logs referencing those failure events
-        session.exec(
-            delete(NotificationLog).where(
-                NotificationLog.failure_event_id.in_(old_failure_id_list)  # type: ignore[union-attr,attr-defined]
-            )
+    # Step 2: Delete failure events via correlated subquery
+    session.exec(
+        delete(FailureEvent).where(
+            FailureEvent.sync_log_id.in_(select(old_sync_subq.c.id))  # type: ignore[union-attr]
         )
+    )
 
-        # Step 3: Delete the failure events
-        session.exec(
-            delete(FailureEvent).where(
-                FailureEvent.sync_log_id.in_(old_sync_id_list)  # type: ignore[union-attr]
-            )
-        )
-
-    # Step 4: Delete the old sync logs
+    # Step 3: Delete old sync logs
     session.exec(
         delete(SyncLog).where(SyncLog.created_at < cutoff)  # type: ignore[arg-type]
     )
 
-    count = len(old_sync_id_list)
     session.commit()
 
     logger.info(

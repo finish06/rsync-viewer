@@ -7,6 +7,7 @@ Handles the Keep a Changelog format:
 """
 
 import re
+from functools import lru_cache
 from pathlib import Path
 
 from app.schemas.changelog import ChangelogVersion
@@ -23,28 +24,8 @@ SECTION_HEADER = re.compile(r"^###\s+(?P<section>.+)$")
 LIST_ITEM = re.compile(r"^-\s+(?P<text>.+)$")
 
 
-def parse_changelog(
-    path: Path | None = None,
-    content: str | None = None,
-) -> list[ChangelogVersion]:
-    """Parse a CHANGELOG.md file or string into structured version data.
-
-    Args:
-        path: Path to CHANGELOG.md file. Ignored if content is provided.
-        content: Raw changelog text. Takes priority over path.
-
-    Returns:
-        List of ChangelogVersion models, most recent first.
-        Returns empty list if file is missing, empty, or unparseable.
-    """
-    if content is None:
-        if path is None:
-            return []
-        try:
-            content = Path(path).read_text(encoding="utf-8")
-        except (FileNotFoundError, OSError):
-            return []
-
+def _parse_content(content: str) -> list[ChangelogVersion]:
+    """Parse changelog content string into structured version data."""
     if not content.strip():
         return []
 
@@ -95,3 +76,34 @@ def parse_changelog(
         )
 
     return versions
+
+
+@lru_cache(maxsize=1)
+def _parse_changelog_from_file(path_str: str) -> list[ChangelogVersion]:
+    """Cached file-based parsing — reads disk once per process lifetime."""
+    try:
+        content = Path(path_str).read_text(encoding="utf-8")
+    except (FileNotFoundError, OSError):
+        return []
+    return _parse_content(content)
+
+
+def parse_changelog(
+    path: Path | None = None,
+    content: str | None = None,
+) -> list[ChangelogVersion]:
+    """Parse a CHANGELOG.md file or string into structured version data.
+
+    Args:
+        path: Path to CHANGELOG.md file. Ignored if content is provided.
+        content: Raw changelog text. Takes priority over path.
+
+    Returns:
+        List of ChangelogVersion models, most recent first.
+        Returns empty list if file is missing, empty, or unparseable.
+    """
+    if content is not None:
+        return _parse_content(content)
+    if path is None:
+        return []
+    return _parse_changelog_from_file(str(path))
