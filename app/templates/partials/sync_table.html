@@ -1,5 +1,6 @@
 {% if syncs %}
-<table class="sync-table">
+<!-- Desktop table view (hidden on mobile) -->
+<table class="sync-table sync-desktop-only">
     <thead>
         <tr>
             <th>Source</th>
@@ -39,6 +40,45 @@
         {% endfor %}
     </tbody>
 </table>
+
+<!-- Mobile card view (hidden on desktop) -->
+<div class="sync-cards sync-mobile-only">
+    {% for sync in syncs %}
+    <div class="sync-card">
+        <div class="sync-card-header">
+            <span class="source-badge">{{ sync.source_name }}</span>
+            {% if sync.is_dry_run %}<span class="dry-run-badge">DRY RUN</span>{% endif %}
+            {% if sync.status == 'failed' %}<span class="failed-badge">FAILED</span>{% endif %}
+        </div>
+        <div class="sync-card-body">
+            <div class="sync-card-row">
+                <span class="sync-card-label">Time</span>
+                <span>{{ sync.start_time.strftime('%Y-%m-%d %H:%M') }}</span>
+            </div>
+            <div class="sync-card-row">
+                <span class="sync-card-label">Duration</span>
+                <span>{{ (sync.end_time - sync.start_time) | format_duration }}</span>
+            </div>
+            <div class="sync-card-row">
+                <span class="sync-card-label">Size</span>
+                <span>{{ sync.total_size_bytes | format_bytes }}</span>
+            </div>
+            <div class="sync-card-row">
+                <span class="sync-card-label">Files</span>
+                <span>{{ sync.file_count or 0 }}</span>
+            </div>
+        </div>
+        <div class="sync-card-footer">
+            <button class="btn btn-small"
+                    hx-get="/htmx/sync-detail/{{ sync.id }}"
+                    hx-target="#modal-container"
+                    hx-swap="innerHTML">
+                View
+            </button>
+        </div>
+    </div>
+    {% endfor %}
+</div>
 
 <div class="pagination">
     {% if offset > 0 and not load_all %}

@@ -84,6 +84,13 @@ main {
     display: flex;
     gap: 0.5rem;
     margin-bottom: 1rem;
+    flex-wrap: wrap;
+}
+
+.filter-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: flex-end;
 }
 
 .quick-select-btn {
@@ -267,6 +274,64 @@ main {
     font-size: 0.75rem;
     font-weight: 500;
     margin-left: 0.5rem;
+}
+
+.failed-badge {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    background-color: var(--error-color, #dc2626);
+    color: white;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    margin-left: 0.5rem;
+}
+
+/* Desktop/mobile visibility */
+.sync-mobile-only {
+    display: none;
+}
+
+/* Mobile card layout */
+.sync-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.sync-card {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.sync-card-header {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.sync-card-body {
+    padding: 0.75rem 1rem;
+}
+
+.sync-card-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.25rem 0;
+    font-size: 0.875rem;
+}
+
+.sync-card-label {
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.sync-card-footer {
+    padding: 0.75rem 1rem;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    justify-content: flex-end;
 }
 
 /* Pagination */
@@ -726,13 +791,34 @@ main {
         width: 100%;
     }
 
-    .sync-table {
-        font-size: 0.75rem;
+    .filter-actions {
+        width: 100%;
     }
 
-    .sync-table th,
-    .sync-table td {
-        padding: 0.5rem;
+    .filter-actions .btn {
+        flex: 1;
+    }
+
+    /* Switch from table to card layout */
+    .sync-desktop-only {
+        display: none;
+    }
+
+    .sync-mobile-only {
+        display: flex;
+    }
+
+    .pagination {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .pagination .btn {
+        width: 100%;
+    }
+
+    .load-all-btn {
+        width: 100%;
     }
 
     .modal {

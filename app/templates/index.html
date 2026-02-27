@@ -9,14 +9,14 @@
     </div>
 
     <div id="syncs-tab" class="tab-content">
-        <section class="quick-select">
-            <button class="quick-select-btn active" data-range="7d" onclick="selectRange('7d', this)">Last 7 Days</button>
-            <button class="quick-select-btn" data-range="30d" onclick="selectRange('30d', this)">Last 30 Days</button>
-            <button class="quick-select-btn" data-range="max" onclick="selectRange('max', this)">Max</button>
-            <button class="quick-select-btn" data-range="custom" onclick="selectRange('custom', this)">Custom</button>
-        </section>
-
         <section class="filters">
+            <div class="quick-select">
+                <button class="quick-select-btn active" data-range="7d" onclick="selectRange('7d', this)">Last 7 Days</button>
+                <button class="quick-select-btn" data-range="30d" onclick="selectRange('30d', this)">Last 30 Days</button>
+                <button class="quick-select-btn" data-range="max" onclick="selectRange('max', this)">Max</button>
+                <button class="quick-select-btn" data-range="custom" onclick="selectRange('custom', this)">Custom</button>
+            </div>
+
             <form id="filter-form" hx-trigger="submit">
                 <div class="filter-group">
                     <label for="source_name">Source:</label>
@@ -26,16 +26,6 @@
                         <option value="{{ source }}">{{ source }}</option>
                         {% endfor %}
                     </select>
-                </div>
-
-                <div class="filter-group date-filter" style="display: none;">
-                    <label for="start_date">From:</label>
-                    <input type="date" name="start_date" id="start_date">
-                </div>
-
-                <div class="filter-group date-filter" style="display: none;">
-                    <label for="end_date">To:</label>
-                    <input type="date" name="end_date" id="end_date">
                 </div>
 
                 <div class="filter-group">
@@ -56,8 +46,20 @@
                     </select>
                 </div>
 
-                <button type="submit" class="btn btn-primary">Filter</button>
-                <button type="button" class="btn btn-secondary" onclick="resetFilters()">Reset</button>
+                <div class="filter-group date-filter" style="display: none;">
+                    <label for="start_date">From:</label>
+                    <input type="date" name="start_date" id="start_date">
+                </div>
+
+                <div class="filter-group date-filter" style="display: none;">
+                    <label for="end_date">To:</label>
+                    <input type="date" name="end_date" id="end_date">
+                </div>
+
+                <div class="filter-actions">
+                    <button type="submit" class="btn btn-primary">Filter</button>
+                    <button type="button" class="btn btn-secondary" onclick="resetFilters()">Reset</button>
+                </div>
             </form>
         </section>
 
