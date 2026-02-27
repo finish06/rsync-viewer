@@ -20,6 +20,7 @@ from app.models.failure_event import FailureEvent  # noqa: F401 — ensure table
 from app.models.webhook import WebhookEndpoint  # noqa: F401 — ensure table creation
 from app.models.notification_log import NotificationLog  # noqa: F401 — ensure table creation
 from app.models.webhook_options import WebhookOptions  # noqa: F401 — ensure table creation
+from app.models.smtp_config import SmtpConfig  # noqa: F401 — ensure table creation
 from app.utils import utc_now
 
 # Test secret key — must match get_test_settings().secret_key

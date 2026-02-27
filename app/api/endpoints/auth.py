@@ -280,16 +280,19 @@ async def request_password_reset(
     session.add(reset_record)
     session.commit()
 
-    # In console mode, log the token (no SMTP)
-    logger.info(
-        "PASSWORD RESET TOKEN for %s: %s",
-        user.username,
-        raw_token,
-    )
+    settings = get_settings()
+
+    # In debug/console mode, log the token so admins can manually reset
+    if settings.debug:
+        logger.info(
+            "PASSWORD RESET TOKEN for %s: %s",
+            user.username,
+            raw_token,
+        )
 
     return PasswordResetResponse(
         message="If an account with that email exists, a reset link has been sent.",
-        reset_token=raw_token,  # Exposed in response for console/debug mode
+        reset_token=raw_token if settings.debug else None,
     )
 
 

@@ -1073,11 +1073,11 @@ async def htmx_smtp_test_email(
             status_code=400,
         )
     except Exception as e:
-        # Strip any credentials from the error message
         error_msg = str(e)
         logger.error("SMTP test email failed", extra={"error": error_msg})
+        # Show a generic message to avoid leaking server internals
         return HTMLResponse(
-            f'<div class="auth-error">Test email failed: {error_msg}</div>',
+            '<div class="auth-error">Test email failed: could not connect to SMTP server. Check logs for details.</div>',
             status_code=500,
         )
 

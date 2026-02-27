@@ -16,7 +16,7 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 from sqlmodel import Session, select
 
-from app.config import get_settings
+from app.config import Settings, get_settings
 from app.csrf import generate_csrf_token
 from app.database import get_session
 from app.main import app
@@ -312,3 +312,52 @@ async def test_ac013_reset_password_page_accessible(db_session: Session) -> None
 
     await client.aclose()
     app.dependency_overrides.clear()
+
+
+@pytest.mark.asyncio
+async def test_ac013_reset_token_hidden_when_debug_false(db_session: Session) -> None:
+    """Password reset token must NOT be returned in response when DEBUG=false."""
+    _create_user(db_session, "user1")
+
+    os.environ["SECRET_KEY"] = _TEST_SECRET
+    os.environ["DEBUG"] = "false"
+    os.environ["DEFAULT_API_KEY"] = "test-api-key"
+    get_settings.cache_clear()
+
+    def _prod_settings():
+        return Settings(
+            app_name="Rsync Log Viewer Test",
+            debug=False,
+            database_url=os.environ.get(
+                "DATABASE_URL",
+                "postgresql+psycopg://postgres:postgres@localhost:5433/rsync_viewer_test",
+            ),
+            secret_key=_TEST_SECRET,
+            default_api_key="test-api-key",
+        )
+
+    def get_test_session():
+        yield db_session
+
+    app.dependency_overrides[get_session] = get_test_session
+    app.dependency_overrides[get_settings] = _prod_settings
+
+    client = AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    )
+
+    resp = await client.post(
+        "/api/v1/auth/password-reset/request",
+        json={"email": "user1@test.com"},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data.get("reset_token") is None, (
+        "Reset token must not be exposed when DEBUG=false"
+    )
+
+    await client.aclose()
+    app.dependency_overrides.clear()
+    os.environ.pop("DEBUG", None)
+    get_settings.cache_clear()
