@@ -7,6 +7,38 @@ and this project adheres to [Conventional Commits](https://www.conventionalcommi
 
 ## [Unreleased]
 
+## [1.9.0] - 2026-02-27
+
+### Added
+
+- **SMTP email configuration (M11):**
+  - Admin Settings UI for configuring SMTP server (host, port, encryption, credentials)
+  - Send test email button to verify SMTP configuration
+  - SMTP credentials encrypted at rest with Fernet symmetric encryption
+  - Singleton SMTP config model (one config per instance)
+- **Registration toggle:**
+  - `REGISTRATION_ENABLED` environment variable to disable new user signups
+  - GET /register shows "disabled" message when registration is off
+  - POST /register and POST /api/v1/auth/register return 403 when disabled
+- **Sync logs UI improvements:**
+  - Quick-select date range buttons (Today, 7d, 30d, 90d) integrated into filter box
+  - Mobile-responsive card layout for sync logs below 768px
+- **Dev seed data:**
+  - `python -m scripts.seed` command to populate database with sample data
+  - Seeds admin/viewer users, API key, sync logs, webhooks, and notifications
+- 28 new tests for SMTP settings, registration toggle, email service, and password reset
+- 596 total tests passing with 83% coverage
+
+### Fixed
+
+- **Password reset token no longer exposed in production:** reset token only returned in API response when `DEBUG=true` (security fix)
+- SMTP test email error handler shows generic message instead of raw exception details
+- SmtpConfig model explicitly registered in test conftest for reliable table creation
+
+### Changed
+
+- M11 (Polish & Infrastructure) milestone marked COMPLETE (6/6 success criteria met)
+
 ## [1.8.0] - 2026-02-26
 
 ### Added

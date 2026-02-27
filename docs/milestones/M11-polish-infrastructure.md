@@ -1,11 +1,11 @@
 # M11 — Polish & Infrastructure
 
 **Goal:** UI consistency, email infrastructure, and codebase cleanup to prepare for OIDC (M7) and production hardening
-**Status:** IN_PROGRESS
+**Status:** COMPLETE
 **Appetite:** 1 week
 **Target Maturity:** beta
 **Started:** 2026-02-26
-**Completed:** —
+**Completed:** 2026-02-27
 
 ## Success Criteria
 

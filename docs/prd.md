@@ -99,7 +99,7 @@ Production deployment is to a self-hosted homelab server. No staging environment
 | M5: API Performance | Debounce API key `last_used_at` writes | alpha | COMPLETE | Configurable debounce, zero regression, fewer DB writes |
 | M6: Observability | Prometheus metrics, Grafana dashboards, project docs | beta | COMPLETE | /metrics endpoint, Grafana templates, setup/architecture docs |
 | M9: Multi-User | User accounts, JWT auth, role-based access control | beta → ga | COMPLETE | Registration/login, Admin/Operator/Viewer roles, per-user API keys |
-| M11: Polish & Infrastructure | UI consistency, SMTP email, codebase cleanup | beta | IN_PROGRESS | SMTP settings UI, sync logs responsive, deprecation cleanup |
+| M11: Polish & Infrastructure | UI consistency, SMTP email, codebase cleanup | beta | COMPLETE | SMTP settings UI, sync logs responsive, deprecation cleanup |
 | M7: OIDC Authentication | OpenID Connect single sign-on via PocketId or generic provider | beta → ga | LATER | OIDC login, OIDC settings UI, auto-create/link users |
 | M10: Sync Management | On-demand sync triggering, cron scheduling, real-time progress | beta → ga | LATER | Run Now button, cron schedules, WebSocket progress, retry |
 
