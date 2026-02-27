@@ -343,6 +343,7 @@ class TestSmtpTestEmail:
         assert response.status_code == 200
         assert "sent successfully" in response.text
         assert "recipient@example.com" in response.text
+        mock_send.assert_called_once()
 
     @pytest.mark.anyio
     @patch(
@@ -365,3 +366,23 @@ class TestSmtpTestEmail:
 
         assert response.status_code == 400
         assert "SMTP is not configured" in response.text
+
+    @pytest.mark.anyio
+    async def test_ac008_test_email_fails_when_no_config_saved(
+        self, test_engine, db_session
+    ):
+        """Sending test email with no SMTP config saved returns error."""
+        _setup_overrides(db_session)
+        admin = _create_user(db_session, "admin-no-config", ROLE_ADMIN)
+
+        async with _make_client(admin) as client:
+            response = await client.post(
+                "/htmx/smtp-settings/test",
+                data={"test_email": "recipient@example.com"},
+            )
+        _cleanup()
+
+        assert response.status_code in (400, 500)
+        assert (
+            "smtp" in response.text.lower() or "not configured" in response.text.lower()
+        )
