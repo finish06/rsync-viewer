@@ -240,6 +240,7 @@ app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 # Set up templates
 templates = Jinja2Templates(directory="app/templates")
+templates.env.globals["app_version"] = settings.app_version
 
 
 # Add custom template filters
