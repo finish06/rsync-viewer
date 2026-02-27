@@ -292,9 +292,8 @@ main {
     display: none;
 }
 
-/* Mobile card layout */
+/* Mobile card layout (only visible inside @media 768px via .sync-mobile-only) */
 .sync-cards {
-    display: flex;
     flex-direction: column;
     gap: 0.75rem;
 }
