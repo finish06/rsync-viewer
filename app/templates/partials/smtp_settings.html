@@ -1,0 +1,98 @@
+{% if success_message %}
+<div class="settings-success" style="margin-bottom: 1rem;">{{ success_message }}</div>
+{% endif %}
+
+{% if not has_encryption_key %}
+<div class="auth-error" style="margin-bottom: 1rem;">
+    SMTP_ENCRYPTION_KEY is not set. Generate one with:<br>
+    <code>python3 -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"</code><br>
+    Add it to your .env file before configuring SMTP.
+</div>
+{% endif %}
+
+<form hx-post="/htmx/smtp-settings"
+      hx-target="#smtp-settings-container"
+      hx-swap="innerHTML">
+    <div class="smtp-form-grid">
+        <div class="filter-group">
+            <label for="smtp-host">SMTP Host</label>
+            <input type="text" id="smtp-host" name="host" required
+                   placeholder="smtp.example.com"
+                   value="{{ smtp.host if smtp else '' }}">
+        </div>
+
+        <div class="filter-group">
+            <label for="smtp-port">Port</label>
+            <input type="number" id="smtp-port" name="port" required
+                   min="1" max="65535"
+                   placeholder="587"
+                   value="{{ smtp.port if smtp else '587' }}">
+        </div>
+
+        <div class="filter-group">
+            <label for="smtp-encryption">Encryption</label>
+            <select id="smtp-encryption" name="encryption">
+                <option value="starttls" {{ 'selected' if not smtp or smtp.encryption == 'starttls' }}>STARTTLS</option>
+                <option value="ssl_tls" {{ 'selected' if smtp and smtp.encryption == 'ssl_tls' }}>SSL/TLS</option>
+                <option value="none" {{ 'selected' if smtp and smtp.encryption == 'none' }}>None</option>
+            </select>
+        </div>
+
+        <div class="filter-group">
+            <label for="smtp-username">Username</label>
+            <input type="text" id="smtp-username" name="username"
+                   placeholder="user@example.com"
+                   value="{{ smtp.username if smtp and smtp.username else '' }}">
+        </div>
+
+        <div class="filter-group">
+            <label for="smtp-password">Password</label>
+            <input type="password" id="smtp-password" name="password"
+                   placeholder="{{ '••••••••' if smtp and smtp.encrypted_password else 'Enter password' }}"
+                   autocomplete="new-password">
+            {% if smtp and smtp.encrypted_password %}
+            <span style="font-size: 0.75rem; color: var(--text-muted);">Leave blank to keep current password</span>
+            {% endif %}
+        </div>
+
+        <div class="filter-group">
+            <label for="smtp-from-address">From Address</label>
+            <input type="email" id="smtp-from-address" name="from_address" required
+                   placeholder="noreply@example.com"
+                   value="{{ smtp.from_address if smtp else '' }}">
+        </div>
+
+        <div class="filter-group">
+            <label for="smtp-from-name">From Name</label>
+            <input type="text" id="smtp-from-name" name="from_name"
+                   placeholder="Rsync Viewer"
+                   value="{{ smtp.from_name if smtp else 'Rsync Viewer' }}">
+        </div>
+    </div>
+
+    <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+        <button type="submit" class="btn btn-primary" {{ 'disabled' if not has_encryption_key }}>Save</button>
+    </div>
+</form>
+
+{% if smtp %}
+<div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
+    <h3 style="font-size: 0.875rem; font-weight: 600; margin-bottom: 0.75rem;">Send Test Email</h3>
+    <form hx-post="/htmx/smtp-settings/test"
+          hx-target="#smtp-test-result"
+          hx-swap="innerHTML"
+          style="display: flex; gap: 0.5rem; align-items: flex-end;">
+        <div class="filter-group" style="flex: 1;">
+            <label for="smtp-test-email">Recipient</label>
+            <input type="email" id="smtp-test-email" name="test_email" required
+                   placeholder="you@example.com">
+        </div>
+        <button type="submit" class="btn btn-secondary">Send Test</button>
+    </form>
+    <div id="smtp-test-result" style="margin-top: 0.5rem;"></div>
+</div>
+{% elif not smtp %}
+<p style="color: var(--text-muted); font-size: 0.875rem; margin-top: 1rem;">
+    No SMTP server configured. Email features (password reset) are disabled until SMTP is set up.
+</p>
+{% endif %}

@@ -49,6 +49,7 @@ from app.models.sync_log import SyncLog
 from app.models.user import User  # noqa: F401 — ensure table creation
 from app.models.user import RefreshToken  # noqa: F401 — ensure table creation
 from app.models.user import PasswordResetToken  # noqa: F401 — ensure table creation
+from app.models.smtp_config import SmtpConfig  # noqa: F401 — ensure table creation
 from app.schemas.user import UserCreate
 from app.services.auth import (
     create_access_token,
@@ -912,6 +913,173 @@ async def htmx_changelog_detail(request: Request, version: str):
         "partials/changelog_detail.html",
         context={"version": target},
     )
+
+
+# --- SMTP Settings HTMX routes ---
+
+
+@app.get("/htmx/smtp-settings")
+async def htmx_smtp_settings(
+    request: Request,
+    session: Session = Depends(get_session),
+    user: OptionalUserDep = None,
+):
+    """HTMX partial: SMTP configuration form."""
+    from app.services.auth import ROLE_ADMIN, role_at_least
+    from app.services.email import get_smtp_config
+
+    if not user or not role_at_least(user.role, ROLE_ADMIN):
+        raise HTTPException(status_code=403, detail="Admin only")
+
+    config = get_smtp_config(session)
+    has_encryption_key = bool(get_settings().smtp_encryption_key)
+
+    return templates.TemplateResponse(
+        request,
+        "partials/smtp_settings.html",
+        context={
+            "smtp": config,
+            "has_encryption_key": has_encryption_key,
+        },
+    )
+
+
+@app.post("/htmx/smtp-settings")
+async def htmx_smtp_settings_save(
+    request: Request,
+    session: Session = Depends(get_session),
+    user: OptionalUserDep = None,
+):
+    """HTMX: Save SMTP configuration."""
+    from app.services.auth import ROLE_ADMIN, role_at_least
+    from app.services.email import encrypt_password, get_smtp_config
+
+    if not user or not role_at_least(user.role, ROLE_ADMIN):
+        raise HTTPException(status_code=403, detail="Admin only")
+
+    if not get_settings().smtp_encryption_key:
+        return HTMLResponse(
+            '<div class="auth-error">SMTP_ENCRYPTION_KEY is not set. '
+            "Configure it in your .env file before saving SMTP settings.</div>",
+            status_code=400,
+        )
+
+    form = await request.form()
+    host = str(form.get("host", "")).strip()
+    port_str = str(form.get("port", "")).strip()
+    username = str(form.get("username", "")).strip()
+    password = str(form.get("password", ""))
+    encryption = str(form.get("encryption", "starttls")).strip()
+    from_address = str(form.get("from_address", "")).strip()
+    from_name = str(form.get("from_name", "")).strip() or "Rsync Viewer"
+
+    # Validate required fields
+    if not host or not port_str or not from_address:
+        return HTMLResponse(
+            '<div class="auth-error">Host, port, and from address are required.</div>',
+            status_code=422,
+        )
+
+    try:
+        port = int(port_str)
+        if not (1 <= port <= 65535):
+            raise ValueError()
+    except ValueError:
+        return HTMLResponse(
+            '<div class="auth-error">Port must be a number between 1 and 65535.</div>',
+            status_code=422,
+        )
+
+    if encryption not in ("none", "starttls", "ssl_tls"):
+        return HTMLResponse(
+            '<div class="auth-error">Invalid encryption method.</div>',
+            status_code=422,
+        )
+
+    config = get_smtp_config(session)
+    if config is None:
+        config = SmtpConfig(
+            host=host,
+            port=port,
+            username=username or None,
+            encryption=encryption,
+            from_address=from_address,
+            from_name=from_name,
+            configured_by_id=user.id,
+        )
+    else:
+        config.host = host
+        config.port = port
+        config.username = username or None
+        config.encryption = encryption
+        config.from_address = from_address
+        config.from_name = from_name
+        config.configured_by_id = user.id
+        config.updated_at = utc_now()
+
+    # Only update password if a new one was provided
+    if password:
+        config.encrypted_password = encrypt_password(password)
+
+    session.add(config)
+    session.commit()
+    session.refresh(config)
+
+    logger.info(
+        "SMTP configuration saved",
+        extra={"user_id": str(user.id), "host": host},
+    )
+
+    return templates.TemplateResponse(
+        request,
+        "partials/smtp_settings.html",
+        context={
+            "smtp": config,
+            "has_encryption_key": True,
+            "success_message": "SMTP configuration saved.",
+        },
+    )
+
+
+@app.post("/htmx/smtp-settings/test")
+async def htmx_smtp_test_email(
+    request: Request,
+    session: Session = Depends(get_session),
+    user: OptionalUserDep = None,
+):
+    """HTMX: Send a test email."""
+    from app.services.auth import ROLE_ADMIN, role_at_least
+    from app.services.email import send_test_email
+
+    if not user or not role_at_least(user.role, ROLE_ADMIN):
+        raise HTTPException(status_code=403, detail="Admin only")
+
+    form = await request.form()
+    test_email = str(form.get("test_email", "")).strip()
+    if not test_email:
+        return HTMLResponse(
+            '<div class="auth-error">Please enter a test email address.</div>',
+            status_code=422,
+        )
+
+    try:
+        send_test_email(session, to_address=test_email)
+        return HTMLResponse(
+            f'<div class="settings-success">Test email sent successfully to {test_email}.</div>'
+        )
+    except ValueError as e:
+        return HTMLResponse(
+            f'<div class="auth-error">{e}</div>',
+            status_code=400,
+        )
+    except Exception as e:
+        # Strip any credentials from the error message
+        error_msg = str(e)
+        logger.error("SMTP test email failed", extra={"error": error_msg})
+        return HTMLResponse(
+            f'<div class="auth-error">Test email failed: {error_msg}</div>',
+            status_code=500,
+        )
 
 
 # --- API Key HTMX routes ---

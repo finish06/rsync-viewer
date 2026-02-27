@@ -19,7 +19,7 @@
 ## Hill Chart
 
 ```
-SMTP Email Config      ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  SHAPED
+SMTP Email Config      ████████████████████████████░░░░░░░░  IN_PROGRESS
 Sync Logs UI Refresh   ████████████████████████████░░░░░░░░  IN_PROGRESS
 Deprecation Cleanup    ████████████████████████████████████  DONE
 Dev Seed Data          ██████████████████████████████░░░░░░  VERIFIED
@@ -29,7 +29,7 @@ Dev Seed Data          ███████████████████
 
 | Feature | Spec | Position | Notes |
 |---------|------|----------|-------|
-| SMTP Email Configuration | specs/smtp-email.md | SHAPED | Admin UI for SMTP setup, encrypted credentials, test email |
+| SMTP Email Configuration | specs/smtp-email.md | IN_PROGRESS | Model, service, admin UI, Fernet encryption, test email |
 | Sync Logs UI Refresh | specs/sync-logs-ui-refresh.md | IN_PROGRESS | Quick-select in filter box, mobile cards, responsive layout |
 | Deprecation Cleanup | specs/deprecation-cleanup.md | DONE | All datetime.utcnow() replaced with utc_now() helper |
 | Dev Seed Data | specs/dev-seed-data.md | VERIFIED | Seed data with users, API key, sync logs, webhooks, notifications |

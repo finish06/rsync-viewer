@@ -29,6 +29,7 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     auth_enabled: bool = False  # Auto-enables when first user registers
     registration_enabled: bool = True  # Set to false to disable new user registration
+    smtp_encryption_key: str = ""  # Fernet key for encrypting SMTP credentials
     app_version: str = "1.8.0"
 
 
