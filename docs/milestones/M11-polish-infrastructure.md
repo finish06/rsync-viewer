@@ -1,38 +1,38 @@
 # M11 — Polish & Infrastructure
 
 **Goal:** UI consistency, email infrastructure, and codebase cleanup to prepare for OIDC (M7) and production hardening
-**Status:** NEXT
+**Status:** IN_PROGRESS
 **Appetite:** 1 week
 **Target Maturity:** beta
-**Started:** —
+**Started:** 2026-02-26
 **Completed:** —
 
 ## Success Criteria
 
-- [ ] SMTP email configuration manageable via admin Settings UI
-- [ ] Test email can be sent from Settings to verify SMTP config
-- [ ] SMTP credentials encrypted at rest (Fernet)
-- [ ] Sync Logs filter box integrates quick-select date range buttons (matches Analytics pattern)
-- [ ] Sync Logs page responsive down to phone with card layout below 768px
+- [x] SMTP email configuration manageable via admin Settings UI
+- [x] Test email can be sent from Settings to verify SMTP config
+- [x] SMTP credentials encrypted at rest (Fernet)
+- [x] Sync Logs filter box integrates quick-select date range buttons (matches Analytics pattern)
+- [x] Sync Logs page responsive down to phone with card layout below 768px
 - [x] Deprecated code and patterns cleaned up
 
 ## Hill Chart
 
 ```
-SMTP Email Config      ████████████████████████████░░░░░░░░  IN_PROGRESS
-Sync Logs UI Refresh   ████████████████████████████░░░░░░░░  IN_PROGRESS
+SMTP Email Config      ████████████████████████████████░░░░  VERIFIED
+Sync Logs UI Refresh   ████████████████████████████████░░░░  VERIFIED
 Deprecation Cleanup    ████████████████████████████████████  DONE
-Dev Seed Data          ██████████████████████████████░░░░░░  VERIFIED
+Dev Seed Data          ████████████████████████████████████  DONE
 ```
 
 ## Features
 
 | Feature | Spec | Position | Notes |
 |---------|------|----------|-------|
-| SMTP Email Configuration | specs/smtp-email.md | IN_PROGRESS | Model, service, admin UI, Fernet encryption, test email |
-| Sync Logs UI Refresh | specs/sync-logs-ui-refresh.md | IN_PROGRESS | Quick-select in filter box, mobile cards, responsive layout |
+| SMTP Email Configuration | specs/smtp-email.md | VERIFIED | Model, service, admin UI, Fernet encryption, test email — 2ee116a |
+| Sync Logs UI Refresh | specs/sync-logs-ui-refresh.md | VERIFIED | Quick-select in filter box, mobile cards, responsive layout — ea7784f |
 | Deprecation Cleanup | specs/deprecation-cleanup.md | DONE | All datetime.utcnow() replaced with utc_now() helper |
-| Dev Seed Data | specs/dev-seed-data.md | VERIFIED | Seed data with users, API key, sync logs, webhooks, notifications |
+| Dev Seed Data | specs/dev-seed-data.md | DONE | Seed data with users, API key, sync logs, webhooks, notifications — d51fd89 |
 
 ## Dependencies
 

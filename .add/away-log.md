@@ -15,3 +15,9 @@
 ## Progress Log
 | Time | Task | Status | Notes |
 |------|------|--------|-------|
+| — | Commit + push registration toggle, README, milestones | Done | bd52a18 |
+| — | Deprecation Cleanup | Done | Already complete — all utcnow() migrated. Spec → Complete |
+| — | Dev Seed Data | Done | Added user + API key seeding. d51fd89 |
+| — | Sync Logs UI Refresh | Done | Quick-select in filters, mobile cards. ea7784f |
+| — | SMTP Email Configuration | Done | Model, service, admin UI, Fernet encryption, test email. 2ee116a |
+| — | Push all to origin/main | Done | 443d735 |
