@@ -79,7 +79,8 @@ async def fetch_discovery(issuer_url: str) -> dict[str, Any]:
         doc = response.json()
 
     _discovery_cache[issuer_url] = (doc, now)
-    return doc
+    result: dict[str, Any] = doc
+    return result
 
 
 def clear_discovery_cache() -> None:
@@ -144,7 +145,7 @@ async def build_authorize_url(
 ) -> str:
     """Build the OIDC authorization URL for the redirect."""
     discovery = await fetch_discovery(config.issuer_url)
-    authorize_endpoint = discovery["authorization_endpoint"]
+    authorize_endpoint: str = discovery["authorization_endpoint"]
 
     state, nonce = generate_state(return_url)
 
@@ -186,7 +187,8 @@ async def exchange_code_for_tokens(
             },
         )
         response.raise_for_status()
-        return response.json()
+        result: dict[str, Any] = response.json()
+        return result
 
 
 def decode_id_token(
@@ -242,7 +244,7 @@ def get_or_create_oidc_user(
     session: Session,
     claims: dict[str, Any],
     config: OidcConfig,
-) -> "User":  # noqa: F821 — forward ref
+) -> Any:  # Returns User; avoid forward-ref mypy error
     """Find or create a local user from OIDC claims.
 
     Priority:
