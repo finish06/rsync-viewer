@@ -345,7 +345,10 @@ class TestSmtpTestEmail:
         assert "recipient@example.com" in response.text
 
     @pytest.mark.anyio
-    @patch("app.main.send_test_email", side_effect=ValueError("SMTP is not configured"))
+    @patch(
+        "app.services.email.send_test_email",
+        side_effect=ValueError("SMTP is not configured"),
+    )
     async def test_ac010_test_email_shows_error_on_failure(
         self, mock_send, test_engine, db_session
     ):
