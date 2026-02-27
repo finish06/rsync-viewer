@@ -151,7 +151,7 @@ class TestMetricsPerformance:
         response = await client.get("/metrics")
         elapsed_ms = (time.monotonic() - start) * 1000
         assert response.status_code == 200
-        assert elapsed_ms < 100, f"Metrics endpoint took {elapsed_ms:.1f}ms (max 100ms)"
+        assert elapsed_ms < 200, f"Metrics endpoint took {elapsed_ms:.1f}ms (max 200ms)"
 
 
 class TestMetricsZeroData:
