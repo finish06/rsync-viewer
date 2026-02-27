@@ -271,7 +271,13 @@ def get_or_create_oidc_user(
     user = session.exec(select(User).where(User.oidc_subject == sub)).first()
     if user:
         # Update claims on each login (AC-017)
-        user.email = email
+        # Only update email if it wouldn't conflict with another user
+        if email and email != user.email:
+            existing_email = session.exec(
+                select(User).where(User.email == email, User.id != user.id)
+            ).first()
+            if not existing_email:
+                user.email = email
         if name and name != user.username:
             # Only update username if it wouldn't conflict
             existing = session.exec(

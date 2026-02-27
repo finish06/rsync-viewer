@@ -488,15 +488,16 @@ class TestOidcPasswordGuard:
 
         async with _make_client(oidc_user) as client:
             response = await client.post(
-                "/auth/password-reset/request",
+                "/api/v1/auth/password-reset/request",
                 json={"email": oidc_user.email},
                 headers={"X-API-Key": "test-api-key"},
             )
         _cleanup()
 
-        # Should reject with 400 or include an SSO message
-        # The exact status depends on the existing implementation
-        assert response.status_code in (200, 400)
+        # Should return 200 with SSO message (no info leakage)
+        assert response.status_code == 200
+        data = response.json()
+        assert "SSO" in data["message"] or "identity provider" in data["message"]
 
 
 # --- Edge cases ---

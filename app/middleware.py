@@ -146,7 +146,7 @@ PUBLIC_PATHS = {
     "/forgot-password",
     "/reset-password",
 }
-PUBLIC_PREFIXES = ("/static/", "/api/")
+PUBLIC_PREFIXES = ("/static/", "/api/", "/auth/oidc/")
 
 
 class AuthRedirectMiddleware(BaseHTTPMiddleware):
