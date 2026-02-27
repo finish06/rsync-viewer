@@ -95,6 +95,37 @@
         .auth-links a:hover {
             text-decoration: underline;
         }
+        .auth-divider {
+            display: flex;
+            align-items: center;
+            margin: 1.25rem 0;
+            gap: 0.75rem;
+        }
+        .auth-divider::before,
+        .auth-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border-color, #d0d0d0);
+        }
+        .auth-divider span {
+            font-size: 0.8rem;
+            color: var(--text-muted, #888);
+        }
+        .auth-oidc-btn {
+            width: 100%;
+            padding: 0.625rem;
+            background: var(--card-bg, #f5f5f5);
+            color: var(--text-color, #333);
+            border: 1px solid var(--border-color, #d0d0d0);
+            border-radius: 4px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+        }
+        .auth-oidc-btn:hover {
+            background: var(--hover-bg, #eee);
+        }
     </style>
 </head>
 <body>
@@ -114,6 +145,7 @@
             </div>
             {% endif %}
 
+            {% if not hide_local_login %}
             <form id="login-form" method="post" action="/login">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                 {% if return_url %}
@@ -132,11 +164,25 @@
 
                 <button type="submit" class="auth-submit">Log In</button>
             </form>
+            {% endif %}
 
+            {% if oidc_enabled and not hide_local_login %}
+            <div class="auth-divider"><span>or</span></div>
+            {% endif %}
+
+            {% if oidc_enabled %}
+            <a href="/auth/oidc/login{% if return_url %}?return_url={{ return_url }}{% endif %}"
+               class="auth-oidc-btn" style="display: block; text-align: center; text-decoration: none;">
+                Login with {{ oidc_provider_name }}
+            </a>
+            {% endif %}
+
+            {% if not hide_local_login %}
             <div class="auth-links">
                 <p><a href="/forgot-password">Forgot password?</a></p>
                 <p>Don't have an account? <a href="/register">Register</a></p>
             </div>
+            {% endif %}
         </div>
     </div>
 

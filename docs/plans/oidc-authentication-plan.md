@@ -1,300 +1,200 @@
-# Implementation Plan: OIDC Authentication
+# Implementation Plan: M7 — OIDC Authentication
 
-**Spec Version**: 0.1.0
+**Spec Versions**: oidc-settings.md v0.1.0, oidc-authentication.md v0.2.0
 **Created**: 2026-02-24
+**Updated**: 2026-02-27
 **Team Size**: Solo
-**Estimated Duration**: 3-4 days
 
 ## Overview
 
-Add OpenID Connect login as an optional authentication method alongside the existing API key auth. A single OIDC provider (PocketId or generic) is configured via environment variables. Users authenticating via OIDC get local accounts auto-created or auto-linked by email.
+Add OpenID Connect (OIDC) single sign-on as an optional authentication method. M7 has two specs:
 
-## Critical Dependency
+1. **OIDC Settings UI** (`specs/oidc-settings.md`) — Admin configures OIDC provider via Settings page (DB-stored, Fernet-encrypted client secret, test discovery). This must be built first since the auth flow reads config from DB.
+2. **OIDC Authentication** (`specs/oidc-authentication.md`) — Authorization Code Flow, user auto-create/link, login page UI, session handling.
 
-**This spec depends on `specs/user-management.md` being implemented first.** The OIDC feature extends the User model, issues JWT sessions, and uses role-based access — all of which are defined in the user-management spec.
+## Dependencies — All Satisfied
 
-**However**, a subset of OIDC can be implemented independently by building the OIDC plumbing (discovery, auth flow, callback, token exchange) with a minimal User model. The plan below assumes user-management is implemented first, but Phase 1 (config + OIDC client) can start without it.
+| Dependency | Status | Notes |
+|------------|--------|-------|
+| M9 Multi-User (User model, JWT, RBAC, login page) | Complete | PR #15, #17 merged |
+| M3 Security Hardening (rate limiting) | Complete | Applies to OIDC endpoints automatically |
+| Fernet encryption pattern (SMTP) | Complete | `SmtpConfig` model, `email.py` service |
+| `cryptography` package | Installed | Already in requirements.txt |
+| `httpx` package | Installed | Already in requirements.txt |
 
 ## Objectives
 
-- Enable SSO login via any OIDC-compliant provider
-- Auto-create and auto-link accounts based on OIDC claims
-- Maintain backward compatibility (no OIDC = no changes to existing behavior)
-- Secure the flow with state + nonce validation
+- Admin-configurable OIDC provider via Settings UI (no env vars needed)
+- SSO login via any OIDC-compliant provider (PocketId, Authelia, Keycloak, etc.)
+- Auto-create and auto-link local accounts from OIDC claims
+- Secure flow: state + nonce validation, encrypted client secret at rest
+- Backward compatible: no OIDC config = no changes to existing behavior
+- `FORCE_LOCAL_LOGIN` env var as safety fallback
 
 ## Success Criteria
 
-- All 17 acceptance criteria implemented and tested
+- All 28 acceptance criteria covered by tests (14 from oidc-settings + 14 active from oidc-authentication)
 - Code coverage >= 80% for new OIDC code
 - All quality gates passing (ruff, mypy, pytest)
+- Zero regressions in existing 594 tests
 - OIDC login works end-to-end with PocketId in Docker environment
-
-## Acceptance Criteria Analysis
-
-### AC-001: OIDC enabled via env vars
-- **Complexity**: Simple
-- **Effort**: 1h
-- **Tasks**: Add OIDC settings to config.py, update .env.example
-- **Testing**: Unit test that config loads correctly with/without OIDC vars
-
-### AC-002: Provider-branded login button
-- **Complexity**: Simple
-- **Effort**: 1h
-- **Tasks**: Update login template with conditional OIDC button
-- **Dependencies**: Login page must exist (user-management spec)
-- **Testing**: Template renders button when OIDC configured, hides when not
-
-### AC-003: Authorization Code Flow redirect
-- **Complexity**: Medium
-- **Effort**: 2h
-- **Tasks**: OIDC login endpoint, state/nonce generation, redirect logic
-- **Testing**: Unit test redirect URL construction, state storage
-
-### AC-004: Callback token exchange + validation
-- **Complexity**: Complex
-- **Effort**: 4h
-- **Tasks**: Callback endpoint, code exchange, ID token validation, claim extraction
-- **Dependencies**: AC-003, OIDC discovery (AC-010)
-- **Risks**: Provider-specific token format quirks
-- **Testing**: Mock provider responses, test happy path and error cases
-
-### AC-005: Auto-create user from OIDC
-- **Complexity**: Medium
-- **Effort**: 2h
-- **Tasks**: Create user with Viewer role from OIDC claims, set auth_provider="oidc"
-- **Dependencies**: User model (user-management spec), AC-004
-- **Testing**: Test new user creation with expected defaults
-
-### AC-006: Auto-link by email match
-- **Complexity**: Medium
-- **Effort**: 2h
-- **Tasks**: Email lookup, link oidc_subject/oidc_issuer to existing user
-- **Dependencies**: User model, AC-004
-- **Testing**: Test linking, test that role is preserved
-
-### AC-007: OIDC users cannot set local password
-- **Complexity**: Simple
-- **Effort**: 30min
-- **Tasks**: Guard on password change endpoint
-- **Testing**: Test 403 when OIDC user tries password change
-
-### AC-008: Local JWT after OIDC login
-- **Complexity**: Simple
-- **Effort**: 1h
-- **Tasks**: Issue JWT + set session cookie in callback handler
-- **Dependencies**: JWT infrastructure (user-management spec)
-- **Testing**: Test session cookie is set after callback
-
-### AC-009: OIDC config from env vars
-- **Complexity**: Simple
-- **Effort**: 30min
-- **Tasks**: Already covered by AC-001 (5 env vars in Settings)
-- **Testing**: Covered by AC-001 tests
-
-### AC-010: OIDC Discovery
-- **Complexity**: Medium
-- **Effort**: 2h
-- **Tasks**: Fetch + cache .well-known/openid-configuration, extract endpoints
-- **Risks**: Provider down at startup
-- **Testing**: Mock discovery response, test caching, test failure handling
-
-### AC-011: Request openid email profile scopes
-- **Complexity**: Simple
-- **Effort**: 15min
-- **Tasks**: Part of AC-003 redirect URL construction
-- **Testing**: Verify scope parameter in redirect URL
-
-### AC-012: Hide local login option
-- **Complexity**: Simple
-- **Effort**: 30min
-- **Tasks**: Conditional template rendering based on OIDC_HIDE_LOCAL_LOGIN
-- **Testing**: Template test with flag on/off
-
-### AC-013: State parameter validation
-- **Complexity**: Medium
-- **Effort**: 1h
-- **Tasks**: Generate + store state, validate on callback, reject mismatches
-- **Testing**: Test valid state, invalid state, expired state
-
-### AC-014: Nonce validation
-- **Complexity**: Medium
-- **Effort**: 1h
-- **Tasks**: Generate + store nonce, validate in ID token
-- **Testing**: Test nonce match, nonce mismatch
-
-### AC-015: No OIDC button when unconfigured
-- **Complexity**: Simple
-- **Effort**: 15min
-- **Tasks**: Covered by AC-002 conditional rendering
-- **Testing**: Covered by AC-002 tests
-
-### AC-016: Local-only logout
-- **Complexity**: Simple
-- **Effort**: 15min
-- **Tasks**: Existing logout destroys local session only (no OIDC logout endpoint)
-- **Testing**: Verify no redirect to OIDC provider on logout
-
-### AC-017: Update display name/email on login
-- **Complexity**: Simple
-- **Effort**: 30min
-- **Tasks**: Update user fields from OIDC claims on each login
-- **Testing**: Test that changed email/name at provider propagates
 
 ## Implementation Phases
 
-### Phase 0: Configuration & Dependencies (0.5 day)
+### Phase 1: Foundation — Config, Model, Encryption (0.5 day)
 
-| Task ID | Description | Effort | Dependencies | ACs |
-|---------|-------------|--------|--------------|-----|
-| TASK-001 | Add `authlib` to requirements.txt | 15min | — | — |
-| TASK-002 | Add OIDC settings to `app/config.py` (`oidc_issuer_url`, `oidc_client_id`, `oidc_client_secret`, `oidc_provider_name`, `oidc_hide_local_login`) | 30min | — | AC-001, AC-009 |
-| TASK-003 | Update `.env.example` with OIDC env vars | 15min | TASK-002 | AC-009 |
-| TASK-004 | Add `oidc_subject`, `oidc_issuer`, `auth_provider` columns to User model | 1h | User model exists | AC-005, AC-006 |
+Establishes the `OidcConfig` DB model and shared encryption infrastructure. Mirrors the `SmtpConfig` pattern.
 
-**Phase Duration**: 0.5 day
-**Blockers**: User model from user-management spec must exist for TASK-004
+| Task | Description | ACs (settings) | Files |
+|------|-------------|----------------|-------|
+| T-01 | Add `force_local_login: bool = False` to `app/config.py` Settings | S-AC-004 | `app/config.py` |
+| T-02 | Rename/alias `smtp_encryption_key` → `encryption_key` in Settings (keep backward compat with `SMTP_ENCRYPTION_KEY` env var, also accept `ENCRYPTION_KEY`) | S-AC-005 | `app/config.py` |
+| T-03 | Create `app/models/oidc_config.py` — `OidcConfig` SQLModel table (singleton pattern, same as SmtpConfig) | S-AC-001 | `app/models/oidc_config.py` |
+| T-04 | Add OIDC encryption helpers to `app/services/oidc.py` — `encrypt_client_secret()` / `decrypt_client_secret()` reusing Fernet from shared encryption key | S-AC-005 | `app/services/oidc.py` |
+| T-05 | Add `auth_provider`, `oidc_subject`, `oidc_issuer` columns to User model | A-AC-005, A-AC-006 | `app/models/user.py` |
+| T-06 | Import `OidcConfig` in `main.py` for auto table creation | — | `app/main.py` |
+| T-07 | Update `.env.example` with `ENCRYPTION_KEY` and `FORCE_LOCAL_LOGIN` | — | `.env.example` |
 
-### Phase 1: OIDC Client Core (1 day)
+**Spec traceability:** S = oidc-settings spec, A = oidc-authentication spec
 
-| Task ID | Description | Effort | Dependencies | ACs |
-|---------|-------------|--------|--------------|-----|
-| TASK-005 | Write failing tests for OIDC discovery, auth flow, callback | 3h | TASK-002 | AC-003, AC-004, AC-010, AC-013, AC-014 |
-| TASK-006 | Implement OIDC discovery client (`app/services/oidc.py`) — fetch + cache `.well-known/openid-configuration` | 2h | TASK-005 | AC-010 |
-| TASK-007 | Implement state/nonce generation and storage (`app/services/oidc.py`) — in-memory dict with TTL | 1h | TASK-005 | AC-013, AC-014 |
-| TASK-008 | Implement `GET /auth/oidc/login` endpoint — build authorize URL, redirect | 1h | TASK-006, TASK-007 | AC-003, AC-011 |
-| TASK-009 | Implement `GET /auth/oidc/callback` endpoint — code exchange, ID token validation, claim extraction | 3h | TASK-006, TASK-007, TASK-008 | AC-004, AC-013, AC-014 |
+### Phase 2: OIDC Settings Admin UI (1 day)
 
-**Phase Duration**: 1 day
-**Blockers**: None (OIDC plumbing is independent of User model specifics)
+Admin can configure, test, enable/disable OIDC from the Settings page. Follows the SMTP settings HTMX pattern exactly.
 
-### Phase 2: User Account Integration (1 day)
+| Task | Description | ACs (settings) | Files |
+|------|-------------|----------------|-------|
+| T-08 | Write failing tests for OIDC settings CRUD, discovery test, access control | S-AC-001 through S-AC-009 | `tests/test_oidc_settings.py` |
+| T-09 | Implement `get_oidc_config(session)` and `save_oidc_config()` service functions (singleton upsert) | S-AC-001, S-AC-012 | `app/services/oidc.py` |
+| T-10 | Implement OIDC discovery function — fetch `/.well-known/openid-configuration`, return endpoints | S-AC-007 | `app/services/oidc.py` |
+| T-11 | Add HTMX endpoint `GET /htmx/settings/auth` — render OIDC config form (admin only, secret masked) | S-AC-001, S-AC-006, S-AC-008 | `app/main.py` |
+| T-12 | Add HTMX endpoint `POST /htmx/settings/auth` — save/update OIDC config (admin only, empty secret preserves existing) | S-AC-001, S-AC-005, S-AC-009, S-AC-011, S-AC-012 | `app/main.py` |
+| T-13 | Add HTMX endpoint `POST /htmx/settings/auth/test-discovery` — test discovery against issuer URL | S-AC-007 | `app/main.py` |
+| T-14 | Create `app/templates/partials/oidc_settings.html` — form with provider name, issuer URL, client ID, client secret, scopes, toggles, test discovery button, info note about `FORCE_LOCAL_LOGIN` | S-AC-001 through S-AC-006, S-AC-013 | `app/templates/partials/oidc_settings.html` |
+| T-15 | Add "Authentication" section to `app/templates/settings.html` — admin-only guard, lazy-load via `hx-get` | S-AC-008 | `app/templates/settings.html` |
+| T-16 | Make tests pass (GREEN), then refactor | All settings ACs | All above |
 
-| Task ID | Description | Effort | Dependencies | ACs |
-|---------|-------------|--------|--------------|-----|
-| TASK-010 | Write failing tests for auto-create, auto-link, JWT issuance | 2h | TASK-004 | AC-005, AC-006, AC-007, AC-008, AC-017 |
-| TASK-011 | Implement auto-create user from OIDC claims in callback | 1.5h | TASK-009, TASK-010 | AC-005 |
-| TASK-012 | Implement auto-link by email match in callback | 1.5h | TASK-009, TASK-010 | AC-006 |
-| TASK-013 | Issue local JWT session after OIDC login (set cookie, redirect) | 1h | TASK-009, TASK-010 | AC-008 |
-| TASK-014 | Guard password change for OIDC-only users | 30min | TASK-010 | AC-007 |
-| TASK-015 | Update user email/name from claims on each login | 30min | TASK-011, TASK-012 | AC-017 |
+### Phase 3: OIDC Client Core — Auth Code Flow (1 day)
 
-**Phase Duration**: 1 day
-**Blockers**: TASK-004 (User model columns), Phase 1 complete
+The core OIDC plumbing: state/nonce management, login redirect, callback with token exchange.
 
-### Phase 3: UI & Configuration Endpoint (0.5 day)
+| Task | Description | ACs (auth) | Files |
+|------|-------------|------------|-------|
+| T-17 | Write failing tests for state/nonce generation, auth URL construction, callback token exchange, ID token validation | A-AC-003, A-AC-004, A-AC-010, A-AC-011, A-AC-013, A-AC-014 | `tests/test_oidc_auth.py` |
+| T-18 | Implement state/nonce manager in `app/services/oidc.py` — in-memory dict with 10-min TTL, generate/store/validate/cleanup | A-AC-013, A-AC-014 | `app/services/oidc.py` |
+| T-19 | Implement `build_authorize_url()` — reads OidcConfig from DB, runs discovery, constructs redirect URL with state/nonce/scopes | A-AC-003, A-AC-010, A-AC-011 | `app/services/oidc.py` |
+| T-20 | Implement `exchange_code_for_tokens()` — POST to token endpoint, validate ID token (signature, nonce, iss, aud), extract claims | A-AC-004, A-AC-014 | `app/services/oidc.py` |
+| T-21 | Add `GET /auth/oidc/login` endpoint — reads DB config, calls `build_authorize_url()`, returns 302 redirect | A-AC-003 | `app/main.py` or `app/api/endpoints/auth_oidc.py` |
+| T-22 | Add `GET /auth/oidc/callback` endpoint — validates state, exchanges code, extracts claims, hands off to user integration (Phase 4) | A-AC-004, A-AC-013 | `app/main.py` or `app/api/endpoints/auth_oidc.py` |
+| T-23 | Make tests pass (GREEN), then refactor | — | All above |
 
-| Task ID | Description | Effort | Dependencies | ACs |
-|---------|-------------|--------|--------------|-----|
-| TASK-016 | Write failing tests for login page rendering, config endpoint | 1h | TASK-002 | AC-002, AC-012, AC-015 |
-| TASK-017 | Update login template — OIDC button, conditional local form | 1h | TASK-016 | AC-002, AC-012, AC-015 |
-| TASK-018 | Implement `GET /api/v1/auth/oidc/config` endpoint | 30min | TASK-016 | AC-002 |
-| TASK-019 | Verify logout is local-only (no OIDC provider logout) | 15min | — | AC-016 |
+**Decision: authlib vs httpx** — Use `httpx` directly (already installed) for discovery fetch and token exchange. Use `PyJWT` (already installed) for ID token validation. This avoids adding `authlib` as a new dependency. If OIDC provider quirks emerge, we can add `authlib` later.
 
-**Phase Duration**: 0.5 day
-**Blockers**: Login page must exist (user-management spec)
+### Phase 4: User Account Integration (0.5 day)
 
-### Phase 4: Verification & Polish (0.5 day)
+Auto-create/link users from OIDC claims, issue local JWT sessions, guard password changes.
 
-| Task ID | Description | Effort | Dependencies | ACs |
-|---------|-------------|--------|--------------|-----|
-| TASK-020 | Write edge case tests (no email claim, duplicate emails, expired state, provider down) | 2h | Phase 1-3 | All edge cases |
-| TASK-021 | Run full test suite, fix regressions | 1h | TASK-020 | — |
-| TASK-022 | Run ruff check + mypy, fix issues | 30min | TASK-021 | — |
-| TASK-023 | Manual end-to-end test with PocketId in Docker | 1h | TASK-021 | All |
+| Task | Description | ACs (auth) | Files |
+|------|-------------|------------|-------|
+| T-24 | Write failing tests for user auto-create, auto-link, JWT issuance, password guard, claim updates | A-AC-005, A-AC-006, A-AC-007, A-AC-008, A-AC-017 | `tests/test_oidc_auth.py` |
+| T-25 | Implement `get_or_create_oidc_user(session, claims)` — lookup by `oidc_subject`, then by email, then create new. Set `auth_provider="oidc"` | A-AC-005, A-AC-006 | `app/services/oidc.py` |
+| T-26 | Update claims on each login (email, display name from `preferred_username` or `name`) | A-AC-017 | `app/services/oidc.py` |
+| T-27 | Issue local JWT session in callback (access + refresh tokens, set cookies, redirect to dashboard or `return_url`) | A-AC-008 | callback endpoint |
+| T-28 | Guard password change/reset for OIDC-only users (`auth_provider == "oidc"` → reject with message) | A-AC-007 | `app/api/endpoints/auth.py`, `app/main.py` |
+| T-29 | Make tests pass (GREEN), then refactor | — | All above |
 
-**Phase Duration**: 0.5 day
+### Phase 5: Login Page UI (0.5 day)
+
+Update the login page to conditionally show the OIDC button and optionally hide local login.
+
+| Task | Description | ACs | Files |
+|------|-------------|-----|-------|
+| T-30 | Write failing tests for login page rendering in all modes (no OIDC, OIDC+local, OIDC-only, FORCE_LOCAL_LOGIN override) | A-AC-002, A-AC-012, A-AC-015, S-AC-003, S-AC-004 | `tests/test_oidc_auth.py` |
+| T-31 | Update `GET /login` route in `main.py` — query `OidcConfig` from DB, pass `oidc_enabled`, `oidc_provider_name`, `hide_local_login` to template. Respect `FORCE_LOCAL_LOGIN` override. | A-AC-001, A-AC-015, S-AC-004 | `app/main.py` |
+| T-32 | Update `app/templates/login.html` — add "or" divider + "Login with {provider_name}" button (conditional), hide local form when `hide_local_login` and not `force_local_login` | A-AC-002, A-AC-012 | `app/templates/login.html` |
+| T-33 | Verify logout is local-only (existing logout handler doesn't redirect to OIDC provider) | A-AC-016 | `tests/test_oidc_auth.py` |
+| T-34 | Make tests pass (GREEN), then refactor | — | All above |
+
+### Phase 6: Edge Cases & Verification (0.5 day)
+
+| Task | Description | ACs | Files |
+|------|-------------|-----|-------|
+| T-35 | Write edge case tests: no email claim, duplicate emails (sub takes precedence), expired state/nonce, provider unreachable at login time, OIDC disabled with active sessions | Edge cases from both specs | `tests/test_oidc_auth.py` |
+| T-36 | Write tests for OIDC settings edge cases: empty secret on edit, discovery fails but save allowed, concurrent admin edits, missing encryption key | S-AC-011, S-AC-012, edge cases | `tests/test_oidc_settings.py` |
+| T-37 | Run full test suite — verify zero regressions in existing 594 tests | — | — |
+| T-38 | Run quality gates: `ruff check`, `ruff format`, `mypy` | — | — |
+| T-39 | Update `.env.example`, `docker-compose.yml` if needed | — | Config files |
+| T-40 | Update milestone doc — mark features as VERIFIED/DONE | — | `docs/milestones/M7-oidc-authentication.md` |
 
 ## Effort Summary
 
-| Phase | Estimated Hours | Days (solo) |
-|-------|-----------------|-------------|
-| Phase 0: Config & Dependencies | 2h | 0.5 |
-| Phase 1: OIDC Client Core | 10h | 1 |
-| Phase 2: User Integration | 7h | 1 |
-| Phase 3: UI & Config Endpoint | 3h | 0.5 |
-| Phase 4: Verification & Polish | 4.5h | 0.5 |
-| **Total** | **26.5h** | **3.5 days** |
+| Phase | Scope | ACs Covered |
+|-------|-------|-------------|
+| Phase 1: Foundation | Config, models, encryption | 4 |
+| Phase 2: OIDC Settings UI | Admin HTMX UI, CRUD, discovery test | 14 (all settings ACs) |
+| Phase 3: Auth Code Flow | State/nonce, login redirect, callback, token exchange | 7 |
+| Phase 4: User Integration | Auto-create/link, JWT session, password guard | 5 |
+| Phase 5: Login Page UI | OIDC button, hide local form, FORCE_LOCAL_LOGIN | 5 |
+| Phase 6: Edge Cases & Verify | Edge cases, quality gates, regressions | All |
 
-## Dependencies
+## Architecture Decisions
 
-### External Dependencies
-- `authlib` library (OIDC client, JWT validation)
-- OIDC provider available for end-to-end testing (PocketId instance)
+### No `authlib` — use existing deps
+`httpx` (already installed) handles OIDC discovery fetch and token exchange HTTP calls. `PyJWT` (already installed) handles ID token validation. `cryptography` (already installed) provides Fernet. This keeps the dependency footprint minimal. If provider-specific quirks require more sophisticated OIDC handling, `authlib` can be added later.
 
-### Internal Dependencies (Blocking)
-- **User Management spec** (`specs/user-management.md`) must be implemented first:
-  - User model with username, email, role, password_hash
-  - JWT session infrastructure (issue, validate, refresh)
-  - Login page template (`/login`)
-  - Logout handler
-  - Role-based access control middleware
+### Shared encryption key
+Rename the config setting from `smtp_encryption_key` to `encryption_key` (accept both env var names for backward compat). Both `SmtpConfig` and `OidcConfig` use the same Fernet key. Refactor `app/services/email.py` encryption helpers to a shared location or have `oidc.py` import from email service.
 
-### Internal Dependencies (Non-Blocking)
-- Security hardening (rate limiting) — already implemented, will apply to OIDC endpoints automatically
+### In-memory state/nonce storage
+State and nonce for OIDC CSRF/replay protection are stored in an in-memory dict with 10-minute TTL. Acceptable for a single-instance homelab app. Users simply retry login if state expires (e.g., server restart). No DB table needed for `OidcState`.
+
+### OIDC endpoints in main.py
+The browser-facing login flow (`GET /login`, `POST /login`) is already in `main.py`. OIDC login/callback endpoints (`GET /auth/oidc/login`, `GET /auth/oidc/callback`) go alongside them for consistency since they handle browser redirects and cookie setting, not REST API responses.
+
+### Singleton OidcConfig
+Same pattern as `SmtpConfig` — integer PK, only one row, upsert on save. Service layer enforces the singleton via `select().limit(1)`.
+
+## File Change Summary
+
+### New Files
+| File | Purpose |
+|------|---------|
+| `app/models/oidc_config.py` | `OidcConfig` SQLModel table |
+| `app/services/oidc.py` | Discovery, state/nonce, token exchange, user integration |
+| `app/templates/partials/oidc_settings.html` | Admin OIDC config form |
+| `tests/test_oidc_settings.py` | OIDC Settings UI tests |
+| `tests/test_oidc_auth.py` | OIDC auth flow tests |
+
+### Modified Files
+| File | Change |
+|------|--------|
+| `app/config.py` | Add `encryption_key`, `force_local_login` |
+| `app/models/user.py` | Add `auth_provider`, `oidc_subject`, `oidc_issuer` columns |
+| `app/main.py` | Import OidcConfig, add HTMX settings endpoints, add OIDC login/callback routes, update `GET /login` context |
+| `app/templates/settings.html` | Add "Authentication" section (admin-only) |
+| `app/templates/login.html` | Add OIDC button, conditional local form |
+| `app/api/endpoints/auth.py` | Guard password reset for OIDC users |
+| `app/services/email.py` | Refactor encryption to shared helper (or import from oidc.py) |
+| `.env.example` | Add `ENCRYPTION_KEY`, `FORCE_LOCAL_LOGIN` |
+| `requirements.txt` | No new deps needed |
 
 ## Risk Assessment
 
 | Risk | Probability | Impact | Mitigation |
-|------|-------------|--------|-----------|
-| User-management spec not yet implemented | High | High | Plan OIDC as a follow-on milestone; Phase 1 (OIDC client) can be built independently |
-| PocketId-specific OIDC quirks | Medium | Medium | Test with generic OIDC first (e.g., Keycloak dev instance); PocketId is standards-compliant |
-| Token validation edge cases | Medium | Medium | Use authlib's built-in JWT validation; don't roll our own |
-| Discovery endpoint caching staleness | Low | Low | Cache with 1h TTL; re-fetch on 401 errors |
-| State storage in-memory lost on restart | Low | Low | Acceptable for homelab; users just re-click login button. Could use DB if needed later |
+|------|-------------|--------|------------|
+| PocketId-specific OIDC quirks | Medium | Medium | Test with generic OIDC first; PocketId is standards-compliant |
+| ID token validation edge cases (alg, aud, iss) | Medium | Medium | Use PyJWT with explicit algorithm + audience + issuer checks |
+| Discovery endpoint caching staleness | Low | Low | Cache with 1h TTL; re-fetch on errors |
+| State storage lost on restart | Low | Low | Acceptable for homelab; users retry login |
+| Shared encryption key migration | Low | Low | Accept both `SMTP_ENCRYPTION_KEY` and `ENCRYPTION_KEY` env var names |
 
 ## Testing Strategy
 
-1. **Unit Tests** (Phase 1-3, TDD)
-   - OIDC discovery client (mocked HTTP responses)
-   - State/nonce generation and validation
-   - Authorization URL construction
-   - Token exchange (mocked provider)
-   - ID token validation (mocked JWKs)
-   - Auto-create and auto-link logic
-   - Config endpoint response
-   - Template rendering (OIDC button presence/absence)
-
-2. **Integration Tests** (Phase 4)
-   - Full callback flow with mocked OIDC provider
-   - Session cookie set after login
-   - Edge cases (no email, duplicate email, expired state)
-
-3. **Manual E2E Test** (Phase 4)
-   - Login with PocketId in Docker environment
-   - Verify account creation, role assignment, session
-
-4. **Quality Gates**
-   - Coverage >= 80% for `app/services/oidc.py` and OIDC endpoints
-   - ruff check clean
-   - mypy clean
-   - All 421+ existing tests still passing
-
-## Deliverables
-
-### Code
-- `app/services/oidc.py` — OIDC discovery client, state management, token exchange
-- `app/api/endpoints/auth_oidc.py` — Login + callback + config endpoints (or added to existing auth router)
-- `app/config.py` — OIDC settings additions
-- `app/models/sync_log.py` or `app/models/user.py` — User model OIDC columns
-- `app/templates/login.html` — Updated with OIDC button
-
-### Tests
-- `tests/test_oidc.py` — All OIDC unit and integration tests
-
-### Configuration
-- `.env.example` — Updated with OIDC env vars
-- `requirements.txt` — Added authlib
-
-## Success Metrics
-
-- [ ] All 17 acceptance criteria implemented
-- [ ] 25+ tests written and passing for OIDC
-- [ ] Code coverage >= 80% for new code
-- [ ] Zero regressions in existing 421 tests
-- [ ] All quality gates passing
-- [ ] Manual PocketId login works end-to-end
-- [ ] Login page renders correctly in all 3 modes (no OIDC, OIDC + local, OIDC only)
+1. **Unit Tests (TDD, Phases 1-5):** Discovery client (mocked httpx), state/nonce lifecycle, authorize URL construction, token exchange (mocked), ID token validation (mocked JWKs), user auto-create/link, config CRUD, template rendering, access control
+2. **Integration Tests (Phase 6):** Full callback flow with mocked provider, session cookie verification, edge cases
+3. **Quality Gates:** Coverage >= 80% for new code, ruff clean, mypy clean, 594+ existing tests passing
+4. **Manual E2E:** Login with PocketId in Docker, verify account creation, role assignment, session
 
 ## Plan History
 
-- 2026-02-24: Initial plan created
+- 2026-02-24: Initial plan created (spec v0.1.0, env var config)
+- 2026-02-27: Major revision — split into 6 phases covering both specs (oidc-settings.md + oidc-authentication.md v0.2.0). Removed `authlib` dependency (use httpx + PyJWT). Updated for DB-based config. All M9 dependencies now satisfied.

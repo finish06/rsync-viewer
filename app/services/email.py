@@ -17,9 +17,9 @@ logger = logging.getLogger(__name__)
 
 
 def _get_fernet() -> Optional[Fernet]:
-    """Get Fernet cipher from SMTP_ENCRYPTION_KEY setting."""
+    """Get Fernet cipher from encryption key setting."""
     settings = get_settings()
-    key = settings.smtp_encryption_key
+    key = settings.effective_encryption_key
     if not key:
         return None
     return Fernet(key.encode())

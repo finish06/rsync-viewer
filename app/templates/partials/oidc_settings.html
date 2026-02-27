@@ -1,0 +1,95 @@
+{% if success_message %}
+<div class="settings-success" style="margin-bottom: 1rem;">{{ success_message }}</div>
+{% endif %}
+
+{% if not has_encryption_key %}
+<div class="auth-error" style="margin-bottom: 1rem;">
+    ENCRYPTION_KEY is not set. Generate one with:<br>
+    <code>python3 -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"</code><br>
+    Add it to your .env file before configuring OIDC.
+</div>
+{% endif %}
+
+<form hx-post="/htmx/settings/auth"
+      hx-target="#oidc-settings-container"
+      hx-swap="innerHTML">
+    <div class="smtp-form-grid">
+        <div class="filter-group">
+            <label for="oidc-provider-name">Provider Name</label>
+            <input type="text" id="oidc-provider-name" name="provider_name" required
+                   placeholder="PocketId"
+                   value="{{ oidc.provider_name if oidc else '' }}">
+        </div>
+
+        <div class="filter-group">
+            <label for="oidc-issuer-url">Issuer URL</label>
+            <input type="url" id="oidc-issuer-url" name="issuer_url" required
+                   placeholder="https://auth.example.com"
+                   value="{{ oidc.issuer_url if oidc else '' }}">
+        </div>
+
+        <div class="filter-group">
+            <label for="oidc-client-id">Client ID</label>
+            <input type="text" id="oidc-client-id" name="client_id" required
+                   placeholder="rsync-viewer"
+                   value="{{ oidc.client_id if oidc else '' }}">
+        </div>
+
+        <div class="filter-group">
+            <label for="oidc-client-secret">Client Secret</label>
+            <input type="password" id="oidc-client-secret" name="client_secret"
+                   placeholder="{{ '••••••••' if oidc and oidc.encrypted_client_secret else 'Enter client secret' }}"
+                   autocomplete="new-password">
+            {% if oidc and oidc.encrypted_client_secret %}
+            <span style="font-size: 0.75rem; color: var(--text-muted);">Leave blank to keep current secret</span>
+            {% endif %}
+        </div>
+
+        <div class="filter-group">
+            <label for="oidc-scopes">Scopes</label>
+            <input type="text" id="oidc-scopes" name="scopes"
+                   placeholder="openid email profile"
+                   value="{{ oidc.scopes if oidc else 'openid email profile' }}">
+        </div>
+    </div>
+
+    <div style="margin-top: 1rem;">
+        <button type="button" class="btn btn-secondary"
+                hx-post="/htmx/settings/auth/test-discovery"
+                hx-target="#oidc-discovery-result"
+                hx-swap="innerHTML"
+                hx-include="[name='issuer_url']"
+                {{ 'disabled' if not has_encryption_key }}>
+            Test Discovery
+        </button>
+        <div id="oidc-discovery-result" style="margin-top: 0.5rem;"></div>
+    </div>
+
+    <div style="margin-top: 1rem; display: flex; flex-direction: column; gap: 0.75rem;">
+        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+            <input type="checkbox" name="enabled"
+                   {{ 'checked' if oidc and oidc.enabled }}>
+            Enable OIDC
+        </label>
+
+        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+            <input type="checkbox" name="hide_local_login"
+                   {{ 'checked' if oidc and oidc.hide_local_login }}>
+            Hide Local Login
+        </label>
+    </div>
+
+    <div style="margin-top: 0.75rem; padding: 0.5rem 0.75rem; background: var(--bg-secondary, #f5f5f5); border-radius: 4px; font-size: 0.8rem; color: var(--text-muted);">
+        Local login can always be forced via the <code>FORCE_LOCAL_LOGIN</code> environment variable as a safety fallback.
+    </div>
+
+    <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+        <button type="submit" class="btn btn-primary" {{ 'disabled' if not has_encryption_key }}>Save</button>
+    </div>
+</form>
+
+{% if not oidc %}
+<p style="color: var(--text-muted); font-size: 0.875rem; margin-top: 1rem;">
+    No OIDC provider configured. Single sign-on is disabled.
+</p>
+{% endif %}

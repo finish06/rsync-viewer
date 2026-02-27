@@ -30,7 +30,16 @@ class Settings(BaseSettings):
     auth_enabled: bool = False  # Auto-enables when first user registers
     registration_enabled: bool = True  # Set to false to disable new user registration
     smtp_encryption_key: str = ""  # Fernet key for encrypting SMTP credentials
+    encryption_key: str = (
+        ""  # Shared Fernet key (used for OIDC + SMTP if smtp_encryption_key is empty)
+    )
+    force_local_login: bool = False  # Safety fallback: always show local login form
     app_version: str = "1.9.0"
+
+    @property
+    def effective_encryption_key(self) -> str:
+        """Return the encryption key to use. Prefers smtp_encryption_key for backward compat."""
+        return self.smtp_encryption_key or self.encryption_key
 
 
 @lru_cache

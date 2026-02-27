@@ -270,6 +270,12 @@ async def request_password_reset(
             message="If an account with that email exists, a reset link has been sent."
         )
 
+    # OIDC users cannot reset local passwords
+    if user.auth_provider == "oidc":
+        return PasswordResetResponse(
+            message="This account uses SSO. Please log in with your identity provider."
+        )
+
     # Generate reset token
     raw_token = secrets.token_urlsafe(32)
     reset_record = PasswordResetToken(

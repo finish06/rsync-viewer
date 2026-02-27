@@ -50,6 +50,7 @@ from app.models.user import User  # noqa: F401 — ensure table creation
 from app.models.user import RefreshToken  # noqa: F401 — ensure table creation
 from app.models.user import PasswordResetToken  # noqa: F401 — ensure table creation
 from app.models.smtp_config import SmtpConfig  # noqa: F401 — ensure table creation
+from app.models.oidc_config import OidcConfig  # noqa: F401 — ensure table creation
 from app.schemas.user import UserCreate
 from app.services.auth import (
     create_access_token,
@@ -637,16 +638,44 @@ async def htmx_notifications(
 @app.get("/login")
 async def login_page(
     request: Request,
+    session: Session = Depends(get_session),
     return_url: Optional[str] = Query(None),
     success: Optional[str] = Query(None),
+    error: Optional[str] = Query(None),
 ):
     """Render login page."""
     from app.csrf import generate_csrf_token
+    from app.services.oidc import get_oidc_config
 
     csrf_token = generate_csrf_token()
     success_message = None
     if success == "registered":
         success_message = "Account created successfully. Please log in."
+
+    error_message = None
+    if error == "oidc_unavailable":
+        error_message = (
+            "Unable to reach authentication provider. Please try again later."
+        )
+    elif error == "oidc_denied":
+        error_message = "Authentication was denied by the provider."
+    elif error == "oidc_expired":
+        error_message = "Login session expired. Please try again."
+    elif error == "oidc_failed":
+        error_message = "Authentication failed. Please try again."
+    elif error == "oidc_invalid":
+        error_message = "Invalid authentication response. Please try again."
+
+    # Check OIDC configuration
+    oidc_config = get_oidc_config(session)
+    oidc_enabled = bool(oidc_config and oidc_config.enabled)
+    oidc_provider_name = oidc_config.provider_name if oidc_config else ""
+    hide_local_login = bool(
+        oidc_enabled
+        and oidc_config
+        and oidc_config.hide_local_login
+        and not settings.force_local_login
+    )
 
     response = templates.TemplateResponse(
         request,
@@ -655,6 +684,10 @@ async def login_page(
             "csrf_token": csrf_token,
             "return_url": return_url or "",
             "success_message": success_message,
+            "error_message": error_message,
+            "oidc_enabled": oidc_enabled,
+            "oidc_provider_name": oidc_provider_name,
+            "hide_local_login": hide_local_login,
         },
     )
     response.set_cookie("csrf_token", csrf_token, httponly=True, samesite="lax")
@@ -737,6 +770,109 @@ async def logout():
     response = RedirectResponse(url="/login", status_code=302)
     response.delete_cookie("access_token")
     return response
+
+
+# --- OIDC Authentication routes ---
+
+
+@app.get("/auth/oidc/login")
+async def oidc_login(
+    request: Request,
+    session: Session = Depends(get_session),
+    return_url: Optional[str] = Query(None),
+):
+    """Initiate OIDC Authorization Code Flow — redirect to provider."""
+    from fastapi.responses import RedirectResponse
+
+    from app.services.oidc import build_authorize_url, get_oidc_config
+
+    config = get_oidc_config(session)
+    if not config or not config.enabled:
+        return RedirectResponse(url="/login", status_code=302)
+
+    # Build the callback URL from the current request
+    redirect_uri = str(request.base_url).rstrip("/") + "/auth/oidc/callback"
+
+    try:
+        authorize_url = await build_authorize_url(
+            config, redirect_uri, return_url or "/"
+        )
+        return RedirectResponse(url=authorize_url, status_code=302)
+    except Exception as e:
+        logger.error("OIDC login initiation failed", extra={"error": str(e)})
+        return RedirectResponse(url="/login?error=oidc_unavailable", status_code=302)
+
+
+@app.get("/auth/oidc/callback")
+async def oidc_callback(
+    request: Request,
+    session: Session = Depends(get_session),
+    code: Optional[str] = Query(None),
+    state: Optional[str] = Query(None),
+    error: Optional[str] = Query(None),
+):
+    """Handle OIDC provider callback — exchange code, create/link user, set session."""
+    from fastapi.responses import RedirectResponse
+
+    from app.services.oidc import (
+        decode_id_token,
+        exchange_code_for_tokens,
+        get_oidc_config,
+        get_or_create_oidc_user,
+        validate_state,
+    )
+
+    # Handle provider error
+    if error:
+        logger.warning("OIDC provider returned error", extra={"error": error})
+        return RedirectResponse(url="/login?error=oidc_denied", status_code=302)
+
+    # Validate required params
+    if not code or not state:
+        return RedirectResponse(url="/login?error=oidc_invalid", status_code=302)
+
+    # Validate state (CSRF protection)
+    state_data = validate_state(state)
+    if not state_data:
+        return RedirectResponse(url="/login?error=oidc_expired", status_code=302)
+
+    config = get_oidc_config(session)
+    if not config or not config.enabled:
+        return RedirectResponse(url="/login", status_code=302)
+
+    redirect_uri = str(request.base_url).rstrip("/") + "/auth/oidc/callback"
+
+    try:
+        # Exchange code for tokens
+        token_response = await exchange_code_for_tokens(config, code, redirect_uri)
+        id_token = token_response.get("id_token")
+        if not id_token:
+            raise ValueError("No id_token in token response")
+
+        # Decode and validate ID token
+        claims = decode_id_token(id_token, state_data["nonce"], config)
+
+        # Get or create local user
+        user = get_or_create_oidc_user(session, claims, config)
+        session.commit()
+
+        # Issue local JWT session
+        access_token = create_access_token(user.id, user.username, user.role)
+        return_url = state_data.get("return_url", "/")
+
+        redirect = RedirectResponse(url=return_url, status_code=302)
+        redirect.set_cookie(
+            "access_token",
+            access_token,
+            httponly=True,
+            samesite="lax",
+            max_age=settings.jwt_access_expiry_minutes * 60,
+        )
+        return redirect
+
+    except Exception as e:
+        logger.error("OIDC callback failed", extra={"error": str(e)})
+        return RedirectResponse(url="/login?error=oidc_failed", status_code=302)
 
 
 @app.get("/register")
@@ -933,7 +1069,7 @@ async def htmx_smtp_settings(
         raise HTTPException(status_code=403, detail="Admin only")
 
     config = get_smtp_config(session)
-    has_encryption_key = bool(get_settings().smtp_encryption_key)
+    has_encryption_key = bool(get_settings().effective_encryption_key)
 
     return templates.TemplateResponse(
         request,
@@ -958,9 +1094,9 @@ async def htmx_smtp_settings_save(
     if not user or not role_at_least(user.role, ROLE_ADMIN):
         raise HTTPException(status_code=403, detail="Admin only")
 
-    if not get_settings().smtp_encryption_key:
+    if not get_settings().effective_encryption_key:
         return HTMLResponse(
-            '<div class="auth-error">SMTP_ENCRYPTION_KEY is not set. '
+            '<div class="auth-error">ENCRYPTION_KEY is not set. '
             "Configure it in your .env file before saving SMTP settings.</div>",
             status_code=400,
         )
@@ -1080,6 +1216,183 @@ async def htmx_smtp_test_email(
         return HTMLResponse(
             '<div class="auth-error">Test email failed: could not connect to SMTP server. Check logs for details.</div>',
             status_code=500,
+        )
+
+
+# --- OIDC Settings HTMX routes ---
+
+
+@app.get("/htmx/settings/auth")
+async def htmx_oidc_settings(
+    request: Request,
+    session: Session = Depends(get_session),
+    user: OptionalUserDep = None,
+):
+    """HTMX partial: OIDC configuration form."""
+    from app.services.auth import ROLE_ADMIN, role_at_least
+    from app.services.oidc import get_oidc_config
+
+    if not user or not role_at_least(user.role, ROLE_ADMIN):
+        raise HTTPException(status_code=403, detail="Admin only")
+
+    config = get_oidc_config(session)
+    has_encryption_key = bool(get_settings().effective_encryption_key)
+
+    return templates.TemplateResponse(
+        request,
+        "partials/oidc_settings.html",
+        context={
+            "oidc": config,
+            "has_encryption_key": has_encryption_key,
+        },
+    )
+
+
+@app.post("/htmx/settings/auth")
+async def htmx_oidc_settings_save(
+    request: Request,
+    session: Session = Depends(get_session),
+    user: OptionalUserDep = None,
+):
+    """HTMX: Save OIDC configuration."""
+    from app.services.auth import ROLE_ADMIN, role_at_least
+    from app.services.oidc import encrypt_client_secret, get_oidc_config
+
+    if not user or not role_at_least(user.role, ROLE_ADMIN):
+        raise HTTPException(status_code=403, detail="Admin only")
+
+    if not get_settings().effective_encryption_key:
+        return HTMLResponse(
+            '<div class="auth-error">ENCRYPTION_KEY is not set. '
+            "Configure it in your .env file before saving OIDC settings.</div>",
+            status_code=400,
+        )
+
+    form = await request.form()
+    issuer_url = str(form.get("issuer_url", "")).strip()
+    client_id = str(form.get("client_id", "")).strip()
+    client_secret = str(form.get("client_secret", ""))
+    provider_name = str(form.get("provider_name", "")).strip()
+    scopes = str(form.get("scopes", "openid email profile")).strip()
+    enabled = str(form.get("enabled", "")) == "on"
+    hide_local_login = str(form.get("hide_local_login", "")) == "on"
+
+    if not issuer_url or not client_id or not provider_name:
+        return HTMLResponse(
+            '<div class="auth-error">Issuer URL, Client ID, and Provider Name are required.</div>',
+            status_code=422,
+        )
+
+    if len(issuer_url) > 512:
+        return HTMLResponse(
+            '<div class="auth-error">Issuer URL must be 512 characters or fewer.</div>',
+            status_code=422,
+        )
+
+    config = get_oidc_config(session)
+    if config is None:
+        if not client_secret:
+            return HTMLResponse(
+                '<div class="auth-error">Client Secret is required for initial configuration.</div>',
+                status_code=422,
+            )
+        from app.models.oidc_config import OidcConfig
+
+        config = OidcConfig(
+            issuer_url=issuer_url,
+            client_id=client_id,
+            encrypted_client_secret=encrypt_client_secret(client_secret),
+            provider_name=provider_name,
+            scopes=scopes or "openid email profile",
+            enabled=enabled,
+            hide_local_login=hide_local_login,
+            configured_by_id=user.id,
+        )
+    else:
+        config.issuer_url = issuer_url
+        config.client_id = client_id
+        config.provider_name = provider_name
+        config.scopes = scopes or "openid email profile"
+        config.enabled = enabled
+        config.hide_local_login = hide_local_login
+        config.configured_by_id = user.id
+        config.updated_at = utc_now()
+
+        # Only update secret if a new one was provided
+        if client_secret:
+            config.encrypted_client_secret = encrypt_client_secret(client_secret)
+
+    session.add(config)
+    session.commit()
+    session.refresh(config)
+
+    logger.info(
+        "OIDC configuration saved",
+        extra={"user_id": str(user.id), "issuer_url": issuer_url},
+    )
+
+    return templates.TemplateResponse(
+        request,
+        "partials/oidc_settings.html",
+        context={
+            "oidc": config,
+            "has_encryption_key": True,
+            "success_message": "OIDC configuration saved.",
+        },
+    )
+
+
+@app.post("/htmx/settings/auth/test-discovery")
+async def htmx_oidc_test_discovery(
+    request: Request,
+    user: OptionalUserDep = None,
+):
+    """HTMX: Test OIDC discovery against provided issuer URL."""
+    from app.services.auth import ROLE_ADMIN, role_at_least
+    from app.services.oidc import fetch_discovery
+
+    if not user or not role_at_least(user.role, ROLE_ADMIN):
+        raise HTTPException(status_code=403, detail="Admin only")
+
+    form = await request.form()
+    issuer_url = str(form.get("issuer_url", "")).strip()
+    if not issuer_url:
+        return HTMLResponse(
+            '<div class="auth-error">Issuer URL is required.</div>',
+            status_code=422,
+        )
+
+    try:
+        discovery = await fetch_discovery(issuer_url)
+        endpoints = []
+        for key in (
+            "authorization_endpoint",
+            "token_endpoint",
+            "userinfo_endpoint",
+            "jwks_uri",
+        ):
+            if key in discovery:
+                endpoints.append(f"<li><strong>{key}:</strong> {discovery[key]}</li>")
+
+        if not endpoints:
+            return HTMLResponse(
+                '<div class="auth-error">Discovery response missing required endpoints.</div>'
+            )
+
+        return HTMLResponse(
+            '<div class="settings-success">'
+            "<strong>Discovery successful:</strong>"
+            f'<ul style="margin: 0.5rem 0 0 1rem;">{"".join(endpoints)}</ul>'
+            "</div>"
+        )
+    except Exception as e:
+        error_msg = str(e)
+        logger.warning(
+            "OIDC discovery failed",
+            extra={"issuer_url": issuer_url, "error": error_msg},
+        )
+        return HTMLResponse(
+            f'<div class="auth-error">Discovery failed: {error_msg}</div>'
         )
 
 
