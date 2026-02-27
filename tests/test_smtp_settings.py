@@ -327,7 +327,7 @@ class TestSmtpTestEmail:
         assert "email address" in response.text.lower()
 
     @pytest.mark.anyio
-    @patch("app.main.send_test_email")
+    @patch("app.services.email.send_test_email")
     async def test_ac003_test_email_success(self, mock_send, test_engine, db_session):
         """Successful test email returns success message."""
         _setup_overrides(db_session)

@@ -8,36 +8,66 @@ import os
 import pytest
 from httpx import ASGITransport, AsyncClient
 
-from app.config import Settings, get_settings
+from app.config import get_settings
 from app.database import get_session
 from app.main import app
 
 _TEST_SECRET = "test-secret-key"
-_TEST_ALGORITHM = "HS256"
 
 
-def _get_settings_registration_disabled() -> Settings:
-    """Settings with registration disabled."""
-    return Settings(
-        app_name="Rsync Log Viewer Test",
-        debug=True,
-        database_url="postgresql+psycopg://postgres:postgres@localhost:5433/rsync_viewer_test",
-        secret_key=_TEST_SECRET,
-        default_api_key="test-api-key",
-        registration_enabled=False,
-    )
+def _setup_disabled(db_session):
+    """Set up overrides with registration DISABLED."""
+    os.environ["SECRET_KEY"] = _TEST_SECRET
+    os.environ["DEBUG"] = "true"
+    os.environ["DEFAULT_API_KEY"] = "test-api-key"
+    os.environ["REGISTRATION_ENABLED"] = "false"
+    get_settings.cache_clear()
+
+    from tests.conftest import get_test_settings
+
+    # Build a custom settings factory that also disables registration
+    _base = get_test_settings()
+
+    def _disabled_settings():
+        from app.config import Settings
+
+        return Settings(
+            app_name=_base.app_name,
+            debug=_base.debug,
+            database_url=_base.database_url,
+            secret_key=_base.secret_key,
+            default_api_key=_base.default_api_key,
+            registration_enabled=False,
+        )
+
+    def get_test_session():
+        yield db_session
+
+    app.dependency_overrides[get_session] = get_test_session
+    app.dependency_overrides[get_settings] = _disabled_settings
 
 
-def _get_settings_registration_enabled() -> Settings:
-    """Settings with registration enabled (default)."""
-    return Settings(
-        app_name="Rsync Log Viewer Test",
-        debug=True,
-        database_url="postgresql+psycopg://postgres:postgres@localhost:5433/rsync_viewer_test",
-        secret_key=_TEST_SECRET,
-        default_api_key="test-api-key",
-        registration_enabled=True,
-    )
+def _setup_enabled(db_session):
+    """Set up overrides with registration ENABLED."""
+    os.environ["SECRET_KEY"] = _TEST_SECRET
+    os.environ["DEBUG"] = "true"
+    os.environ["DEFAULT_API_KEY"] = "test-api-key"
+    os.environ["REGISTRATION_ENABLED"] = "true"
+    get_settings.cache_clear()
+
+    from tests.conftest import get_test_settings
+
+    def get_test_session():
+        yield db_session
+
+    app.dependency_overrides[get_session] = get_test_session
+    app.dependency_overrides[get_settings] = get_test_settings
+
+
+def _cleanup():
+    app.dependency_overrides.clear()
+    os.environ.pop("REGISTRATION_ENABLED", None)
+    get_settings.cache_clear()
 
 
 class TestRegistrationDisabled:
@@ -46,15 +76,7 @@ class TestRegistrationDisabled:
     @pytest.mark.anyio
     async def test_get_register_shows_disabled_message(self, test_engine, db_session):
         """GET /register shows disabled message when registration is off."""
-        os.environ["SECRET_KEY"] = _TEST_SECRET
-        os.environ["DEBUG"] = "true"
-        get_settings.cache_clear()
-
-        def get_test_session():
-            yield db_session
-
-        app.dependency_overrides[get_session] = get_test_session
-        app.dependency_overrides[get_settings] = _get_settings_registration_disabled
+        _setup_disabled(db_session)
 
         async with AsyncClient(
             transport=ASGITransport(app=app),
@@ -62,8 +84,7 @@ class TestRegistrationDisabled:
         ) as client:
             response = await client.get("/register")
 
-        app.dependency_overrides.clear()
-        get_settings.cache_clear()
+        _cleanup()
 
         assert response.status_code == 200
         assert "disabled" in response.text.lower()
@@ -73,15 +94,7 @@ class TestRegistrationDisabled:
         self, test_engine, db_session
     ):
         """POST /register returns 403 when registration is off."""
-        os.environ["SECRET_KEY"] = _TEST_SECRET
-        os.environ["DEBUG"] = "true"
-        get_settings.cache_clear()
-
-        def get_test_session():
-            yield db_session
-
-        app.dependency_overrides[get_session] = get_test_session
-        app.dependency_overrides[get_settings] = _get_settings_registration_disabled
+        _setup_disabled(db_session)
 
         async with AsyncClient(
             transport=ASGITransport(app=app),
@@ -97,8 +110,7 @@ class TestRegistrationDisabled:
                 },
             )
 
-        app.dependency_overrides.clear()
-        get_settings.cache_clear()
+        _cleanup()
 
         assert response.status_code == 403
 
@@ -107,15 +119,7 @@ class TestRegistrationDisabled:
         self, test_engine, db_session
     ):
         """POST /api/v1/auth/register returns 403 when registration is off."""
-        os.environ["SECRET_KEY"] = _TEST_SECRET
-        os.environ["DEBUG"] = "true"
-        get_settings.cache_clear()
-
-        def get_test_session():
-            yield db_session
-
-        app.dependency_overrides[get_session] = get_test_session
-        app.dependency_overrides[get_settings] = _get_settings_registration_disabled
+        _setup_disabled(db_session)
 
         async with AsyncClient(
             transport=ASGITransport(app=app),
@@ -130,8 +134,7 @@ class TestRegistrationDisabled:
                 },
             )
 
-        app.dependency_overrides.clear()
-        get_settings.cache_clear()
+        _cleanup()
 
         assert response.status_code == 403
 
@@ -142,15 +145,7 @@ class TestRegistrationEnabled:
     @pytest.mark.anyio
     async def test_get_register_shows_form_when_enabled(self, test_engine, db_session):
         """GET /register shows registration form when enabled."""
-        os.environ["SECRET_KEY"] = _TEST_SECRET
-        os.environ["DEBUG"] = "true"
-        get_settings.cache_clear()
-
-        def get_test_session():
-            yield db_session
-
-        app.dependency_overrides[get_session] = get_test_session
-        app.dependency_overrides[get_settings] = _get_settings_registration_enabled
+        _setup_enabled(db_session)
 
         async with AsyncClient(
             transport=ASGITransport(app=app),
@@ -158,8 +153,7 @@ class TestRegistrationEnabled:
         ) as client:
             response = await client.get("/register")
 
-        app.dependency_overrides.clear()
-        get_settings.cache_clear()
+        _cleanup()
 
         assert response.status_code == 200
         # The form should be visible, not the disabled message
