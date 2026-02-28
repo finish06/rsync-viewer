@@ -46,7 +46,7 @@ async def htmx_sync_table(
     )
 
     # Get total count
-    count_statement = select(func.count()).select_from(statement.subquery())
+    count_statement = select(func.count()).select_from(statement.subquery())  # type: ignore[attr-defined]
     total = session.exec(count_statement).one()
 
     # Apply pagination and ordering
@@ -224,7 +224,7 @@ async def htmx_notifications(
         ).where(FailureEvent.source_name == source_name)
 
     # Get total count
-    count_statement = select(func.count()).select_from(statement.subquery())
+    count_statement = select(func.count()).select_from(statement.subquery())  # type: ignore[attr-defined]
     total = session.exec(count_statement).one()
 
     # Apply ordering and pagination

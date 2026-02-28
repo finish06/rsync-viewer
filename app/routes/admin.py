@@ -25,7 +25,7 @@ async def admin_users_page(
     if not user or not role_at_least(user.role, ROLE_ADMIN):
         raise HTTPException(status_code=403, detail="Admin access required")
 
-    users_list = session.exec(select(User).order_by(User.created_at.desc())).all()
+    users_list = session.exec(select(User).order_by(User.created_at.desc())).all()  # type: ignore[attr-defined]
     return templates.TemplateResponse(
         request,
         "admin_users.html",
@@ -43,7 +43,7 @@ async def htmx_admin_user_list(
     if not user or not role_at_least(user.role, ROLE_ADMIN):
         raise HTTPException(status_code=403, detail="Admin access required")
 
-    users_list = session.exec(select(User).order_by(User.created_at.desc())).all()
+    users_list = session.exec(select(User).order_by(User.created_at.desc())).all()  # type: ignore[attr-defined]
     return templates.TemplateResponse(
         request,
         "partials/admin_user_list.html",
@@ -76,7 +76,7 @@ async def htmx_admin_change_role(
 
     if target.role == "admin" and new_role != "admin":
         admin_count = session.exec(
-            select(func.count()).where(User.role == "admin", User.is_active.is_(True))
+            select(func.count()).where(User.role == "admin", User.is_active.is_(True))  # type: ignore[attr-defined]
         ).one()
         if admin_count <= 1:
             raise HTTPException(status_code=400, detail="Cannot demote the last admin")
@@ -131,7 +131,7 @@ async def htmx_admin_delete_user(
 
     if target.role == "admin":
         admin_count = session.exec(
-            select(func.count()).where(User.role == "admin", User.is_active.is_(True))
+            select(func.count()).where(User.role == "admin", User.is_active.is_(True))  # type: ignore[attr-defined]
         ).one()
         if admin_count <= 1:
             raise HTTPException(status_code=400, detail="Cannot delete the last admin")

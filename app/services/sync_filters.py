@@ -5,9 +5,7 @@ apply identical source / date-range / dry-run / hide-empty predicates.
 """
 
 from datetime import datetime
-from typing import Optional
-
-from sqlmodel import select
+from typing import Any, Optional
 
 from app.models.sync_log import SyncLog
 
@@ -32,14 +30,14 @@ def _parse_date(date_str: str) -> datetime:
 
 
 def apply_sync_filters(
-    statement: select,  # type: ignore[type-arg]
+    statement: Any,
     *,
     source_name: Optional[str] = None,
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
     show_dry_run: str = "hide",
     hide_empty: str = "hide",
-) -> select:  # type: ignore[type-arg]
+) -> Any:
     """Apply standard sync log filters to a SQLModel select statement.
 
     Parameters

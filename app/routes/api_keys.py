@@ -33,8 +33,8 @@ async def htmx_api_keys_list(
             ApiKeyModel.is_active.is_(True),  # type: ignore[attr-defined]
             ApiKeyModel.user_id == user.id,
         )
-        .order_by(ApiKeyModel.created_at.desc())
-    )  # type: ignore[attr-defined]
+        .order_by(ApiKeyModel.created_at.desc())  # type: ignore[attr-defined]
+    )
     api_keys = session.exec(statement).all()
 
     return templates.TemplateResponse(
@@ -153,8 +153,8 @@ async def htmx_api_key_revoke(
             ApiKeyModel.is_active.is_(True),  # type: ignore[attr-defined]
             ApiKeyModel.user_id == user.id,
         )
-        .order_by(ApiKeyModel.created_at.desc())
-    )  # type: ignore[attr-defined]
+        .order_by(ApiKeyModel.created_at.desc())  # type: ignore[attr-defined]
+    )
     api_keys = session.exec(statement).all()
 
     return templates.TemplateResponse(
