@@ -12,6 +12,7 @@ from starlette.responses import JSONResponse, Response, RedirectResponse
 
 from app.config import get_settings
 from app.csrf import validate_csrf_token
+from app.services.auth import decode_token
 
 logger = logging.getLogger(__name__)
 
@@ -124,8 +125,6 @@ class BodySizeLimitMiddleware(BaseHTTPMiddleware):
         content_length = request.headers.get("content-length")
 
         if content_length and int(content_length) > settings.max_request_body_size:
-            from starlette.responses import JSONResponse
-
             return JSONResponse(
                 status_code=413,
                 content={
@@ -166,13 +165,8 @@ class AuthRedirectMiddleware(BaseHTTPMiddleware):
         # Check JWT cookie
         token = request.cookies.get("access_token")
         if token:
-            settings = get_settings()
             try:
-                payload = pyjwt.decode(
-                    token,
-                    settings.secret_key,
-                    algorithms=[settings.jwt_algorithm],
-                )
+                payload = decode_token(token)
                 if payload.get("type") == "access":
                     return await call_next(request)
             except (pyjwt.ExpiredSignatureError, pyjwt.InvalidTokenError):
@@ -193,8 +187,14 @@ class AuthRedirectMiddleware(BaseHTTPMiddleware):
         return RedirectResponse(f"/login?return_url={return_url}", status_code=302)
 
 
-# Paths where CSRF validation is enforced for form POSTs
-CSRF_PROTECTED_PREFIXES = ("/htmx/webhooks",)
+# Paths where CSRF validation is enforced for state-mutating form POSTs
+CSRF_PROTECTED_PREFIXES = (
+    "/htmx/webhooks",
+    "/htmx/smtp-settings",
+    "/htmx/settings/auth",
+    "/htmx/api-keys",
+    "/htmx/admin/users",
+)
 
 # Methods that are state-changing and require CSRF validation
 CSRF_METHODS = {"POST", "PUT", "DELETE", "PATCH"}
@@ -212,8 +212,6 @@ class CsrfMiddleware(BaseHTTPMiddleware):
             cookie_token = request.cookies.get("csrf_token", "")
 
             if not csrf_token or not validate_csrf_token(cookie_token, csrf_token):
-                from starlette.responses import JSONResponse
-
                 return JSONResponse(
                     status_code=403,
                     content={

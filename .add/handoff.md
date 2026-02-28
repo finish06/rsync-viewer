@@ -1,32 +1,27 @@
 # Session Handoff
-**Written:** 2026-02-27
+**Written:** 2026-02-28
 
 ## In Progress
-- Nothing — all M11 work complete, CI green
+- Nothing — all planned work complete
 
 ## Completed This Session
-- `bd52a18` feat: REGISTRATION_ENABLED toggle + README auth docs + milestone cleanup
-- `d51fd89` feat: dev seed data — user + API key seeding, deprecation cleanup marked done
-- `ea7784f` feat: sync logs UI refresh — quick-select in filter box, mobile card layout
-- `2ee116a` feat: SMTP email config — model, Fernet encryption, admin UI, test email
-- `443d735` chore: remove unused reddit-share.svg
-- `b7f2125` docs: update M11 milestone — all features implemented
-- `d6399cf` test: add SMTP settings, registration toggle, and email service tests
-- `b2edb25` fix: correct test overrides for registration toggle and SMTP mock path
-- `6c340e3` fix: correct remaining SMTP mock path in test_ac010
-- Fixed PRD roadmap: M4, M6, M9 marked COMPLETE, M11 IN_PROGRESS
-- CI green: 594 tests, 83% coverage, container built and pushed
-- All pushed to origin/main
+- Fixed OIDC callback URL mismatch behind reverse proxy (proxy headers + env_file)
+- Added OIDC callback URL display in settings UI (AC-015)
+- Created reverse-proxy-support spec and plan
+- Released v1.10.0 (tagged, GitHub release, Docker image pushed to registry)
+- Updated 19 spec statuses from Draft/Approved to Complete
+- Updated PRD and README for v1.10.0
 
 ## Decisions Made
-- Registration toggle tests: must use env var + cache_clear (not just dependency override) because routes call get_settings() directly
-- SMTP test email mock: patch at app.services.email.send_test_email (local import in route handler)
-- 83% test coverage maintained (above 80% threshold)
+- No BASE_URL env var — proxy headers are the standard solution
+- `--forwarded-allow-ips *` acceptable for homelab (not hardened)
+- Collapsed duplicate changelog entries into single [1.10.0] release
 
 ## Blockers
-- Tests cannot run locally (Python 3.9, project needs 3.11+) — CI verifies on push
+- None
 
 ## Next Steps
-1. Mark M11 as COMPLETE (all criteria met, CI green)
-2. Production deploy queued for human approval
-3. Next milestone: M7 (OIDC) or M10 (Sync Management)
+1. Deploy v1.10.0 image on production (pull + restart)
+2. Verify OIDC callback URL displays correctly in settings UI
+3. Consider GA promotion assessment (all milestones except M10 complete)
+4. Run `/add:spec` for M10 (Sync Management) when ready to start next milestone

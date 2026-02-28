@@ -82,11 +82,15 @@ def _create_user(
 
 
 def _make_client(user: User) -> AsyncClient:
+    from app.csrf import generate_csrf_token
+
     jwt_token = _make_jwt(str(user.id), user.username, user.role)
+    csrf_token = generate_csrf_token()
     return AsyncClient(
         transport=ASGITransport(app=app),
         base_url="http://test",
-        cookies={"access_token": jwt_token},
+        headers={"X-CSRF-Token": csrf_token},
+        cookies={"access_token": jwt_token, "csrf_token": csrf_token},
     )
 
 
@@ -440,7 +444,7 @@ class TestOidcDiscovery:
         }
 
         with patch(
-            "app.services.oidc.fetch_discovery",
+            "app.routes.settings.fetch_discovery",
             new_callable=AsyncMock,
             return_value=mock_discovery,
         ):
@@ -461,7 +465,7 @@ class TestOidcDiscovery:
         admin = _create_user(db_session, "oidc-disc-fail", ROLE_ADMIN)
 
         with patch(
-            "app.services.oidc.fetch_discovery",
+            "app.routes.settings.fetch_discovery",
             new_callable=AsyncMock,
             side_effect=Exception("Could not reach issuer URL"),
         ):

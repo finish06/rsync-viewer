@@ -12,7 +12,13 @@ from app.config import Settings, get_settings
 from app.database import get_session
 from app.models.sync_log import ApiKey
 from app.models.user import User
-from app.services.auth import ROLE_ADMIN, ROLE_OPERATOR, ROLE_VIEWER, role_at_least
+from app.services.auth import (
+    ROLE_ADMIN,
+    ROLE_OPERATOR,
+    ROLE_VIEWER,
+    decode_token,
+    role_at_least,
+)
 from app.utils import utc_now
 
 logger = logging.getLogger(__name__)
@@ -28,28 +34,16 @@ def verify_api_key_hash(key: str, hashed: str) -> bool:
     return bcrypt.checkpw(key.encode(), hashed.encode())
 
 
-async def verify_api_key(
-    x_api_key: Annotated[Optional[str], Header()] = None,
-    session: Session = Depends(get_session),
+def _lookup_and_verify_api_key(
+    raw_key: str,
+    session: Session,
 ) -> Optional[ApiKey]:
-    """Verify API key and return the associated ApiKey model"""
-    settings = get_settings()
+    """Core API key lookup: prefix-optimised bcrypt scan with legacy fallback.
 
-    if not x_api_key:
-        logger.warning("API key missing", extra={"endpoint": "sync-logs"})
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="API key required",
-        )
-
-    # Check for development key
-    if settings.debug and x_api_key == settings.default_api_key:
-        return None  # Allow dev key without DB lookup
-
-    # Use key_prefix to narrow candidates before expensive bcrypt comparison.
-    # Falls back to scanning all active keys if prefix filter finds nothing
-    # (handles legacy keys created without a stored prefix).
-    prefix = x_api_key[:8] if len(x_api_key) >= 8 else x_api_key
+    Returns the matched ``ApiKey`` or ``None`` if no match is found.
+    Also debounces ``last_used_at`` (5-minute threshold).
+    """
+    prefix = raw_key[:8] if len(raw_key) >= 8 else raw_key
     statement = select(ApiKey).where(
         ApiKey.is_active.is_(True),  # type: ignore[attr-defined]
         ApiKey.key_prefix == prefix,
@@ -64,28 +58,50 @@ async def verify_api_key(
 
     matched_key: Optional[ApiKey] = None
     for api_key in api_keys:
-        # Check expiration
         if api_key.expires_at and api_key.expires_at < utc_now():
             continue
-        if verify_api_key_hash(x_api_key, api_key.key_hash):
+        if verify_api_key_hash(raw_key, api_key.key_hash):
             matched_key = api_key
             break
 
+    if matched_key:
+        now = utc_now()
+        if (
+            matched_key.last_used_at is None
+            or now - matched_key.last_used_at > timedelta(minutes=5)
+        ):
+            matched_key.last_used_at = now
+            session.add(matched_key)
+            session.commit()
+
+    return matched_key
+
+
+async def verify_api_key(
+    x_api_key: Annotated[Optional[str], Header()] = None,
+    session: Session = Depends(get_session),
+) -> Optional[ApiKey]:
+    """Verify API key and return the associated ApiKey model."""
+    settings = get_settings()
+
+    if not x_api_key:
+        logger.warning("API key missing", extra={"endpoint": "sync-logs"})
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="API key required",
+        )
+
+    # Check for development key
+    if settings.debug and x_api_key == settings.default_api_key:
+        return None  # Allow dev key without DB lookup
+
+    matched_key = _lookup_and_verify_api_key(x_api_key, session)
     if not matched_key:
         logger.warning("Invalid or inactive API key", extra={"endpoint": "sync-logs"})
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or inactive API key",
         )
-
-    # Debounce last_used_at — only write if stale by 5+ minutes
-    now = utc_now()
-    if matched_key.last_used_at is None or now - matched_key.last_used_at > timedelta(
-        minutes=5
-    ):
-        matched_key.last_used_at = now
-        session.add(matched_key)
-        session.commit()
 
     return matched_key
 
@@ -117,13 +133,8 @@ async def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    settings = get_settings()
     try:
-        payload = pyjwt.decode(
-            token,
-            settings.secret_key,
-            algorithms=[settings.jwt_algorithm],
-        )
+        payload = decode_token(token)
     except pyjwt.ExpiredSignatureError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -186,13 +197,8 @@ async def get_optional_user(
     if not token:
         return None
 
-    settings = get_settings()
     try:
-        payload = pyjwt.decode(
-            token,
-            settings.secret_key,
-            algorithms=[settings.jwt_algorithm],
-        )
+        payload = decode_token(token)
     except (pyjwt.ExpiredSignatureError, pyjwt.InvalidTokenError):
         return None
 
@@ -240,46 +246,13 @@ async def _try_verify_api_key(
     if settings.debug and x_api_key == settings.default_api_key:
         return None  # Valid dev key — returns None (no ApiKey model)
 
-    # Use key_prefix to narrow candidates before expensive bcrypt comparison
-    prefix = x_api_key[:8] if len(x_api_key) >= 8 else x_api_key
-    statement = select(ApiKey).where(
-        ApiKey.is_active.is_(True),  # type: ignore[attr-defined]
-        ApiKey.key_prefix == prefix,
-    )
-    api_keys = session.exec(statement).all()
-
-    if not api_keys:
-        # Fallback: scan all active keys (legacy keys without prefix)
-        api_keys = session.exec(
-            select(ApiKey).where(ApiKey.is_active.is_(True))  # type: ignore[attr-defined]
-        ).all()
-
-    matched_key: Optional[ApiKey] = None
-    for api_key in api_keys:
-        if api_key.expires_at and api_key.expires_at < utc_now():
-            continue
-        if verify_api_key_hash(x_api_key, api_key.key_hash):
-            matched_key = api_key
-            break
-
-    if not matched_key and not (
-        settings.debug and x_api_key == settings.default_api_key
-    ):
+    matched_key = _lookup_and_verify_api_key(x_api_key, session)
+    if not matched_key:
         logger.warning("Invalid or inactive API key", extra={"endpoint": "dual-auth"})
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or inactive API key",
         )
-
-    if matched_key:
-        now = utc_now()
-        if (
-            matched_key.last_used_at is None
-            or now - matched_key.last_used_at > timedelta(minutes=5)
-        ):
-            matched_key.last_used_at = now
-            session.add(matched_key)
-            session.commit()
 
     return matched_key
 
@@ -330,11 +303,7 @@ async def verify_api_key_or_jwt(
 
     if jwt_token:
         try:
-            payload = pyjwt.decode(
-                jwt_token,
-                settings.secret_key,
-                algorithms=[settings.jwt_algorithm],
-            )
+            payload = decode_token(jwt_token)
         except (pyjwt.ExpiredSignatureError, pyjwt.InvalidTokenError):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,

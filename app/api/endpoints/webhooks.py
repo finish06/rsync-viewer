@@ -8,6 +8,12 @@ from sqlmodel import select
 
 from app.api.deps import SessionDep, require_role_or_api_key
 from app.services.auth import ROLE_OPERATOR, ROLE_VIEWER
+from app.services.webhook_test import (
+    build_test_headers,
+    build_test_webhook_payload,
+    get_webhook_options,
+    send_test_webhook,
+)
 from app.utils import utc_now
 from app.models.webhook import WebhookEndpoint
 from app.models.webhook_options import WebhookOptions
@@ -214,43 +220,13 @@ async def test_webhook(
             detail="Webhook not found",
         )
 
-    # Build test payload based on webhook type
-    if webhook.webhook_type == "discord":
-        opts = _get_options_dict(session, webhook_id) or {}
-        color = opts.get("color", 16711680)
-        username = opts.get("username", "Rsync Viewer")
-
-        payload = {
-            "username": username,
-            "embeds": [
-                {
-                    "title": "Test Notification",
-                    "description": "This is a test notification from Rsync Viewer.",
-                    "color": color,
-                }
-            ],
-        }
-        if opts.get("avatar_url"):
-            payload["avatar_url"] = opts["avatar_url"]
-    else:
-        payload = {
-            "event": "test",
-            "message": "This is a test notification from Rsync Viewer.",
-        }
-
-    headers = {"Content-Type": "application/json"}
-    if webhook.headers:
-        headers.update(webhook.headers)
+    # Build test payload via shared service (AC-009)
+    opts = get_webhook_options(session, webhook_id)
+    payload = build_test_webhook_payload(webhook, opts)
+    headers = build_test_headers(webhook)
 
     try:
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                webhook.url,
-                json=payload,
-                headers=headers,
-                timeout=10.0,
-            )
-
+        response = await send_test_webhook(webhook, payload, headers)
         if 200 <= response.status_code < 300:
             return {"status": "sent", "http_status": response.status_code}
 

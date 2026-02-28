@@ -82,11 +82,15 @@ def _create_user(
 
 
 def _make_client(user: User) -> AsyncClient:
+    from app.csrf import generate_csrf_token
+
     jwt_token = _make_jwt(str(user.id), user.username, user.role)
+    csrf_token = generate_csrf_token()
     return AsyncClient(
         transport=ASGITransport(app=app),
         base_url="http://test",
-        cookies={"access_token": jwt_token},
+        headers={"X-CSRF-Token": csrf_token},
+        cookies={"access_token": jwt_token, "csrf_token": csrf_token},
     )
 
 
@@ -327,7 +331,7 @@ class TestSmtpTestEmail:
         assert "email address" in response.text.lower()
 
     @pytest.mark.anyio
-    @patch("app.services.email.send_test_email_async", new_callable=AsyncMock)
+    @patch("app.routes.settings.send_test_email_async", new_callable=AsyncMock)
     async def test_ac003_test_email_success(self, mock_send, test_engine, db_session):
         """Successful test email returns success message."""
         _setup_overrides(db_session)
@@ -347,7 +351,7 @@ class TestSmtpTestEmail:
 
     @pytest.mark.anyio
     @patch(
-        "app.services.email.send_test_email_async",
+        "app.routes.settings.send_test_email_async",
         new_callable=AsyncMock,
         side_effect=ValueError("SMTP is not configured"),
     )

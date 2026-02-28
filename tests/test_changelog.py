@@ -225,7 +225,7 @@ class TestSettingsChangelog:
     async def test_ac001_changelog_tab_visible_when_file_exists(self, client):
         """AC-001: Changelog tab appears when CHANGELOG.md exists and is parseable."""
         with patch(
-            "app.main.parse_changelog",
+            "app.routes.pages.parse_changelog",
             return_value=[
                 ChangelogVersion(
                     version="1.0.0",
@@ -241,7 +241,7 @@ class TestSettingsChangelog:
     @pytest.mark.anyio
     async def test_ac006_changelog_tab_hidden_when_no_file(self, client):
         """AC-006: Changelog tab hidden when CHANGELOG.md is missing."""
-        with patch("app.main.parse_changelog", return_value=[]):
+        with patch("app.routes.pages.parse_changelog", return_value=[]):
             response = await client.get("/settings")
             assert response.status_code == 200
             # The tab should not be rendered
@@ -260,7 +260,7 @@ class TestChangelogEndpoints:
     async def test_ac003_get_changelog_list(self, client):
         """AC-003: GET /htmx/changelog returns version accordion list."""
         with patch(
-            "app.main.parse_changelog",
+            "app.routes.pages.parse_changelog",
             return_value=[
                 ChangelogVersion(
                     version="1.7.0",
@@ -283,7 +283,7 @@ class TestChangelogEndpoints:
     async def test_ac004_get_version_detail(self, client):
         """AC-004: GET /htmx/changelog/{version} returns grouped sections."""
         with patch(
-            "app.main.parse_changelog",
+            "app.routes.pages.parse_changelog",
             return_value=[
                 ChangelogVersion(
                     version="1.7.0",
@@ -304,7 +304,7 @@ class TestChangelogEndpoints:
     @pytest.mark.anyio
     async def test_ac004_version_not_found_returns_404(self, client):
         """AC-004: Unknown version returns 404."""
-        with patch("app.main.parse_changelog", return_value=[]):
+        with patch("app.routes.pages.parse_changelog", return_value=[]):
             response = await client.get("/htmx/changelog/99.99.99")
             assert response.status_code == 404
 
@@ -320,7 +320,7 @@ class TestCurrentBadge:
         """AC-005: Version matching app version displays 'Current' badge."""
         with (
             patch(
-                "app.main.parse_changelog",
+                "app.routes.pages.parse_changelog",
                 return_value=[
                     ChangelogVersion(
                         version="1.7.0",
@@ -334,7 +334,7 @@ class TestCurrentBadge:
                     ),
                 ],
             ),
-            patch("app.main.get_settings") as mock_settings,
+            patch("app.routes.pages.get_settings") as mock_settings,
         ):
             settings_obj = mock_settings.return_value
             settings_obj.app_version = "1.7.0"
