@@ -3,7 +3,7 @@
 **Version:** 0.1.0
 **Created:** 2026-02-21
 **PRD Reference:** docs/prd.md
-**Status:** Draft
+**Status:** Complete
 **Milestone:** M2 — Notifications
 
 ## 1. Overview

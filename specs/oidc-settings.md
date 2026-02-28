@@ -5,7 +5,7 @@
 **PRD Reference:** docs/prd.md
 **Supersedes:** specs/oidc-authentication.md AC-009 (env var configuration)
 **Related:** specs/oidc-authentication.md (OIDC login flow, user creation/linking)
-**Status:** Draft
+**Status:** Complete
 **Milestone:** M7 — OIDC Authentication
 
 ## 1. Overview

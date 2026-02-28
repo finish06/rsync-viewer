@@ -14,8 +14,14 @@ A web application for collecting, parsing, and visualizing rsync synchronization
 - **Webhook Notifications** — Alerts via Discord or generic webhooks with retry logic and auto-disable
 - **Notification History** — Dashboard tab with filters and pagination for past alerts
 - **Dark Mode** — Light, dark, and system theme toggle
+- **Multi-User Authentication** — User registration/login, JWT sessions, Admin/Operator/Viewer roles
+- **OIDC Single Sign-On** — OpenID Connect authentication via PocketId, Authelia, Keycloak, or any OIDC provider
+- **Per-User API Keys** — Role-scoped API keys with admin management UI
+- **SMTP Email** — Admin-configurable SMTP settings with encrypted credentials
+- **Reverse Proxy Support** — Works behind Nginx, Traefik, Caddy with correct URL resolution
 - **Security Hardening** — Rate limiting, bcrypt API key hashing, CSRF protection, security headers
 - **Structured Logging** — JSON log output with request tracing and sensitive data masking
+- **Prometheus Metrics** — `/metrics` endpoint for monitoring with Grafana dashboard templates
 
 ## Architecture
 
@@ -82,6 +88,8 @@ Environment variables (see `.env.example`):
 | `RATE_LIMIT_UNAUTHENTICATED` | Rate limit for unauthenticated requests | `20/minute` |
 | `MAX_REQUEST_BODY_SIZE` | Max request body in bytes | `10485760` (10 MB) |
 | `REGISTRATION_ENABLED` | Allow new user registration | `true` |
+| `ENCRYPTION_KEY` | Fernet key for encrypting OIDC/SMTP secrets | — |
+| `FORCE_LOCAL_LOGIN` | Always show local login form (OIDC safety fallback) | `false` |
 | `HSTS_ENABLED` | Enable Strict-Transport-Security header | `false` |
 | `CSP_REPORT_ONLY` | Use CSP in report-only mode | `true` |
 
@@ -101,28 +109,24 @@ REGISTRATION_ENABLED=false
 
 When disabled, the `/register` page shows a "Registration is currently disabled" message and the API rejects registration attempts with a 403 error. Admins can still create users directly in the database if needed.
 
-### OIDC Single Sign-On (Planned)
+### OIDC Single Sign-On
 
-> **Status:** Not yet implemented — coming in a future release (M7 milestone). See [specs/oidc-authentication.md](specs/oidc-authentication.md) for the full specification.
+OIDC authentication allows users to log in via an external identity provider (e.g., PocketId, Authelia, Keycloak) alongside or instead of local credentials.
 
-OIDC authentication will allow users to log in via an external identity provider (e.g., PocketId, Authelia, Keycloak) alongside or instead of local credentials.
-
-**Planned capabilities:**
-
-- **Authorization Code Flow** with PKCE, state, and nonce validation
+- **Authorization Code Flow** with state and nonce validation
 - **Auto-discovery** via `/.well-known/openid-configuration`
 - **Auto-provisioning** — new OIDC users get a local account with Viewer role
 - **Email linking** — existing local users are linked by matching email
-- **OIDC-only mode** — option to hide the local login form (`FORCE_LOCAL_LOGIN=true` env var overrides this for emergency access)
-- **Admin Settings UI** — configure the OIDC provider (issuer URL, client ID/secret) from the web interface with encrypted secret storage
-
-**Planned environment variables:**
+- **OIDC-only mode** — option to hide the local login form
+- **Admin Settings UI** — configure the OIDC provider (issuer URL, client ID/secret, provider name, scopes) from the web interface with Fernet-encrypted secret storage
+- **Callback URL** — displayed in the Settings UI for easy provider configuration
 
 | Variable | Description |
 |----------|-------------|
 | `FORCE_LOCAL_LOGIN` | Always show the local login form, even when OIDC is in "hide local login" mode |
+| `ENCRYPTION_KEY` | Fernet key for encrypting OIDC client secret and SMTP credentials |
 
-All other OIDC settings (issuer URL, client ID, client secret, provider name, scopes) will be configured via the admin Settings UI rather than environment variables.
+All OIDC provider settings are configured via the admin Settings UI, not environment variables.
 
 ## API Usage
 
@@ -210,7 +214,7 @@ rsync-viewer/
 │   ├── logging_config.py     # Structured JSON logging
 │   ├── middleware.py          # Security headers, body size, CSRF middleware
 │   └── main.py               # FastAPI application entry point
-├── tests/                    # Test suite (294 tests, 92% coverage)
+├── tests/                    # Test suite (596+ tests, 83% coverage)
 ├── specs/                    # Feature specifications
 ├── docs/                     # Documentation, milestones, plans
 ├── .github/workflows/        # CI/CD pipeline

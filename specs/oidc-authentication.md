@@ -3,7 +3,7 @@
 **Version:** 0.2.0
 **Created:** 2026-02-24
 **PRD Reference:** docs/prd.md
-**Status:** Draft
+**Status:** Complete
 **Milestone:** M7 — OIDC Authentication
 **Note:** OIDC provider configuration (AC-009) has been superseded by specs/oidc-settings.md. This spec now covers only the OIDC login flow, user creation/linking, and session handling. See specs/oidc-settings.md for how OIDC gets configured.
 

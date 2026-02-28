@@ -86,7 +86,7 @@ Production deployment is to a self-hosted homelab server. No staging environment
 
 ## 6. Milestones & Roadmap
 
-### Current Maturity: Alpha
+### Current Maturity: Beta
 
 ### Roadmap
 
@@ -100,7 +100,7 @@ Production deployment is to a self-hosted homelab server. No staging environment
 | M6: Observability | Prometheus metrics, Grafana dashboards, project docs | beta | COMPLETE | /metrics endpoint, Grafana templates, setup/architecture docs |
 | M9: Multi-User | User accounts, JWT auth, role-based access control | beta → ga | COMPLETE | Registration/login, Admin/Operator/Viewer roles, per-user API keys |
 | M11: Polish & Infrastructure | UI consistency, SMTP email, codebase cleanup | beta | COMPLETE | SMTP settings UI, sync logs responsive, deprecation cleanup |
-| M7: OIDC Authentication | OpenID Connect single sign-on via PocketId or generic provider | beta → ga | LATER | OIDC login, OIDC settings UI, auto-create/link users |
+| M7: OIDC Authentication | OpenID Connect single sign-on via PocketId or generic provider | beta → ga | COMPLETE | OIDC login, OIDC settings UI, auto-create/link users |
 | M10: Sync Management | On-demand sync triggering, cron scheduling, real-time progress | beta → ga | LATER | Run Now button, cron schedules, WebSocket progress, retry |
 
 ### Dependency Chain
@@ -213,21 +213,24 @@ M3 is the gate to beta promotion. M4 and M6 can partially overlap. M7 (OIDC) dep
 - [x] New developers can deploy using only documentation
 - [x] All environment variables documented
 
-#### M7: OIDC Authentication [LATER]
+#### M7: OIDC Authentication [COMPLETE]
 **Goal:** Add OpenID Connect SSO as optional auth method
 **Appetite:** 1 week
 **Target maturity:** beta → ga
-**Specs:** oidc-authentication
+**Specs:** oidc-authentication, oidc-settings
+**Completed:** 2026-02-27 (PR #20)
 **Features:**
 - OIDC Authorization Code Flow with state/nonce validation
 - OIDC Discovery (`.well-known/openid-configuration`)
 - Auto-create/link local accounts from OIDC claims
 - Provider-branded login button, optional OIDC-only mode
+- Admin OIDC settings UI with Fernet-encrypted client secret
+- Performance optimizations (API key prefix filter, async SMTP, changelog caching)
 **Success criteria:**
-- [ ] OIDC login works with PocketId and generic providers
-- [ ] New users auto-created with Viewer role
-- [ ] Existing users auto-linked by email
-- [ ] Local JWT session issued after OIDC login
+- [x] OIDC login works with PocketId and generic providers
+- [x] New users auto-created with Viewer role
+- [x] Existing users auto-linked by email
+- [x] Local JWT session issued after OIDC login
 
 #### M10: Sync Management [LATER]
 **Goal:** Transform viewer into active sync management platform
