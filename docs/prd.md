@@ -102,6 +102,7 @@ Production deployment is to a self-hosted homelab server. No staging environment
 | M11: Polish & Infrastructure | UI consistency, SMTP email, codebase cleanup | beta | COMPLETE | SMTP settings UI, sync logs responsive, deprecation cleanup |
 | M7: OIDC Authentication | OpenID Connect single sign-on via PocketId or generic provider | beta → ga | COMPLETE | OIDC login, OIDC settings UI, auto-create/link users |
 | M10: Sync Management | On-demand sync triggering, cron scheduling, real-time progress | beta → ga | LATER | Run Now button, cron schedules, WebSocket progress, retry |
+| M12: Rsync Client Distribution | Drop-in Docker Compose examples for rsync with automatic log shipping | beta → ga | LATER | Alpine image <30MB, pull/push modes, cron schedule, README |
 
 ### Dependency Chain
 
