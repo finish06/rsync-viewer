@@ -1,6 +1,7 @@
 import json
 import logging
 import re
+import secrets as secrets_module
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -13,7 +14,7 @@ import httpx
 from fastapi import FastAPI, HTTPException, Request, Query, Depends
 from starlette.responses import Response as StarletteResponse
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from slowapi import Limiter, _rate_limit_exceeded_handler
@@ -23,8 +24,9 @@ from slowapi.util import get_remote_address
 from sqlmodel import SQLModel, Session, select, func
 
 from app.config import get_settings
+from app.csrf import generate_csrf_token
 from app.database import engine, get_session
-from app.api.deps import OptionalUserDep
+from app.api.deps import OptionalUserDep, hash_api_key as _hash_api_key
 from app.api.endpoints import (
     sync_logs,
     monitors,
@@ -45,21 +47,36 @@ from app.middleware import (
     RequestLoggingMiddleware,
     SecurityHeadersMiddleware,
 )
-from app.models.sync_log import SyncLog
+from app.models.oidc_config import OidcConfig
+from app.models.sync_log import SyncLog, ApiKey as ApiKeyModel
 from app.models.user import User  # noqa: F401 — ensure table creation
 from app.models.user import RefreshToken  # noqa: F401 — ensure table creation
 from app.models.user import PasswordResetToken  # noqa: F401 — ensure table creation
 from app.models.smtp_config import SmtpConfig  # noqa: F401 — ensure table creation
-from app.models.oidc_config import OidcConfig  # noqa: F401 — ensure table creation
 from app.schemas.user import UserCreate
 from app.services.auth import (
     create_access_token,
     hash_password,
+    role_at_least,
     verify_password,
     ROLE_ADMIN,
+    ROLE_OPERATOR,
     ROLE_VIEWER,
+    VALID_ROLES,
 )
 from app.services.changelog_parser import parse_changelog
+from app.services.email import encrypt_password, get_smtp_config, send_test_email_async
+from app.services.oidc import (
+    build_authorize_url,
+    decode_id_token,
+    encrypt_client_secret,
+    exchange_code_for_tokens,
+    fetch_discovery,
+    get_oidc_config,
+    get_or_create_oidc_user,
+    validate_state,
+)
+from app.services.retention import retention_background_task
 from app.models.monitor import SyncSourceMonitor  # noqa: F401 — ensure table creation
 from app.models.failure_event import FailureEvent
 from app.models.webhook import WebhookEndpoint
@@ -106,14 +123,12 @@ async def lifespan(app: FastAPI):
     SQLModel.metadata.create_all(engine)
 
     # Set Prometheus app info
-    set_app_info(version="1.5.0")
+    set_app_info(version=settings.app_version)
 
     # Start retention background task
     shutdown_event = asyncio.Event()
     retention_task = None
     if settings.data_retention_days > 0:
-        from app.services.retention import retention_background_task
-
         retention_task = asyncio.create_task(
             retention_background_task(
                 retention_days=settings.data_retention_days,
@@ -150,7 +165,7 @@ Rsync Log Viewer API collects, parses, and provides access to rsync synchronizat
 
 Protected endpoints require an API key passed via the `X-API-Key` header.
     """,
-    version="1.5.0",
+    version=settings.app_version,
     lifespan=lifespan,
     openapi_tags=[
         {
@@ -330,8 +345,6 @@ async def index(
 @app.get("/analytics")
 async def analytics_page():
     """Redirect to dashboard analytics tab."""
-    from fastapi.responses import RedirectResponse
-
     return RedirectResponse(url="/?tab=analytics", status_code=302)
 
 
@@ -644,9 +657,6 @@ async def login_page(
     error: Optional[str] = Query(None),
 ):
     """Render login page."""
-    from app.csrf import generate_csrf_token
-    from app.services.oidc import get_oidc_config
-
     csrf_token = generate_csrf_token()
     success_message = None
     if success == "registered":
@@ -700,8 +710,6 @@ async def login_submit(
     session: Session = Depends(get_session),
 ):
     """Handle login form submission. Set JWT in httpOnly cookie."""
-    from app.csrf import generate_csrf_token
-
     form = await request.form()
     username = str(form.get("username", "")).strip()
     password = str(form.get("password", ""))
@@ -749,8 +757,6 @@ async def login_submit(
     session.commit()
 
     # Redirect to return_url with JWT in cookie
-    from fastapi.responses import RedirectResponse
-
     redirect = RedirectResponse(url=return_url, status_code=302)
     redirect.set_cookie(
         "access_token",
@@ -765,8 +771,6 @@ async def login_submit(
 @app.post("/logout")
 async def logout():
     """Clear access token cookie and redirect to login."""
-    from fastapi.responses import RedirectResponse
-
     response = RedirectResponse(url="/login", status_code=302)
     response.delete_cookie("access_token")
     return response
@@ -782,10 +786,6 @@ async def oidc_login(
     return_url: Optional[str] = Query(None),
 ):
     """Initiate OIDC Authorization Code Flow — redirect to provider."""
-    from fastapi.responses import RedirectResponse
-
-    from app.services.oidc import build_authorize_url, get_oidc_config
-
     config = get_oidc_config(session)
     if not config or not config.enabled:
         return RedirectResponse(url="/login", status_code=302)
@@ -812,16 +812,6 @@ async def oidc_callback(
     error: Optional[str] = Query(None),
 ):
     """Handle OIDC provider callback — exchange code, create/link user, set session."""
-    from fastapi.responses import RedirectResponse
-
-    from app.services.oidc import (
-        decode_id_token,
-        exchange_code_for_tokens,
-        get_oidc_config,
-        get_or_create_oidc_user,
-        validate_state,
-    )
-
     # Handle provider error
     if error:
         logger.warning("OIDC provider returned error", extra={"error": error})
@@ -886,8 +876,6 @@ async def register_page(request: Request):
             context={"registration_disabled": True},
         )
 
-    from app.csrf import generate_csrf_token
-
     csrf_token = generate_csrf_token()
     response = templates.TemplateResponse(
         request,
@@ -912,8 +900,6 @@ async def register_submit(
             context={"registration_disabled": True},
             status_code=403,
         )
-
-    from app.csrf import generate_csrf_token
 
     form_data = await request.form()
     username = str(form_data.get("username", "")).strip()
@@ -999,16 +985,12 @@ async def register_submit(
     )
 
     # Redirect to login with success message
-    from fastapi.responses import RedirectResponse
-
     return RedirectResponse(url="/login?success=registered", status_code=302)
 
 
 @app.get("/settings")
 async def settings_page(request: Request, user: OptionalUserDep = None):
     """Settings page — requires Operator+ role."""
-    from app.services.auth import role_at_least, ROLE_OPERATOR
-
     if user and not role_at_least(user.role, ROLE_OPERATOR):
         raise HTTPException(status_code=403, detail="Requires operator role")
     changelog_versions = parse_changelog(path=Path("CHANGELOG.md"))
@@ -1062,9 +1044,6 @@ async def htmx_smtp_settings(
     user: OptionalUserDep = None,
 ):
     """HTMX partial: SMTP configuration form."""
-    from app.services.auth import ROLE_ADMIN, role_at_least
-    from app.services.email import get_smtp_config
-
     if not user or not role_at_least(user.role, ROLE_ADMIN):
         raise HTTPException(status_code=403, detail="Admin only")
 
@@ -1088,9 +1067,6 @@ async def htmx_smtp_settings_save(
     user: OptionalUserDep = None,
 ):
     """HTMX: Save SMTP configuration."""
-    from app.services.auth import ROLE_ADMIN, role_at_least
-    from app.services.email import encrypt_password, get_smtp_config
-
     if not user or not role_at_least(user.role, ROLE_ADMIN):
         raise HTTPException(status_code=403, detail="Admin only")
 
@@ -1185,9 +1161,6 @@ async def htmx_smtp_test_email(
     user: OptionalUserDep = None,
 ):
     """HTMX: Send a test email."""
-    from app.services.auth import ROLE_ADMIN, role_at_least
-    from app.services.email import send_test_email_async
-
     if not user or not role_at_least(user.role, ROLE_ADMIN):
         raise HTTPException(status_code=403, detail="Admin only")
 
@@ -1229,9 +1202,6 @@ async def htmx_oidc_settings(
     user: OptionalUserDep = None,
 ):
     """HTMX partial: OIDC configuration form."""
-    from app.services.auth import ROLE_ADMIN, role_at_least
-    from app.services.oidc import get_oidc_config
-
     if not user or not role_at_least(user.role, ROLE_ADMIN):
         raise HTTPException(status_code=403, detail="Admin only")
 
@@ -1257,9 +1227,6 @@ async def htmx_oidc_settings_save(
     user: OptionalUserDep = None,
 ):
     """HTMX: Save OIDC configuration."""
-    from app.services.auth import ROLE_ADMIN, role_at_least
-    from app.services.oidc import encrypt_client_secret, get_oidc_config
-
     if not user or not role_at_least(user.role, ROLE_ADMIN):
         raise HTTPException(status_code=403, detail="Admin only")
 
@@ -1298,8 +1265,6 @@ async def htmx_oidc_settings_save(
                 '<div class="auth-error">Client Secret is required for initial configuration.</div>',
                 status_code=422,
             )
-        from app.models.oidc_config import OidcConfig
-
         config = OidcConfig(
             issuer_url=issuer_url,
             client_id=client_id,
@@ -1353,9 +1318,6 @@ async def htmx_oidc_test_discovery(
     user: OptionalUserDep = None,
 ):
     """HTMX: Test OIDC discovery against provided issuer URL."""
-    from app.services.auth import ROLE_ADMIN, role_at_least
-    from app.services.oidc import fetch_discovery
-
     if not user or not role_at_least(user.role, ROLE_ADMIN):
         raise HTTPException(status_code=403, detail="Admin only")
 
@@ -1411,8 +1373,6 @@ async def htmx_api_keys_list(
     user: OptionalUserDep = None,
 ):
     """HTMX partial: API keys list table."""
-    from app.models.sync_log import ApiKey as ApiKeyModel
-
     if not user:
         raise HTTPException(status_code=403, detail="Not authenticated")
 
@@ -1456,11 +1416,6 @@ async def htmx_api_key_create(
     user: OptionalUserDep = None,
 ):
     """HTMX: create a new API key and show the raw key once."""
-    import secrets as secrets_module
-    from app.api.deps import hash_api_key as _hash_api_key
-    from app.models.sync_log import ApiKey as ApiKeyModel
-    from app.services.auth import role_at_least as _role_at_least
-
     if not user:
         raise HTTPException(status_code=403, detail="Not authenticated")
 
@@ -1482,7 +1437,7 @@ async def htmx_api_key_create(
     # Validate role override
     effective_role = user.role
     if role_override:
-        if not _role_at_least(user.role, role_override):
+        if not role_at_least(user.role, role_override):
             return templates.TemplateResponse(
                 request,
                 "partials/api_key_form.html",
@@ -1529,8 +1484,6 @@ async def htmx_api_key_revoke(
     user: OptionalUserDep = None,
 ):
     """HTMX: revoke an API key and return updated list."""
-    from app.models.sync_log import ApiKey as ApiKeyModel
-
     if not user:
         raise HTTPException(status_code=403, detail="Not authenticated")
 
@@ -1609,9 +1562,7 @@ async def htmx_webhook_create(
     user: OptionalUserDep = None,
 ):
     """HTMX: create a new webhook endpoint. Requires Operator+ role."""
-    from app.services.auth import role_at_least, ROLE_OPERATOR as _OP
-
-    if not user or not role_at_least(user.role, _OP):
+    if not user or not role_at_least(user.role, ROLE_OPERATOR):
         raise HTTPException(status_code=403, detail="Requires operator role")
     form = await request.form()
     errors: dict[str, str] = {}
@@ -1732,9 +1683,7 @@ async def htmx_webhook_update(
     user: OptionalUserDep = None,
 ):
     """HTMX: update an existing webhook endpoint. Requires Operator+ role."""
-    from app.services.auth import role_at_least, ROLE_OPERATOR as _OP
-
-    if not user or not role_at_least(user.role, _OP):
+    if not user or not role_at_least(user.role, ROLE_OPERATOR):
         raise HTTPException(status_code=403, detail="Requires operator role")
     webhook = session.get(WebhookEndpoint, webhook_id)
     if not webhook:
@@ -1859,9 +1808,7 @@ async def htmx_webhook_delete(
     user: OptionalUserDep = None,
 ):
     """HTMX: delete a webhook endpoint. Requires Operator+ role."""
-    from app.services.auth import role_at_least, ROLE_OPERATOR as _OP
-
-    if not user or not role_at_least(user.role, _OP):
+    if not user or not role_at_least(user.role, ROLE_OPERATOR):
         raise HTTPException(status_code=403, detail="Requires operator role")
     webhook = session.get(WebhookEndpoint, webhook_id)
     if not webhook:
@@ -1883,9 +1830,7 @@ async def htmx_webhook_toggle(
     user: OptionalUserDep = None,
 ):
     """HTMX: toggle webhook enabled/disabled. Requires Operator+ role."""
-    from app.services.auth import role_at_least, ROLE_OPERATOR as _OP
-
-    if not user or not role_at_least(user.role, _OP):
+    if not user or not role_at_least(user.role, ROLE_OPERATOR):
         raise HTTPException(status_code=403, detail="Requires operator role")
     webhook = session.get(WebhookEndpoint, webhook_id)
     if not webhook:
@@ -1907,9 +1852,7 @@ async def htmx_webhook_test(
     user: OptionalUserDep = None,
 ):
     """HTMX: send a test notification. Requires Operator+ role."""
-    from app.services.auth import role_at_least, ROLE_OPERATOR as _OP
-
-    if not user or not role_at_least(user.role, _OP):
+    if not user or not role_at_least(user.role, ROLE_OPERATOR):
         raise HTTPException(status_code=403, detail="Requires operator role")
     webhook = session.get(WebhookEndpoint, webhook_id)
     if not webhook:
@@ -1978,9 +1921,7 @@ async def admin_users_page(
     user: OptionalUserDep = None,
 ):
     """Render admin user management page (admin only)."""
-    from app.services.auth import role_at_least, ROLE_ADMIN as _ADMIN
-
-    if not user or not role_at_least(user.role, _ADMIN):
+    if not user or not role_at_least(user.role, ROLE_ADMIN):
         raise HTTPException(status_code=403, detail="Admin access required")
 
     users_list = session.exec(select(User).order_by(User.created_at.desc())).all()
@@ -1998,9 +1939,7 @@ async def htmx_admin_user_list(
     user: OptionalUserDep = None,
 ):
     """HTMX partial: admin user list table."""
-    from app.services.auth import role_at_least, ROLE_ADMIN as _ADMIN
-
-    if not user or not role_at_least(user.role, _ADMIN):
+    if not user or not role_at_least(user.role, ROLE_ADMIN):
         raise HTTPException(status_code=403, detail="Admin access required")
 
     users_list = session.exec(select(User).order_by(User.created_at.desc())).all()
@@ -2019,9 +1958,7 @@ async def htmx_admin_change_role(
     user: OptionalUserDep = None,
 ):
     """HTMX: change a user's role."""
-    from app.services.auth import role_at_least, ROLE_ADMIN as _ADMIN, VALID_ROLES
-
-    if not user or not role_at_least(user.role, _ADMIN):
+    if not user or not role_at_least(user.role, ROLE_ADMIN):
         raise HTTPException(status_code=403, detail="Admin access required")
 
     form = await request.form()
@@ -2058,9 +1995,7 @@ async def htmx_admin_toggle_status(
     user: OptionalUserDep = None,
 ):
     """HTMX: toggle user active status."""
-    from app.services.auth import role_at_least, ROLE_ADMIN as _ADMIN
-
-    if not user or not role_at_least(user.role, _ADMIN):
+    if not user or not role_at_least(user.role, ROLE_ADMIN):
         raise HTTPException(status_code=403, detail="Admin access required")
     if user_id == user.id:
         raise HTTPException(status_code=400, detail="Cannot change your own status")
@@ -2084,9 +2019,7 @@ async def htmx_admin_delete_user(
     user: OptionalUserDep = None,
 ):
     """HTMX: delete a user."""
-    from app.services.auth import role_at_least, ROLE_ADMIN as _ADMIN
-
-    if not user or not role_at_least(user.role, _ADMIN):
+    if not user or not role_at_least(user.role, ROLE_ADMIN):
         raise HTTPException(status_code=403, detail="Admin access required")
     if user_id == user.id:
         raise HTTPException(status_code=400, detail="Cannot delete your own account")
@@ -2114,8 +2047,6 @@ async def htmx_admin_delete_user(
 @app.get("/forgot-password")
 async def forgot_password_page(request: Request):
     """Render forgot password page."""
-    from app.csrf import generate_csrf_token
-
     csrf_token = generate_csrf_token()
     response = templates.TemplateResponse(
         request,
@@ -2132,8 +2063,6 @@ async def reset_password_page(
     token: Optional[str] = Query(None),
 ):
     """Render reset password page."""
-    from app.csrf import generate_csrf_token
-
     csrf_token = generate_csrf_token()
     response = templates.TemplateResponse(
         request,

@@ -26,20 +26,6 @@ ROLE_HIERARCHY = {
     ROLE_ADMIN: 2,
 }
 
-# Permission matrix: resource -> minimum role required
-PERMISSIONS = {
-    "view_dashboard": ROLE_VIEWER,
-    "view_sync_logs": ROLE_VIEWER,
-    "submit_sync_logs": ROLE_OPERATOR,
-    "view_webhooks": ROLE_VIEWER,
-    "manage_webhooks": ROLE_OPERATOR,
-    "delete_sync_logs": ROLE_ADMIN,
-    "manage_users": ROLE_ADMIN,
-    "view_settings": ROLE_OPERATOR,
-    "manage_own_api_keys": ROLE_VIEWER,
-    "manage_all_api_keys": ROLE_ADMIN,
-}
-
 
 def hash_password(password: str) -> str:
     """Hash a password using bcrypt."""
@@ -65,14 +51,6 @@ def verify_token(token: str, token_hash: str) -> bool:
     """Verify a long token against its SHA-256 + bcrypt hash."""
     digest = hashlib.sha256(token.encode()).hexdigest()
     return bcrypt.checkpw(digest.encode(), token_hash.encode())
-
-
-def has_permission(user_role: str, permission: str) -> bool:
-    """Check if a role has a given permission."""
-    required_role = PERMISSIONS.get(permission)
-    if required_role is None:
-        return False
-    return ROLE_HIERARCHY.get(user_role, -1) >= ROLE_HIERARCHY.get(required_role, 999)
 
 
 def role_at_least(user_role: str, minimum_role: str) -> bool:

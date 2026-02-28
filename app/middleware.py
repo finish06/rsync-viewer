@@ -124,8 +124,6 @@ class BodySizeLimitMiddleware(BaseHTTPMiddleware):
         content_length = request.headers.get("content-length")
 
         if content_length and int(content_length) > settings.max_request_body_size:
-            from starlette.responses import JSONResponse
-
             return JSONResponse(
                 status_code=413,
                 content={
@@ -193,8 +191,14 @@ class AuthRedirectMiddleware(BaseHTTPMiddleware):
         return RedirectResponse(f"/login?return_url={return_url}", status_code=302)
 
 
-# Paths where CSRF validation is enforced for form POSTs
-CSRF_PROTECTED_PREFIXES = ("/htmx/webhooks",)
+# Paths where CSRF validation is enforced for state-mutating form POSTs
+CSRF_PROTECTED_PREFIXES = (
+    "/htmx/webhooks",
+    "/htmx/smtp-settings",
+    "/htmx/settings/auth",
+    "/htmx/api-keys",
+    "/htmx/admin/users",
+)
 
 # Methods that are state-changing and require CSRF validation
 CSRF_METHODS = {"POST", "PUT", "DELETE", "PATCH"}
@@ -212,8 +216,6 @@ class CsrfMiddleware(BaseHTTPMiddleware):
             cookie_token = request.cookies.get("csrf_token", "")
 
             if not csrf_token or not validate_csrf_token(cookie_token, csrf_token):
-                from starlette.responses import JSONResponse
-
                 return JSONResponse(
                     status_code=403,
                     content={

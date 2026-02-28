@@ -10,7 +10,6 @@ from app.services.auth import (
     ROLE_OPERATOR,
     ROLE_VIEWER,
     hash_password,
-    has_permission,
     role_at_least,
     verify_password,
 )
@@ -50,43 +49,6 @@ class TestRoleConstants:
         assert ROLE_OPERATOR == "operator"
         assert ROLE_VIEWER == "viewer"
 
-    def test_ac005_admin_has_all_permissions(self):
-        """Admin should have every permission."""
-        for perm in [
-            "view_dashboard",
-            "view_sync_logs",
-            "submit_sync_logs",
-            "view_webhooks",
-            "manage_webhooks",
-            "delete_sync_logs",
-            "manage_users",
-            "view_settings",
-            "manage_own_api_keys",
-            "manage_all_api_keys",
-        ]:
-            assert has_permission(ROLE_ADMIN, perm), f"Admin missing {perm}"
-
-    def test_ac005_operator_permissions(self):
-        """Operator can view and manage but not delete or manage users."""
-        assert has_permission(ROLE_OPERATOR, "view_dashboard")
-        assert has_permission(ROLE_OPERATOR, "submit_sync_logs")
-        assert has_permission(ROLE_OPERATOR, "manage_webhooks")
-        assert has_permission(ROLE_OPERATOR, "view_settings")
-        assert not has_permission(ROLE_OPERATOR, "delete_sync_logs")
-        assert not has_permission(ROLE_OPERATOR, "manage_users")
-        assert not has_permission(ROLE_OPERATOR, "manage_all_api_keys")
-
-    def test_ac005_viewer_read_only(self):
-        """Viewer can only view and manage own API keys."""
-        assert has_permission(ROLE_VIEWER, "view_dashboard")
-        assert has_permission(ROLE_VIEWER, "view_sync_logs")
-        assert has_permission(ROLE_VIEWER, "view_webhooks")
-        assert has_permission(ROLE_VIEWER, "manage_own_api_keys")
-        assert not has_permission(ROLE_VIEWER, "submit_sync_logs")
-        assert not has_permission(ROLE_VIEWER, "manage_webhooks")
-        assert not has_permission(ROLE_VIEWER, "delete_sync_logs")
-        assert not has_permission(ROLE_VIEWER, "manage_users")
-
     def test_ac005_role_hierarchy(self):
         """Admin > Operator > Viewer."""
         assert role_at_least(ROLE_ADMIN, ROLE_ADMIN)
@@ -101,7 +63,6 @@ class TestRoleConstants:
 
     def test_ac005_unknown_role_has_no_permissions(self):
         """An invalid role should have no permissions."""
-        assert not has_permission("hacker", "view_dashboard")
         assert not role_at_least("hacker", ROLE_VIEWER)
 
 
