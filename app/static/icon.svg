@@ -1,0 +1,114 @@
+<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <!-- V1b: NEON WIREFRAME + INFINITY — Continuous sync symbolized by glowing infinity loop -->
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0a0a18"/>
+      <stop offset="100%" stop-color="#080814"/>
+    </linearGradient>
+
+    <linearGradient id="neon" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ff6b9d"/>
+      <stop offset="50%" stop-color="#d4326d"/>
+      <stop offset="100%" stop-color="#b00149"/>
+    </linearGradient>
+
+    <!-- Infinity symbol gradient — flows left to right -->
+    <linearGradient id="neonInf" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#ff6b9d"/>
+      <stop offset="50%" stop-color="#d4326d"/>
+      <stop offset="100%" stop-color="#ff6b9d"/>
+    </linearGradient>
+
+    <!-- Double-layer neon glow -->
+    <filter id="neonGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="inner"/>
+      <feGaussianBlur in="SourceGraphic" stdDeviation="10" result="outer"/>
+      <feColorMatrix in="outer" type="matrix" values="1 0 0 0 0  0 0.2 0 0 0  0 0 0.5 0 0  0 0 0 0.6 0" result="tinted"/>
+      <feMerge>
+        <feMergeNode in="tinted"/>
+        <feMergeNode in="inner"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- Stronger glow for infinity -->
+    <filter id="infGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="inner"/>
+      <feGaussianBlur in="SourceGraphic" stdDeviation="12" result="outer"/>
+      <feColorMatrix in="outer" type="matrix" values="1 0 0 0 0  0 0.15 0 0 0  0 0 0.4 0 0  0 0 0 0.7 0" result="tinted"/>
+      <feMerge>
+        <feMergeNode in="tinted"/>
+        <feMergeNode in="inner"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Near-black background -->
+  <rect width="512" height="512" rx="96" fill="url(#bg)"/>
+
+  <!-- Subtle scan lines -->
+  <g opacity="0.03">
+    <line x1="0" y1="128" x2="512" y2="128" stroke="#ff6b9d" stroke-width="1"/>
+    <line x1="0" y1="256" x2="512" y2="256" stroke="#ff6b9d" stroke-width="1"/>
+    <line x1="0" y1="384" x2="512" y2="384" stroke="#ff6b9d" stroke-width="1"/>
+    <line x1="128" y1="0" x2="128" y2="512" stroke="#ff6b9d" stroke-width="1"/>
+    <line x1="256" y1="0" x2="256" y2="512" stroke="#ff6b9d" stroke-width="1"/>
+    <line x1="384" y1="0" x2="384" y2="512" stroke="#ff6b9d" stroke-width="1"/>
+  </g>
+
+  <g transform="translate(256, 256)">
+
+    <!-- Gear outline — no fill, neon stroke with glow -->
+    <g filter="url(#neonGlow)">
+      <path d="M 110,-21 L 139,-19 L 139,19 L 110,21
+               L 93,63  L 112,84  L 84,112  L 63,93
+               L 21,110  L 19,139  L -19,139 L -21,110
+               L -63,93  L -84,112 L -112,84 L -93,63
+               L -110,21 L -139,19 L -139,-19 L -110,-21
+               L -93,-63 L -112,-84 L -84,-112 L -63,-93
+               L -21,-110 L -19,-139 L 19,-139  L 21,-110
+               L 63,-93  L 84,-112  L 112,-84  L 93,-63 Z"
+            fill="none" stroke="url(#neon)" stroke-width="3" stroke-linejoin="round"/>
+    </g>
+
+    <!-- Hub ring — thin neon circle -->
+    <g filter="url(#neonGlow)">
+      <circle cx="0" cy="0" r="78" fill="none" stroke="#d4326d" stroke-width="1.5"/>
+    </g>
+
+    <!-- Data node dots at each tooth tip center -->
+    <g filter="url(#neonGlow)">
+      <circle cx="139" cy="0" r="3.5" fill="#ff6b9d"/>
+      <circle cx="98" cy="98" r="3.5" fill="#ff6b9d"/>
+      <circle cx="0" cy="139" r="3.5" fill="#ff6b9d"/>
+      <circle cx="-98" cy="98" r="3.5" fill="#ff6b9d"/>
+      <circle cx="-139" cy="0" r="3.5" fill="#ff6b9d"/>
+      <circle cx="-98" cy="-98" r="3.5" fill="#ff6b9d"/>
+      <circle cx="0" cy="-139" r="3.5" fill="#ff6b9d"/>
+      <circle cx="98" cy="-98" r="3.5" fill="#ff6b9d"/>
+    </g>
+
+    <!-- Infinity symbol — glowing, centered in hub -->
+    <g filter="url(#infGlow)">
+      <path d="M 0,0
+               C 26,-40 62,-40 62,0
+               C 62,40 26,40 0,0
+               C -26,-40 -62,-40 -62,0
+               C -62,40 -26,40 0,0"
+            fill="none" stroke="url(#neonInf)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+
+    <!-- Orbital sync arrows — thin, glowing -->
+    <g filter="url(#neonGlow)">
+      <path d="M 80,-152 A 172,172 0 0 1 168,-30"
+            fill="none" stroke="#d4326d" stroke-width="2.5" stroke-linecap="round"/>
+      <polygon points="172,-6 178,-32 156,-28" fill="#d4326d"/>
+
+      <path d="M -80,152 A 172,172 0 0 1 -168,30"
+            fill="none" stroke="#d4326d" stroke-width="2.5" stroke-linecap="round"/>
+      <polygon points="-172,6 -178,32 -156,28" fill="#d4326d"/>
+    </g>
+
+  </g>
+</svg>
