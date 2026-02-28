@@ -7,6 +7,44 @@ and this project adheres to [Conventional Commits](https://www.conventionalcommi
 
 ## [Unreleased]
 
+## [1.10.0] - 2026-02-28
+
+### Added
+
+- **OIDC authentication (M7):**
+  - OpenID Connect SSO via any OIDC-compliant provider (PocketId, Authelia, Keycloak, etc.)
+  - Admin-configurable OIDC settings UI (issuer URL, client ID, client secret, provider name)
+  - OIDC discovery test button to verify provider configuration
+  - Auto-create and auto-link local accounts from OIDC claims
+  - State + nonce validation for secure authorization code flow
+  - "Hide Local Login" mode with `FORCE_LOCAL_LOGIN` env var safety fallback
+  - Client secret encrypted at rest with Fernet symmetric encryption
+  - OIDC callback URL displayed in settings UI for easy provider configuration
+- **Reverse proxy support:**
+  - Uvicorn proxy header forwarding (`--proxy-headers`, `--forwarded-allow-ips`)
+  - Production docker-compose loads `.env` file into container
+- Auto-generate ENCRYPTION_KEY in Docker entrypoint if not provided
+- Fallback for legacy API keys without user_id (treated as operator-level)
+
+### Fixed
+
+- OIDC callback URL resolves to public domain when behind reverse proxy
+- Production container reads ENCRYPTION_KEY from `.env` file
+- API key prefix filter handles legacy keys without `rsv_` prefix
+- Mypy type errors in OIDC service resolved
+- Auth middleware, email mock, and OIDC edge case test failures resolved
+- Flaky metrics perf test threshold relaxed from 100ms to 200ms
+- Mobile card layout CSS specificity conflict on desktop
+- CSS cache-busting added for static assets
+
+### Changed
+
+- Optimized API key lookup, SMTP sending (async), changelog caching, and retention queries
+
+### Documentation
+
+- Update L-011 to critical — production DB migration is mandatory after model changes
+
 ## [1.9.0] - 2026-02-27
 
 ### Added

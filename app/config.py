@@ -34,7 +34,7 @@ class Settings(BaseSettings):
         ""  # Shared Fernet key (used for OIDC + SMTP if smtp_encryption_key is empty)
     )
     force_local_login: bool = False  # Safety fallback: always show local login form
-    app_version: str = "1.9.0"
+    app_version: str = "1.10.0"
 
     @property
     def effective_encryption_key(self) -> str:
