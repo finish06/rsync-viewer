@@ -10,6 +10,11 @@
 </div>
 {% endif %}
 
+<div style="margin-bottom: 1rem; padding: 0.5rem 0.75rem; background: var(--bg-secondary, #f5f5f5); border-radius: 4px; font-size: 0.8rem; color: var(--text-muted);">
+    <strong>Callback URL</strong> — configure this in your OIDC provider:<br>
+    <code style="user-select: all;">{{ oidc_callback_url }}</code>
+</div>
+
 <form hx-post="/htmx/settings/auth"
       hx-target="#oidc-settings-container"
       hx-swap="innerHTML">

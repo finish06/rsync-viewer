@@ -34,6 +34,7 @@ As an Admin, I want to configure OIDC authentication through the settings UI, so
 | AC-012 | Empty client secret on edit preserves the existing encrypted value (no accidental wipe) | Should |
 | AC-013 | A small info note in the UI explains the `FORCE_LOCAL_LOGIN` safety fallback | Should |
 | AC-014 | When OIDC is disabled via toggle, existing OIDC sessions remain valid until expiry but no new OIDC logins are allowed | Should |
+| AC-015 | OIDC settings UI displays the callback URL (`/auth/oidc/callback`) so the admin knows what to configure in their OIDC provider | Should |
 
 ## 3. User Test Cases
 

@@ -1237,6 +1237,7 @@ async def htmx_oidc_settings(
 
     config = get_oidc_config(session)
     has_encryption_key = bool(get_settings().effective_encryption_key)
+    callback_url = str(request.base_url).rstrip("/") + "/auth/oidc/callback"
 
     return templates.TemplateResponse(
         request,
@@ -1244,6 +1245,7 @@ async def htmx_oidc_settings(
         context={
             "oidc": config,
             "has_encryption_key": has_encryption_key,
+            "oidc_callback_url": callback_url,
         },
     )
 
@@ -1331,6 +1333,8 @@ async def htmx_oidc_settings_save(
         extra={"user_id": str(user.id), "issuer_url": issuer_url},
     )
 
+    callback_url = str(request.base_url).rstrip("/") + "/auth/oidc/callback"
+
     return templates.TemplateResponse(
         request,
         "partials/oidc_settings.html",
@@ -1338,6 +1342,7 @@ async def htmx_oidc_settings_save(
             "oidc": config,
             "has_encryption_key": True,
             "success_message": "OIDC configuration saved.",
+            "oidc_callback_url": callback_url,
         },
     )
 
