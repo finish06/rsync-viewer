@@ -25,6 +25,7 @@ def _mock_settings():
     """Override get_settings to provide a test encryption key."""
     mock_settings = MagicMock()
     mock_settings.smtp_encryption_key = _TEST_FERNET_KEY
+    mock_settings.effective_encryption_key = _TEST_FERNET_KEY
     with patch("app.services.email.get_settings", return_value=mock_settings):
         yield mock_settings
 
@@ -48,12 +49,14 @@ class TestFernetEncryption:
     def test_ac004_encrypt_raises_without_key(self, _mock_settings):
         """Encryption raises ValueError when key is not configured."""
         _mock_settings.smtp_encryption_key = ""
+        _mock_settings.effective_encryption_key = ""
         with pytest.raises(ValueError, match="SMTP_ENCRYPTION_KEY is not configured"):
             encrypt_password("test")
 
     def test_ac004_decrypt_raises_without_key(self, _mock_settings):
         """Decryption raises ValueError when key is not configured."""
         _mock_settings.smtp_encryption_key = ""
+        _mock_settings.effective_encryption_key = ""
         with pytest.raises(ValueError, match="SMTP_ENCRYPTION_KEY is not configured"):
             decrypt_password("gAAAAAB...")
 

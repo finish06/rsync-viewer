@@ -16,6 +16,9 @@ class User(SQLModel, table=True):
     password_hash: str = Field(max_length=255)
     role: str = Field(default="viewer", max_length=20)
     is_active: bool = Field(default=True)
+    auth_provider: str = Field(default="local", max_length=20)
+    oidc_subject: Optional[str] = Field(default=None, max_length=255, unique=True)
+    oidc_issuer: Optional[str] = Field(default=None, max_length=512)
     last_login_at: Optional[datetime] = None
     created_at: datetime = Field(default_factory=utc_now)
     updated_at: datetime = Field(default_factory=utc_now)

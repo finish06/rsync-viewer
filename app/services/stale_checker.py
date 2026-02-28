@@ -31,9 +31,13 @@ def check_stale_sources(session: Session) -> list[FailureEvent]:
     new_events: list[FailureEvent] = []
     now = utc_now()
 
-    # Batch-load all existing stale events to avoid N+1 queries per monitor
+    # Batch-load recent stale events (last 30 days) to avoid N+1 queries
+    thirty_days_ago = now - timedelta(days=30)
     existing_stale = session.exec(
-        select(FailureEvent).where(FailureEvent.failure_type == "stale")
+        select(FailureEvent).where(
+            FailureEvent.failure_type == "stale",
+            FailureEvent.detected_at >= thirty_days_ago,
+        )
     ).all()
     # Index by source_name for O(1) lookup
     stale_by_source: dict[str, list[FailureEvent]] = {}

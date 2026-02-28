@@ -4,7 +4,7 @@
 
 {% if not has_encryption_key %}
 <div class="auth-error" style="margin-bottom: 1rem;">
-    SMTP_ENCRYPTION_KEY is not set. Generate one with:<br>
+    ENCRYPTION_KEY is not set. Generate one with:<br>
     <code>python3 -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"</code><br>
     Add it to your .env file before configuring SMTP.
 </div>
