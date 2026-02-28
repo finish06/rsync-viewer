@@ -3,7 +3,7 @@ import logging
 import re
 import secrets as secrets_module
 from contextlib import asynccontextmanager
-from datetime import datetime, timedelta
+from datetime import timedelta
 from pathlib import Path
 from typing import Optional
 from uuid import UUID
@@ -56,12 +56,10 @@ from app.models.smtp_config import SmtpConfig  # noqa: F401 — ensure table cre
 from app.schemas.user import UserCreate
 from app.services.auth import (
     create_access_token,
-    hash_password,
     role_at_least,
     verify_password,
     ROLE_ADMIN,
     ROLE_OPERATOR,
-    ROLE_VIEWER,
     VALID_ROLES,
 )
 from app.services.changelog_parser import parse_changelog
@@ -76,7 +74,15 @@ from app.services.oidc import (
     get_or_create_oidc_user,
     validate_state,
 )
+from app.services.registration import RegistrationError, register_user
 from app.services.retention import retention_background_task
+from app.services.sync_filters import InvalidDateError, apply_sync_filters
+from app.services.webhook_test import (
+    build_test_headers,
+    build_test_webhook_payload,
+    get_webhook_options,
+    send_test_webhook,
+)
 from app.models.monitor import SyncSourceMonitor  # noqa: F401 — ensure table creation
 from app.models.failure_event import FailureEvent
 from app.models.webhook import WebhookEndpoint
@@ -241,6 +247,20 @@ async def global_exception_handler(request: Request, exc: Exception):
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # type: ignore[arg-type]
 
+
+@app.exception_handler(InvalidDateError)
+async def invalid_date_handler(request: Request, exc: InvalidDateError):
+    """Return 400 for unparseable date query parameters."""
+    return JSONResponse(
+        status_code=400,
+        content=make_error_response(
+            error_code=VALIDATION_ERROR,
+            message=str(exc),
+            path=str(request.url.path),
+        ),
+    )
+
+
 # Middleware order: outermost runs first
 # SecurityHeaders → BodySizeLimit → Prometheus → RequestLogging → AuthRedirect → CSRF → (rate limiting)
 app.add_middleware(RequestLoggingMiddleware)
@@ -348,17 +368,6 @@ async def analytics_page():
     return RedirectResponse(url="/?tab=analytics", status_code=302)
 
 
-def _parse_date(value: str) -> datetime:
-    """Parse an ISO format date string, raising HTTPException on failure."""
-    try:
-        return datetime.fromisoformat(value)
-    except (ValueError, TypeError):
-        raise HTTPException(
-            status_code=400,
-            detail=f"Invalid date format: {value}",
-        )
-
-
 @app.get("/htmx/sync-table")
 async def htmx_sync_table(
     request: Request,
@@ -375,29 +384,15 @@ async def htmx_sync_table(
 ):
     """HTMX partial: sync logs table"""
 
-    # Build query
-    statement = select(SyncLog)
-
-    if source_name:
-        statement = statement.where(SyncLog.source_name == source_name)
-    if start_date:
-        statement = statement.where(SyncLog.start_time >= _parse_date(start_date))
-    if end_date:
-        statement = statement.where(SyncLog.start_time <= _parse_date(end_date))
-
-    # Filter dry runs
-    if show_dry_run == "hide":
-        statement = statement.where(SyncLog.is_dry_run.is_(False))  # type: ignore[attr-defined]
-    elif show_dry_run == "only":
-        statement = statement.where(SyncLog.is_dry_run.is_(True))  # type: ignore[attr-defined]
-
-    # Filter empty runs (runs with zero files transferred)
-    if hide_empty == "hide":
-        statement = statement.where(SyncLog.file_count > 0)  # type: ignore[operator]
-    elif hide_empty == "only":
-        statement = statement.where(
-            (SyncLog.file_count == 0) | (SyncLog.file_count == None)  # noqa: E711
-        )
+    # Build query with shared filter helper (AC-007)
+    statement = apply_sync_filters(
+        select(SyncLog),
+        source_name=source_name,
+        start_date=start_date,
+        end_date=end_date,
+        show_dry_run=show_dry_run,
+        hide_empty=hide_empty,
+    )
 
     # Get total count
     count_statement = select(func.count()).select_from(statement.subquery())
@@ -462,29 +457,15 @@ async def htmx_charts(
 ):
     """HTMX partial: sync statistics charts"""
 
-    # Build query with same filters as sync-table
-    statement = select(SyncLog)
-
-    if source_name:
-        statement = statement.where(SyncLog.source_name == source_name)
-    if start_date:
-        statement = statement.where(SyncLog.start_time >= _parse_date(start_date))
-    if end_date:
-        statement = statement.where(SyncLog.start_time <= _parse_date(end_date))
-
-    # Filter dry runs
-    if show_dry_run == "hide":
-        statement = statement.where(SyncLog.is_dry_run.is_(False))  # type: ignore[attr-defined]
-    elif show_dry_run == "only":
-        statement = statement.where(SyncLog.is_dry_run.is_(True))  # type: ignore[attr-defined]
-
-    # Filter empty runs
-    if hide_empty == "hide":
-        statement = statement.where(SyncLog.file_count > 0)  # type: ignore[operator]
-    elif hide_empty == "only":
-        statement = statement.where(
-            (SyncLog.file_count == 0) | (SyncLog.file_count == None)  # noqa: E711
-        )
+    # Build query with shared filter helper (AC-007)
+    statement = apply_sync_filters(
+        select(SyncLog),
+        source_name=source_name,
+        start_date=start_date,
+        end_date=end_date,
+        show_dry_run=show_dry_run,
+        hide_empty=hide_empty,
+    )
 
     # Get recent syncs (limit 50, ordered by time ascending for charts)
     statement = statement.order_by(SyncLog.start_time.desc()).limit(50)  # type: ignore[attr-defined]
@@ -927,62 +908,29 @@ async def register_submit(
         response.set_cookie("csrf_token", csrf_token, httponly=True, samesite="lax")
         return response
 
-    # Check duplicates
-    existing_username = session.exec(
-        select(User).where(User.username == user_data.username)
-    ).first()
-    if existing_username:
+    # Delegate to shared registration service (AC-008)
+    try:
+        register_user(
+            session,
+            username=user_data.username,
+            email=user_data.email,
+            password=user_data.password,
+        )
+    except RegistrationError as exc:
         csrf_token = generate_csrf_token()
         response = templates.TemplateResponse(
             request,
             "register.html",
             context={
                 "csrf_token": csrf_token,
-                "error_message": "Username already exists",
+                "error_message": str(exc),
                 "form_username": username,
                 "form_email": email,
             },
-            status_code=409,
+            status_code=exc.status_code,
         )
         response.set_cookie("csrf_token", csrf_token, httponly=True, samesite="lax")
         return response
-
-    existing_email = session.exec(
-        select(User).where(User.email == user_data.email)
-    ).first()
-    if existing_email:
-        csrf_token = generate_csrf_token()
-        response = templates.TemplateResponse(
-            request,
-            "register.html",
-            context={
-                "csrf_token": csrf_token,
-                "error_message": "Email already exists",
-                "form_username": username,
-                "form_email": email,
-            },
-            status_code=409,
-        )
-        response.set_cookie("csrf_token", csrf_token, httponly=True, samesite="lax")
-        return response
-
-    # Create user
-    user_count = session.exec(select(func.count()).select_from(User)).one()
-    role = ROLE_ADMIN if user_count == 0 else ROLE_VIEWER
-
-    user = User(
-        username=user_data.username,
-        email=user_data.email,
-        password_hash=hash_password(user_data.password),
-        role=role,
-    )
-    session.add(user)
-    session.commit()
-
-    logger.info(
-        "User registered via UI",
-        extra={"user_id": str(user.id), "username": user.username, "role": user.role},
-    )
 
     # Redirect to login with success message
     return RedirectResponse(url="/login?success=registered", status_code=302)
@@ -1858,46 +1806,13 @@ async def htmx_webhook_test(
     if not webhook:
         return HTMLResponse("<p>Webhook not found.</p>", status_code=404)
 
-    # Build test payload based on webhook type
-    if webhook.webhook_type == "discord":
-        opts_row = session.exec(
-            select(WebhookOptions).where(
-                WebhookOptions.webhook_endpoint_id == webhook_id
-            )
-        ).first()
-        opts = opts_row.options if opts_row else {}
-        color = opts.get("color", 16711680)
-        username = opts.get("username", "Rsync Viewer")
-        payload = {
-            "username": username,
-            "embeds": [
-                {
-                    "title": "Test Notification",
-                    "description": "This is a test notification from Rsync Viewer.",
-                    "color": color,
-                }
-            ],
-        }
-        if opts.get("avatar_url"):
-            payload["avatar_url"] = opts["avatar_url"]
-    else:
-        payload = {
-            "event": "test",
-            "message": "This is a test notification from Rsync Viewer.",
-        }
-
-    req_headers = {"Content-Type": "application/json"}
-    if webhook.headers:
-        req_headers.update(webhook.headers)
+    # Build test payload via shared service (AC-009)
+    opts = get_webhook_options(session, webhook_id)
+    payload = build_test_webhook_payload(webhook, opts)
+    req_headers = build_test_headers(webhook)
 
     try:
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                webhook.url,
-                json=payload,
-                headers=req_headers,
-                timeout=10.0,
-            )
+        response = await send_test_webhook(webhook, payload, req_headers)
         if 200 <= response.status_code < 300:
             return HTMLResponse(
                 '<span class="test-result test-success">Test sent successfully!</span>'

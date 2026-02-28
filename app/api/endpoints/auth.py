@@ -5,7 +5,7 @@ from uuid import UUID
 
 import jwt as pyjwt
 from fastapi import APIRouter, HTTPException, status
-from sqlmodel import func, select
+from sqlmodel import select
 
 from app.api.deps import SessionDep
 from app.config import get_settings
@@ -21,8 +21,6 @@ from app.schemas.user import (
     UserResponse,
 )
 from app.services.auth import (
-    ROLE_ADMIN,
-    ROLE_VIEWER,
     create_access_token,
     create_refresh_token,
     decode_token,
@@ -31,6 +29,7 @@ from app.services.auth import (
     verify_password,
     verify_token,
 )
+from app.services.registration import RegistrationError, register_user
 from app.utils import utc_now
 
 logger = logging.getLogger(__name__)
@@ -53,51 +52,18 @@ async def register(user_data: UserCreate, session: SessionDep) -> User:
             detail="Registration is currently disabled",
         )
 
-    # Check for duplicate username
-    existing_username = session.exec(
-        select(User).where(User.username == user_data.username)
-    ).first()
-    if existing_username:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Username already exists",
+    try:
+        return register_user(
+            session,
+            username=user_data.username,
+            email=user_data.email,
+            password=user_data.password,
         )
-
-    # Check for duplicate email
-    existing_email = session.exec(
-        select(User).where(User.email == user_data.email)
-    ).first()
-    if existing_email:
+    except RegistrationError as exc:
         raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Email already exists",
+            status_code=exc.status_code,
+            detail=str(exc),
         )
-
-    # Determine role: first user gets admin, subsequent get viewer
-    user_count = session.exec(select(func.count()).select_from(User)).one()
-    role = ROLE_ADMIN if user_count == 0 else ROLE_VIEWER
-
-    # Create user
-    user = User(
-        username=user_data.username,
-        email=user_data.email,
-        password_hash=hash_password(user_data.password),
-        role=role,
-    )
-    session.add(user)
-    session.commit()
-    session.refresh(user)
-
-    logger.info(
-        "User registered",
-        extra={
-            "user_id": str(user.id),
-            "username": user.username,
-            "role": user.role,
-        },
-    )
-
-    return user
 
 
 @router.post(
