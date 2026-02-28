@@ -257,10 +257,6 @@ async def _try_verify_api_key(
     return matched_key
 
 
-# Sentinel to distinguish "no API key header" from "invalid API key"
-_API_KEY_NOT_PROVIDED = object()
-
-
 async def verify_api_key_or_jwt(
     request: Request,
     session: Session = Depends(get_session),

@@ -12,6 +12,7 @@ from sqlmodel import Session, select
 
 from app.models.webhook import WebhookEndpoint
 from app.models.webhook_options import WebhookOptions
+from app.services.webhook_dispatcher import DEFAULT_DISCORD_COLOR
 
 
 def get_webhook_options(session: Session, webhook_id: UUID) -> dict:
@@ -33,7 +34,7 @@ def build_test_webhook_payload(
     - anything else → generic ``{"event": "test", ...}`` payload.
     """
     if webhook.webhook_type == "discord":
-        color = options.get("color", 16711680)
+        color = options.get("color", DEFAULT_DISCORD_COLOR)
         username = options.get("username", "Rsync Viewer")
         payload: dict[str, Any] = {
             "username": username,
