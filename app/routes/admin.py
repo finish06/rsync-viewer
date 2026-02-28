@@ -14,6 +14,10 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
+# Admin routes use OptionalUserDep + inline role guard (not AdminDep) because
+# the HTMX UI requires returning HTML error responses. AdminDep raises a raw
+# 403 JSON response that HTMX doesn't handle well in the browser context.
+
 
 @router.get("/admin/users")
 async def admin_users_page(

@@ -42,8 +42,7 @@ def register_user(
     Returns
     -------
     User
-        The newly created user (session is flushed but **not** committed
-        so the caller can decide transaction boundary).
+        The newly created, committed user.
 
     Raises
     ------
