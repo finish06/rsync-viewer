@@ -348,7 +348,7 @@ class TestOidcCallback:
         id_token = self._make_id_token_str(nonce=nonce)
 
         with patch(
-            "app.main.exchange_code_for_tokens",
+            "app.routes.auth.exchange_code_for_tokens",
             new_callable=AsyncMock,
             return_value={"id_token": id_token, "access_token": "at"},
         ):
@@ -376,7 +376,7 @@ class TestOidcCallback:
         )
 
         with patch(
-            "app.main.exchange_code_for_tokens",
+            "app.routes.auth.exchange_code_for_tokens",
             new_callable=AsyncMock,
             return_value={"id_token": id_token, "access_token": "at"},
         ):
@@ -417,7 +417,7 @@ class TestOidcCallback:
         )
 
         with patch(
-            "app.main.exchange_code_for_tokens",
+            "app.routes.auth.exchange_code_for_tokens",
             new_callable=AsyncMock,
             return_value={"id_token": id_token, "access_token": "at"},
         ):

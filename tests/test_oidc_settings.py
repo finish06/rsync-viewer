@@ -444,7 +444,7 @@ class TestOidcDiscovery:
         }
 
         with patch(
-            "app.main.fetch_discovery",
+            "app.routes.settings.fetch_discovery",
             new_callable=AsyncMock,
             return_value=mock_discovery,
         ):
@@ -465,7 +465,7 @@ class TestOidcDiscovery:
         admin = _create_user(db_session, "oidc-disc-fail", ROLE_ADMIN)
 
         with patch(
-            "app.main.fetch_discovery",
+            "app.routes.settings.fetch_discovery",
             new_callable=AsyncMock,
             side_effect=Exception("Could not reach issuer URL"),
         ):
