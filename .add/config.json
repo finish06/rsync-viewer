@@ -143,8 +143,8 @@
     "lastVersionTag": null
   },
   "planning": {
-    "current_milestone": "M7",
-    "current_cycle": null,
+    "current_milestone": "M10",
+    "current_cycle": "cycle-13",
     "wip_limit": 1,
     "parallel_agents": 1,
     "cycle_history": [

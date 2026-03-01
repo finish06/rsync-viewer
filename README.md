@@ -56,23 +56,6 @@ Once the application is running:
 
 > **Note:** There is no default username or password. Authentication is disabled until the first user registers, at which point it activates automatically.
 
-### Local Development
-
-```bash
-# Create virtual environment
-python3.13 -m venv .venv
-source .venv/bin/activate
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Start PostgreSQL (via Docker)
-docker-compose up -d db
-
-# Run the application
-uvicorn app.main:app --reload
-```
-
 ## Configuration
 
 Environment variables (see `.env.example`):
@@ -223,9 +206,90 @@ rsync-viewer/
 └── requirements.txt          # Python dependencies
 ```
 
-## Contributing
+## Development
 
-Contributions are welcome! This project uses conventional commits (`feat:`, `fix:`, `docs:`, etc.) and requires PR review before merging to main.
+### Environment Setup
+
+```bash
+# Clone and enter the repo
+git clone https://github.com/finish06/rsync-viewer.git
+cd rsync-viewer
+
+# Create virtual environment (Python 3.13)
+python3.13 -m venv .venv
+source .venv/bin/activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Copy environment file and edit as needed
+cp .env.example .env
+
+# Start PostgreSQL
+docker-compose up -d db
+
+# Run the application
+uvicorn app.main:app --reload
+```
+
+The app will be available at http://localhost:8000.
+
+### Code Quality
+
+Linting and formatting use [Ruff](https://docs.astral.sh/ruff/):
+
+```bash
+# Check for lint errors
+python3 -m ruff check .
+
+# Auto-format code
+python3 -m ruff format .
+
+# Check formatting without modifying files
+python3 -m ruff format --check .
+```
+
+### Running Tests
+
+```bash
+# Run the full test suite
+pytest
+
+# With coverage (80% threshold enforced in CI)
+pytest --cov=app
+
+# Run in Docker (matches CI environment)
+docker compose -f docker-compose.dev.yml run --rm test \
+  pytest tests/ --cov=app --cov-report=term-missing --cov-fail-under=80
+```
+
+### E2E Tests
+
+The end-to-end test spins up a full Docker stack (Postgres, hub API, SSH server, rsync client) and verifies the complete sync pipeline. Requires Docker.
+
+```bash
+./tests/e2e/run-e2e.sh
+```
+
+Run this before opening a pull request.
+
+### Pre-Commit Hook
+
+A pre-commit hook runs ruff format check, ruff lint, and pytest before every commit. Install it after cloning:
+
+```bash
+./scripts/install-hooks.sh
+```
+
+The hook activates the project venv automatically. If a check fails, the commit is blocked — fix the issue and try again.
+
+### Contributing
+
+1. Create a feature branch off `main` (`feature/`, `fix/`, `refactor/`, `test/`)
+2. Use [conventional commits](https://www.conventionalcommits.org/): `feat:`, `fix:`, `docs:`, `test:`, `refactor:`, `chore:`
+3. Ensure all tests pass and ruff reports no errors
+4. Run the e2e test (`./tests/e2e/run-e2e.sh`)
+5. Open a pull request against `main` — PR review is required before merge
 
 ## License
 

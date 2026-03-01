@@ -1,7 +1,7 @@
 # M10 — Rsync Client & Sync Management
 
 **Goal:** Provide decentralized rsync client containers that run at the edge and ship logs to the central Rsync Viewer hub. The viewer is always the observer, never the executor.
-**Status:** LATER
+**Status:** IN_PROGRESS
 **Appetite:** 1 week
 **Target Maturity:** beta → ga
 **Started:** —
@@ -64,7 +64,7 @@ See `docs/plans/rsync-client-compose-plan.md` for full implementation plan.
 
 | Cycle | Features | Status | Notes |
 |-------|----------|--------|-------|
-| — | — | — | Cycles to be planned when milestone starts |
+| cycle-13 | Rsync Client Docker Compose (SPECCED→VERIFIED) | PLANNED | Full completion in autonomous mode, ~3.5h |
 
 ## Retrospective
 
