@@ -1,0 +1,100 @@
+# E2E test stack: rsync-client → rsync-server (ssh) → hub API → postgres
+# Usage: docker compose -f tests/e2e/docker-compose.e2e.yml -p rsync-e2e up -d --build
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: rsync_viewer_e2e
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+
+  app:
+    build:
+      context: ../../
+      dockerfile: Dockerfile
+    ports:
+      - "18741:8000"
+    environment:
+      DATABASE_URL: postgresql+psycopg://postgres:postgres@db:5432/rsync_viewer_e2e
+      DEBUG: "true"
+      DEFAULT_API_KEY: e2e_test_key_abcdef123456
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  ssh-keygen:
+    image: alpine:3.21
+    command: >
+      sh -c "
+        if [ ! -f /ssh-keys/id_rsa ]; then
+          apk add --no-cache openssh-keygen &&
+          ssh-keygen -t rsa -b 2048 -f /ssh-keys/id_rsa -N '' -q &&
+          chmod 644 /ssh-keys/id_rsa.pub &&
+          chmod 600 /ssh-keys/id_rsa
+        fi
+      "
+    volumes:
+      - ssh-keys:/ssh-keys
+
+  rsync-server:
+    build:
+      context: ./rsync-server
+      dockerfile: Dockerfile
+    depends_on:
+      ssh-keygen:
+        condition: service_completed_successfully
+    volumes:
+      - ssh-keys:/ssh-keys:ro
+    healthcheck:
+      test: ["CMD", "pgrep", "sshd"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+
+  rsync-client:
+    build:
+      context: ../../examples/rsync-client
+      dockerfile: Dockerfile
+    environment:
+      REMOTE_HOST: rsync-server
+      REMOTE_USER: testuser
+      REMOTE_PATH: /test-data/
+      SSH_PORT: "22"
+      SYNC_MODE: pull
+      # RSYNC_ARGS intentionally omitted — sync.sh defaults to "-avz --stats".
+      # Setting it here breaks the upstream entrypoint's unquoted env export.
+      RSYNC_VIEWER_URL: http://app:8000
+      RSYNC_VIEWER_API_KEY: e2e_test_key_abcdef123456
+      RSYNC_SOURCE_NAME: e2e-test-source
+      RUN_ON_START: "true"
+      CRON_SCHEDULE: "0 0 31 2 *"
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - |
+        # Copy SSH key from shared volume before running real entrypoint
+        cp /ssh-keys/id_rsa /home/rsync/.ssh/id_rsa
+        chown rsync:rsync /home/rsync/.ssh/id_rsa
+        chmod 600 /home/rsync/.ssh/id_rsa
+        exec /scripts/entrypoint.sh
+    volumes:
+      - ssh-keys:/ssh-keys:ro
+    depends_on:
+      app:
+        condition: service_healthy
+      rsync-server:
+        condition: service_healthy
+
+volumes:
+  ssh-keys:
