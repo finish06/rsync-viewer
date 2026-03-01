@@ -1,0 +1,21 @@
+# Rsync Client — Pull Mode
+# Pulls files FROM a remote server INTO a local directory on a cron schedule.
+# Logs are automatically shipped to your Rsync Viewer instance.
+#
+# Usage:
+#   1. Copy .env.example to .env and fill in your values
+#   2. docker compose -f docker-compose.pull.yml up -d
+
+services:
+  rsync-client:
+    build: .
+    container_name: rsync-pull
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - SYNC_MODE=pull
+    volumes:
+      # Local directory where pulled files are stored
+      - ./data:/data
+      # SSH key for authenticating with the remote server
+      - ~/.ssh/id_rsa:/home/rsync/.ssh/id_rsa:ro
