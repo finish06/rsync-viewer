@@ -3,8 +3,9 @@
 **Version:** 0.1.0
 **Created:** 2026-02-22
 **PRD Reference:** docs/prd.md
-**Status:** Draft
-**Milestone:** M10 — Sync Management
+**Status:** Superseded
+**Milestone:** M10 — Rsync Client & Sync Management
+**Superseded By:** specs/rsync-client-compose.md
 
 ## 1. Overview
 

@@ -45,10 +45,10 @@ Rsync Log Viewer solves this by providing a centralized web dashboard that colle
 
 ### Future Scope (Post-MVP)
 
-- OIDC single sign-on authentication (M7)
-- Scheduled rsync execution and sync management (M10)
-- Multi-user authentication and role-based access (M9)
-- Prometheus metrics export and Grafana dashboards (M6)
+- OIDC single sign-on authentication (M7) — COMPLETE
+- Decentralized rsync client containers with automatic log shipping (M10)
+- Multi-user authentication and role-based access (M9) — COMPLETE
+- Prometheus metrics export and Grafana dashboards (M6) — COMPLETE
 
 ## 5. Architecture
 
@@ -101,15 +101,14 @@ Production deployment is to a self-hosted homelab server. No staging environment
 | M9: Multi-User | User accounts, JWT auth, role-based access control | beta → ga | COMPLETE | Registration/login, Admin/Operator/Viewer roles, per-user API keys |
 | M11: Polish & Infrastructure | UI consistency, SMTP email, codebase cleanup | beta | COMPLETE | SMTP settings UI, sync logs responsive, deprecation cleanup |
 | M7: OIDC Authentication | OpenID Connect single sign-on via PocketId or generic provider | beta → ga | COMPLETE | OIDC login, OIDC settings UI, auto-create/link users |
-| M10: Sync Management | On-demand sync triggering, cron scheduling, real-time progress | beta → ga | LATER | Run Now button, cron schedules, WebSocket progress, retry |
-| M12: Rsync Client Distribution | Drop-in Docker Compose examples for rsync with automatic log shipping | beta → ga | LATER | Alpine image <30MB, pull/push modes, cron schedule, README |
+| M10: Rsync Client & Sync Management | Decentralized rsync clients with automatic log shipping to the central viewer hub | beta → ga | LATER | Alpine client image <30MB, pull/push modes, cron schedule, README, client examples |
 
 ### Dependency Chain
 
 ```
 M3 (Reliability) → M4 (Analytics & Performance) → M6 (Observability)
                  ↘ M9 (Multi-User) → M11 (Polish & Infrastructure) → M7 (OIDC Authentication)
-                 ↘ M10 (Sync Management)
+                 ↘ M10 (Rsync Client & Sync Management)
 ```
 
 M3 is the gate to beta promotion. M4 and M6 can partially overlap. M7 (OIDC) depends on M9 (Multi-User) for the User model and JWT infrastructure. M10 is independent.
@@ -233,23 +232,24 @@ M3 is the gate to beta promotion. M4 and M6 can partially overlap. M7 (OIDC) dep
 - [x] Existing users auto-linked by email
 - [x] Local JWT session issued after OIDC login
 
-#### M10: Sync Management [LATER]
-**Goal:** Transform viewer into active sync management platform
-**Appetite:** 3 weeks
+#### M10: Rsync Client & Sync Management [LATER]
+**Goal:** Provide decentralized rsync client containers that run at the edge and ship logs to the central Rsync Viewer hub
+**Appetite:** 1 week
 **Target maturity:** beta → ga
-**Specs:** sync-scheduling
+**Specs:** rsync-client-compose
 **Features:**
-- Sync configuration CRUD (source, destination, flags, SSH key)
-- On-demand sync triggering with dry-run mode
-- Cron-based scheduling with builder UI
-- Real-time progress via WebSocket/SSE
-- Retry with exponential backoff, cancellation support
+- Custom Alpine Docker image (<30MB) with rsync + cron + curl
+- Pull mode (remote→local) and push mode (local→remote) compose examples
+- Cron-scheduled rsync with automatic log submission to viewer API
+- SSH key mounting, configurable rsync args, custom SSH port
+- Graceful handling of API downtime (no crash, retry next cycle)
+- README with setup, configuration, and troubleshooting
 **Success criteria:**
-- [ ] "Run Now" triggers sync and captures output as sync log
-- [ ] Cron schedules execute automatically
-- [ ] Real-time progress updates in UI
-- [ ] Failed syncs retry with backoff
-- [ ] No command injection vulnerabilities
+- [ ] Alpine client image builds and is <30MB
+- [ ] Pull and push compose examples work end-to-end
+- [ ] Logs appear in the Rsync Viewer dashboard automatically
+- [ ] Graceful API failure handling (no crash, retry next cycle)
+- [ ] README covers all usage scenarios
 
 #### M9: Multi-User [COMPLETE]
 **Goal:** Multi-user support with authentication and role-based access
@@ -275,7 +275,7 @@ M3 is the gate to beta promotion. M4 and M6 can partially overlap. M7 (OIDC) dep
 |------|-----|----------------|-------------|
 | poc | alpha | M1 | CI/CD pipeline, 80% coverage, PRD exists, webhook MVP |
 | alpha | beta | M3 | Structured logging, error handling, security hardening, all specs written |
-| beta | ga | M10 + M9 | 30+ days stability, comprehensive monitoring, multi-user, sync management |
+| beta | ga | M10 + M9 | 30+ days stability, comprehensive monitoring, multi-user, rsync client distribution |
 
 ## 7. Key Features
 

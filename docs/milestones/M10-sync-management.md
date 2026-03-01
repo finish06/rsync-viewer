@@ -1,78 +1,64 @@
-# M10 — Sync Management
+# M10 — Rsync Client & Sync Management
 
-**Goal:** Transform rsync-viewer from a passive log viewer into an active sync management platform with on-demand triggering, cron scheduling, and real-time progress tracking
+**Goal:** Provide decentralized rsync client containers that run at the edge and ship logs to the central Rsync Viewer hub. The viewer is always the observer, never the executor.
 **Status:** LATER
-**Appetite:** 3 weeks
+**Appetite:** 1 week
 **Target Maturity:** beta → ga
 **Started:** —
 **Completed:** —
 
+## Architecture
+
+Rsync Viewer follows a **hub-and-spoke model**:
+- **Hub (this app):** Receives logs via API, parses statistics, visualizes trends, sends alerts
+- **Spokes (rsync clients):** Lightweight Docker containers running rsync on a cron schedule at the edge, shipping output to the hub
+
+The viewer never runs rsync directly. Users deploy client containers alongside their data, configure the remote host and viewer URL, and logs flow in automatically.
+
 ## Success Criteria
 
-- [ ] "Run Now" button triggers an rsync sync for a configured source
-- [ ] Sync configurations (source, destination, flags, SSH key) stored in DB with full CRUD UI
-- [ ] Cron-style schedules with enable/disable toggle and next-run-time display
-- [ ] Scheduled syncs execute automatically at configured times
-- [ ] Real-time sync progress via WebSocket or SSE
-- [ ] Running syncs can be cancelled from the UI
-- [ ] Failed syncs retry with configurable count and exponential backoff
-- [ ] Sync output captured and stored as a regular sync log entry
-- [ ] Command injection prevention on all rsync arguments
+- [ ] Custom Alpine Docker image (<30MB) with rsync + cron + curl
+- [ ] Pull mode and push mode compose examples work end-to-end
+- [ ] Logs appear in the Rsync Viewer dashboard automatically after sync
+- [ ] README covers setup, configuration, and troubleshooting
+- [ ] Graceful handling of API downtime (no crash, retry next cycle)
 
 ## Hill Chart
 
 ```
-Sync Configurations    ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  SHAPED
-On-Demand Triggering   ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  SHAPED
-Cron Scheduling        ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  SHAPED
-Real-Time Progress     ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  SHAPED
-Retry & Cancellation   ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  SHAPED
+Rsync Client Docker Compose  ████████████████████░░░░░░░░░░░░░░░░  SPECCED
 ```
 
 ## Features
 
 | Feature | Spec | Position | Notes |
 |---------|------|----------|-------|
-| Sync Configuration CRUD | specs/sync-scheduling.md | SHAPED | DB models, API, UI for managing sync configs |
-| On-Demand Sync Trigger | specs/sync-scheduling.md | SHAPED | "Run Now" button, dry-run mode |
-| Cron Scheduling | specs/sync-scheduling.md | SHAPED | APScheduler, cron expression builder, next-run display |
-| Real-Time Progress | specs/sync-scheduling.md | SHAPED | WebSocket/SSE for live status updates |
-| Retry & Cancellation | specs/sync-scheduling.md | SHAPED | Exponential backoff, process termination |
-| Currently Running View | specs/sync-scheduling.md | SHAPED | Active sync dashboard with cancel controls |
-| Deprecation Cleanup | specs/deprecation-cleanup.md | SHAPED | Remove legacy code and deprecated patterns |
-
-## Pre-Milestone Actions
-
-These process improvements should be completed before cycle planning begins:
-
-1. **Promote to Beta maturity** — Evidence score 10/10 (19 specs, 91% coverage, CI/CD, PR workflow, conventional commits, 8 release tags). Run `/add:retro` to formally promote. Beta activates TDD enforcement, agent coordination, and environment-awareness rules.
-2. **Fix CI Docker mount drift** — Switch `docker-compose.dev.yml` to bind-mount the entire project root (or add a pre-commit check) so new top-level directories don't silently break CI tests. This has caused failures twice (`.env.example` and `docs/`/`grafana/`).
+| Rsync Client Docker Compose | specs/rsync-client-compose.md | SPECCED | Alpine image, pull/push modes, cron schedule, log shipping |
 
 ## Dependencies
 
-- M3 must be complete (error handling for sync failures, logging for execution tracking, security for command injection prevention)
-- M4 recommended (performance optimizations help with concurrent sync tracking)
-- Failure detection (M2, complete) provides the foundation for failed sync alerting
-- New infrastructure dependency: APScheduler or Celery for schedule execution
-- New infrastructure dependency: WebSocket support for real-time updates
+- M9 (Multi-User) — COMPLETE (API key auth required for log submission)
+- Existing `POST /api/v1/sync-logs` endpoint — COMPLETE
 
-## Recommended Implementation Order
-
-1. Sync Configuration models + CRUD API + UI (data foundation)
-2. On-Demand Sync Trigger (subprocess management, output capture)
-3. Retry & Cancellation (extend trigger with resilience)
-4. Cron Scheduling (APScheduler integration, cron builder UI)
-5. Real-Time Progress (WebSocket/SSE, running syncs dashboard)
-
-## Risk Assessment
+## Risks
 
 | Risk | Probability | Impact | Mitigation |
-|------|-------------|--------|------------|
-| Command injection via rsync arguments | High | Critical | Strict argument validation, no shell expansion, allowlist flags |
-| SSH key access security | Medium | High | Document required permissions, validate paths, no key content in DB |
-| Orphaned processes on app restart | Medium | Medium | Detect orphans on startup, mark as "interrupted" |
-| Scheduler reliability (missed jobs) | Low | Medium | APScheduler with persistent job store, catch-up on missed runs |
-| WebSocket connection management at scale | Low | Low | Homelab scale is small; SSE as simpler fallback |
+|------|-------------|--------|-----------|
+| Alpine cron daemon quirks | Medium | Medium | Use busybox crond in foreground mode |
+| JSON escaping of rsync output | Medium | High | Use jq for safe JSON construction |
+
+## Superseded
+
+This milestone merges the original M10 (Sync Management) and M12 (Rsync Client Distribution). The original M10 envisioned the viewer running rsync directly — that approach was replaced with the decentralized client model. Key changes:
+- Dropped: APScheduler, subprocess management, WebSocket progress, command injection prevention (viewer doesn't execute rsync)
+- Kept: Cron scheduling (moved to client container), log capture and submission
+- Added: Client Docker image, compose examples, SSH key mounting, graceful API failure
+
+The old `specs/sync-scheduling.md` is superseded by `specs/rsync-client-compose.md`.
+
+## Plan
+
+See `docs/plans/rsync-client-compose-plan.md` for full implementation plan.
 
 ## Cycles
 
