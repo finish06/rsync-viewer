@@ -34,6 +34,7 @@ from app.middleware import (
     SecurityHeadersMiddleware,
 )
 from app.services.retention import retention_background_task
+from app.services.synthetic_check import synthetic_check_background_task
 from app.services.sync_filters import InvalidDateError
 
 # Model imports — ensure SQLModel tables are created
@@ -113,16 +114,31 @@ async def lifespan(app: FastAPI):
             )
         )
 
+    # Start synthetic monitoring background task (AC-001, AC-012)
+    synthetic_task = None
+    if settings_cfg.synthetic_check_enabled:
+        synthetic_task = asyncio.create_task(
+            synthetic_check_background_task(
+                enabled=True,
+                interval_seconds=settings_cfg.synthetic_check_interval_seconds,
+                shutdown_event=shutdown_event,
+                base_url="http://127.0.0.1:8000",
+                api_key=settings_cfg.default_api_key,
+                engine=engine,
+            )
+        )
+
     yield
 
-    # Shutdown retention task
+    # Shutdown background tasks
     shutdown_event.set()
-    if retention_task is not None:
-        retention_task.cancel()
-        try:
-            await retention_task
-        except asyncio.CancelledError:
-            pass
+    for task in (retention_task, synthetic_task):
+        if task is not None:
+            task.cancel()
+            try:
+                await task
+            except asyncio.CancelledError:
+                pass
 
 
 app = FastAPI(
@@ -294,5 +310,18 @@ async def metrics_endpoint():
 
 @app.get("/health")
 async def health():
-    """Health check endpoint"""
-    return {"status": "ok"}
+    """Health check endpoint (AC-009: includes synthetic check status)."""
+    from app.services.synthetic_check import get_state
+
+    state = get_state()
+    synthetic_check = None
+    if state.enabled:
+        synthetic_check = {
+            "status": state.last_status,
+            "last_check_at": (
+                state.last_check_at.isoformat() if state.last_check_at else None
+            ),
+            "last_latency_ms": state.last_latency_ms,
+        }
+
+    return {"status": "ok", "synthetic_check": synthetic_check}
