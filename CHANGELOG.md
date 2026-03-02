@@ -7,6 +7,44 @@ and this project adheres to [Conventional Commits](https://www.conventionalcommi
 
 ## [Unreleased]
 
+## [1.11.0] - 2026-03-01
+
+### Added
+
+- **Alembic database migrations:**
+  - Replace `SQLModel.metadata.create_all()` with versioned Alembic migrations
+  - Baseline migration covering all 12 tables with indexes and constraints
+  - Auto-migrate on container startup via `entrypoint.sh`
+  - Dockerfile updated to include `alembic.ini` and `alembic/` directory
+- **Rsync client Docker Compose examples (M10):**
+  - Pre-built rsync client container with cron scheduling and SSH key support
+  - Docker Compose examples for easy deployment alongside the hub
+- **E2E test pipeline:**
+  - Full integration test: rsync client → SSH transfer → POST to hub → verify parsed log
+  - 5-service Docker Compose stack (db, app, ssh-keygen, rsync-server, rsync-client)
+- Grafana dashboard datasource variable (`DS_PROMETHEUS`) on all panels and queries
+- Project icon — neon wireframe gear with infinity symbol
+
+### Changed
+
+- **Codebase hardening refactor:**
+  - Split `main.py` route handlers into domain-specific modules (`app/routes/`)
+  - Extract shared services: sync filters, registration, webhook test, JWT decode, API key lookup
+  - Phase 1 quick wins: dead code removal, import cleanup, CSRF consolidation
+- 73 new unit tests for extracted services and helpers
+- Coverage tests for deps, email, notification schema, and middleware
+
+### Fixed
+
+- PR #21 review findings: registration docstring, dead sentinel removal, Discord color constant, admin guard comment
+- Mypy type errors in route modules and sync_filters
+
+### Documentation
+
+- Comprehensive Development section added to README
+- Alembic migrations and user preferences specs and plans
+- M10/M12 merged into unified rsync client milestone spec
+
 ## [1.10.0] - 2026-02-28
 
 ### Added
