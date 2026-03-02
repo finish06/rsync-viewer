@@ -55,6 +55,10 @@ Thumbs.db
 # Local development
 TODO/
 
+# One-off migration scripts (contain credentials)
+scripts/migrate_api_keys.py
+scripts/full_schema_sync.py
+
 # ADD — ephemeral artifacts (don't commit)
 .add/away-logs/
 tests/screenshots/errors/
