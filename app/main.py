@@ -11,8 +11,6 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from slowapi.util import get_remote_address
 from starlette.responses import Response as StarletteResponse
-from sqlmodel import SQLModel
-
 from app.config import get_settings
 from app.database import engine
 from app.api.endpoints import (
@@ -96,8 +94,8 @@ limiter = Limiter(
 async def lifespan(app: FastAPI):
     # Configure logging on startup
     setup_logging(log_level=settings_cfg.log_level, log_format=settings_cfg.log_format)
-    # Create tables on startup
-    SQLModel.metadata.create_all(engine)
+    # Database migrations are handled by entrypoint.sh (alembic upgrade head)
+    # before the application starts. No create_all() needed.
 
     # Set Prometheus app info
     set_app_info(version=settings_cfg.app_version)
