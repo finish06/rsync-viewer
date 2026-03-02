@@ -5,4 +5,8 @@ if [ -z "$ENCRYPTION_KEY" ] && [ -z "$SMTP_ENCRYPTION_KEY" ]; then
     echo "INFO: Auto-generated ENCRYPTION_KEY (set explicitly in production for persistence)"
 fi
 
+# Run database migrations
+echo "INFO: Running database migrations..."
+python3 -m alembic upgrade head
+
 exec "$@"
