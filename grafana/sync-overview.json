@@ -15,9 +15,17 @@
       "id": 1,
       "title": "Sync Frequency (per source)",
       "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
       "targets": [
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
           "expr": "rate(rsync_syncs_total[5m])",
           "legendFormat": "{{source}} — {{status}}"
         }
@@ -32,17 +40,33 @@
       "id": 2,
       "title": "Sync Duration (p50 / p95 / p99)",
       "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
       "targets": [
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
           "expr": "histogram_quantile(0.50, rate(rsync_sync_duration_seconds_bucket[5m]))",
           "legendFormat": "p50"
         },
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
           "expr": "histogram_quantile(0.95, rate(rsync_sync_duration_seconds_bucket[5m]))",
           "legendFormat": "p95"
         },
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
           "expr": "histogram_quantile(0.99, rate(rsync_sync_duration_seconds_bucket[5m]))",
           "legendFormat": "p99"
         }
@@ -57,9 +81,17 @@
       "id": 3,
       "title": "Total Syncs by Source",
       "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
       "gridPos": { "h": 6, "w": 12, "x": 0, "y": 8 },
       "targets": [
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
           "expr": "rsync_syncs_total",
           "legendFormat": "{{source}} — {{status}}"
         }
@@ -69,9 +101,17 @@
       "id": 4,
       "title": "Bytes Transferred Rate",
       "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
       "targets": [
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
           "expr": "rate(rsync_bytes_transferred_total[5m])",
           "legendFormat": "{{source}}"
         }
@@ -86,9 +126,17 @@
       "id": 5,
       "title": "Files Transferred Rate",
       "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
       "targets": [
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
           "expr": "rate(rsync_files_transferred_total[5m])",
           "legendFormat": "{{source}}"
         }
@@ -103,9 +151,17 @@
       "id": 6,
       "title": "Sync Failure Rate",
       "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
       "targets": [
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
           "expr": "rate(rsync_syncs_total{status=\"failed\"}[5m])",
           "legendFormat": "{{source}} failures"
         }
@@ -120,11 +176,27 @@
   "templating": {
     "list": [
       {
+        "name": "DS_PROMETHEUS",
+        "type": "datasource",
+        "query": "prometheus",
+        "current": {},
+        "hide": 0,
+        "includeAll": false,
+        "multi": false,
+        "regex": "",
+        "refresh": 1
+      },
+      {
         "name": "source",
         "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
         "query": "label_values(rsync_syncs_total, source)",
         "multi": true,
-        "includeAll": true
+        "includeAll": true,
+        "refresh": 2
       }
     ]
   },
