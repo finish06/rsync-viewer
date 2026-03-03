@@ -1,0 +1,95 @@
+<div class="settings-section">
+    <div class="settings-section-header">
+        <h2>Rsync Client Setup</h2>
+    </div>
+    <div class="settings-section-body">
+        <p style="font-size: 0.85rem; opacity: 0.7; margin: 0 0 1rem 0;">
+            Deploy an rsync client container that runs rsync transfers on a schedule and
+            automatically reports results to this hub. Fill in the details below and click
+            "Generate Compose" to get a ready-to-use Docker Compose snippet with a dedicated API key.
+        </p>
+
+        <form hx-post="/htmx/monitoring-setup/generate"
+              hx-target="#monitoring-setup-container"
+              hx-swap="innerHTML">
+
+            <div class="filter-group" style="margin-bottom: 1rem;">
+                <label for="mon-source-name">Source Name <span style="color: var(--danger-color, #ef4444);">*</span></label>
+                <input type="text" id="mon-source-name" name="source_name"
+                       placeholder="e.g. my-backup-server"
+                       value="{{ form_data.source_name if form_data else '' }}">
+                {% if errors and errors.source_name %}
+                <div class="auth-error" style="margin-top: 0.25rem; font-size: 0.8rem;">{{ errors.source_name }}</div>
+                {% endif %}
+            </div>
+
+            <div class="filter-group" style="margin-bottom: 1rem;">
+                <label for="mon-rsync-source">Rsync Source <span style="color: var(--danger-color, #ef4444);">*</span></label>
+                <input type="text" id="mon-rsync-source" name="rsync_source"
+                       placeholder="user@host:/path/to/files"
+                       value="{{ form_data.rsync_source if form_data else '' }}">
+                {% if errors and errors.rsync_source %}
+                <div class="auth-error" style="margin-top: 0.25rem; font-size: 0.8rem;">{{ errors.rsync_source }}</div>
+                {% endif %}
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                <div class="filter-group">
+                    <label for="mon-cron">Cron Schedule</label>
+                    <input type="text" id="mon-cron" name="cron_schedule"
+                           value="{{ form_data.cron_schedule if form_data else '0 */6 * * *' }}">
+                </div>
+                <div class="filter-group">
+                    <label for="mon-ssh-key">SSH Key Path</label>
+                    <input type="text" id="mon-ssh-key" name="ssh_key_path"
+                           value="{{ form_data.ssh_key_path if form_data else '~/.ssh/id_rsa' }}">
+                </div>
+            </div>
+
+            <div class="filter-group" style="margin-bottom: 1rem;">
+                <label for="mon-rsync-args">Rsync Extra Options</label>
+                <input type="text" id="mon-rsync-args" name="rsync_args"
+                       value="{{ form_data.rsync_args if form_data else '-avz --stats' }}">
+            </div>
+
+            <div class="filter-group" style="margin-bottom: 1rem;">
+                <label>Sync Mode</label>
+                <input type="hidden" name="sync_mode" id="mon-sync-mode"
+                       value="{{ form_data.sync_mode if form_data and form_data.sync_mode == 'push' else 'pull' }}">
+                <div class="theme-options" style="justify-content: flex-start;">
+                    <button class="theme-option sync-mode-btn{% if not form_data or form_data.sync_mode != 'push' %} active{% endif %}" style="flex: none; min-width: 6rem;" data-sync-mode="pull" type="button">Pull</button>
+                    <button class="theme-option sync-mode-btn{% if form_data and form_data.sync_mode == 'push' %} active{% endif %}" style="flex: none; min-width: 6rem;" data-sync-mode="push" type="button">Push</button>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Generate Compose</button>
+        </form>
+    </div>
+</div>
+<script>
+(function() {
+    var btns = document.querySelectorAll('.sync-mode-btn');
+    var hidden = document.getElementById('mon-sync-mode');
+    btns.forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            btns.forEach(function(b) { b.classList.remove('active'); });
+            this.classList.add('active');
+            hidden.value = this.getAttribute('data-sync-mode');
+        });
+    });
+})();
+</script>
+
+<div class="settings-section">
+    <div class="settings-section-header">
+        <h2>Synthetic Health Check</h2>
+    </div>
+    <div class="settings-section-body">
+        <div id="synthetic-settings-container"
+             hx-get="/htmx/synthetic-settings"
+             hx-trigger="load"
+             hx-swap="innerHTML">
+            <div class="loading">Loading synthetic monitoring settings...</div>
+        </div>
+    </div>
+</div>

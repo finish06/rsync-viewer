@@ -1,0 +1,45 @@
+<div class="settings-section">
+    <div class="settings-section-header settings-section-header-flex">
+        <h2>Rsync Client Setup</h2>
+        <button class="theme-option"
+                hx-get="/htmx/monitoring-setup"
+                hx-target="#monitoring-setup-container"
+                hx-swap="innerHTML"
+                type="button">
+            New Client
+        </button>
+    </div>
+    <div class="settings-section-body">
+        <div class="settings-success" style="margin-bottom: 1rem;">
+            API key <strong>{{ key_name }}</strong> created and Compose snippet generated.
+        </div>
+
+        <p style="font-size: 0.85rem; opacity: 0.7; margin: 0 0 0.5rem 0;">
+            Copy the snippet below into your <code>docker-compose.yml</code>.
+            The API key is shown only once — save it now.
+        </p>
+
+        <div style="position: relative;">
+            <pre style="background: var(--table-head-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 1rem; overflow-x: auto; font-size: 0.8rem; line-height: 1.5;"><code>{{ snippet }}</code></pre>
+            <button type="button" class="theme-option"
+                    style="position: absolute; top: 0.5rem; right: 0.5rem; flex: none; padding: 0.25rem 0.75rem; font-size: 0.75rem;"
+                    onclick="navigator.clipboard.writeText(this.closest('div').querySelector('code').textContent).then(() => { this.textContent = 'Copied!'; setTimeout(() => this.textContent = 'Copy', 2000); })">
+                Copy
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="settings-section">
+    <div class="settings-section-header">
+        <h2>Synthetic Health Check</h2>
+    </div>
+    <div class="settings-section-body">
+        <div id="synthetic-settings-container"
+             hx-get="/htmx/synthetic-settings"
+             hx-trigger="load"
+             hx-swap="innerHTML">
+            <div class="loading">Loading synthetic monitoring settings...</div>
+        </div>
+    </div>
+</div>

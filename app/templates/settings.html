@@ -6,127 +6,148 @@
 <div class="settings-page">
     <h1 style="font-size: 1.5rem; font-weight: 600; margin-bottom: 1.5rem;">Settings</h1>
 
-    <div class="settings-grid">
-        <div class="settings-column">
-            <div class="settings-section">
-                <div class="settings-section-header">
-                    <h2>Appearance</h2>
+    <div class="dashboard-tabs">
+        <button class="dashboard-tab active" data-tab="general" type="button">General</button>
+        {% if user and user.role == 'admin' %}
+        <button class="dashboard-tab" data-tab="monitoring" type="button">Monitoring</button>
+        {% endif %}
+        {% if changelog_available %}
+        <button class="dashboard-tab" data-tab="changelog" type="button">Changelog</button>
+        {% endif %}
+    </div>
+
+    <div class="settings-tab-content" data-tab-content="general">
+        <div class="settings-grid">
+            <div class="settings-column">
+                <div class="settings-section">
+                    <div class="settings-section-header">
+                        <h2>Appearance</h2>
+                    </div>
+                    <div class="settings-section-body">
+                        <label class="settings-label">Theme</label>
+                        <div class="theme-options">
+                            <button class="theme-option" data-theme-value="light" type="button">Light</button>
+                            <button class="theme-option" data-theme-value="dark" type="button">Dark</button>
+                            <button class="theme-option" data-theme-value="system" type="button">System</button>
+                        </div>
+                    </div>
                 </div>
-                <div class="settings-section-body">
-                    <label class="settings-label">Theme</label>
-                    <div class="theme-options">
-                        <button class="theme-option" data-theme-value="light" type="button">Light</button>
-                        <button class="theme-option" data-theme-value="dark" type="button">Dark</button>
-                        <button class="theme-option" data-theme-value="system" type="button">System</button>
+
+                <div class="settings-section">
+                    <div class="settings-section-header settings-section-header-flex">
+                        <h2>API Keys</h2>
+                        <button class="theme-option"
+                                hx-get="/htmx/api-keys/add"
+                                hx-target="#modal-container"
+                                hx-swap="innerHTML"
+                                type="button">
+                            Generate Key
+                        </button>
+                    </div>
+                    <div class="settings-section-body">
+                        <div id="api-keys-list"
+                             hx-get="/htmx/api-keys"
+                             hx-trigger="load"
+                             hx-swap="innerHTML">
+                            <div class="loading">Loading API keys...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="settings-section">
+                    <div class="settings-section-header settings-section-header-flex">
+                        <h2>Webhooks</h2>
+                        <button class="theme-option"
+                                hx-get="/htmx/webhooks/add"
+                                hx-target="#modal-container"
+                                hx-swap="innerHTML"
+                                type="button">
+                            Add Webhook
+                        </button>
+                    </div>
+                    <div class="settings-section-body">
+                        <div id="webhooks-list"
+                             hx-get="/htmx/webhooks"
+                             hx-trigger="load"
+                             hx-swap="innerHTML">
+                            <div class="loading">Loading webhooks...</div>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div class="settings-section">
-                <div class="settings-section-header settings-section-header-flex">
-                    <h2>API Keys</h2>
-                    <button class="theme-option"
-                            hx-get="/htmx/api-keys/add"
-                            hx-target="#modal-container"
-                            hx-swap="innerHTML"
-                            type="button">
-                        Generate Key
-                    </button>
-                </div>
-                <div class="settings-section-body">
-                    <div id="api-keys-list"
-                         hx-get="/htmx/api-keys"
-                         hx-trigger="load"
-                         hx-swap="innerHTML">
-                        <div class="loading">Loading API keys...</div>
+            <div class="settings-column">
+                {% if user and user.role == 'admin' %}
+                <div class="settings-section">
+                    <div class="settings-section-header">
+                        <h2>Authentication</h2>
+                    </div>
+                    <div class="settings-section-body">
+                        <div id="oidc-settings-container"
+                             hx-get="/htmx/settings/auth"
+                             hx-trigger="load"
+                             hx-swap="innerHTML">
+                            <div class="loading">Loading authentication settings...</div>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="settings-section">
-                <div class="settings-section-header settings-section-header-flex">
-                    <h2>Webhooks</h2>
-                    <button class="theme-option"
-                            hx-get="/htmx/webhooks/add"
-                            hx-target="#modal-container"
-                            hx-swap="innerHTML"
-                            type="button">
-                        Add Webhook
-                    </button>
-                </div>
-                <div class="settings-section-body">
-                    <div id="webhooks-list"
-                         hx-get="/htmx/webhooks"
-                         hx-trigger="load"
-                         hx-swap="innerHTML">
-                        <div class="loading">Loading webhooks...</div>
+                <div class="settings-section">
+                    <div class="settings-section-header">
+                        <h2>Email (SMTP)</h2>
+                    </div>
+                    <div class="settings-section-body">
+                        <div id="smtp-settings-container"
+                             hx-get="/htmx/smtp-settings"
+                             hx-trigger="load"
+                             hx-swap="innerHTML">
+                            <div class="loading">Loading SMTP settings...</div>
+                        </div>
                     </div>
                 </div>
+                {% endif %}
             </div>
-        </div>
-
-        <div class="settings-column">
-            {% if user and user.role == 'admin' %}
-            <div class="settings-section">
-                <div class="settings-section-header">
-                    <h2>Authentication</h2>
-                </div>
-                <div class="settings-section-body">
-                    <div id="oidc-settings-container"
-                         hx-get="/htmx/settings/auth"
-                         hx-trigger="load"
-                         hx-swap="innerHTML">
-                        <div class="loading">Loading authentication settings...</div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="settings-section">
-                <div class="settings-section-header">
-                    <h2>Email (SMTP)</h2>
-                </div>
-                <div class="settings-section-body">
-                    <div id="smtp-settings-container"
-                         hx-get="/htmx/smtp-settings"
-                         hx-trigger="load"
-                         hx-swap="innerHTML">
-                        <div class="loading">Loading SMTP settings...</div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="settings-section">
-                <div class="settings-section-header">
-                    <h2>Synthetic Monitoring</h2>
-                </div>
-                <div class="settings-section-body">
-                    <div id="synthetic-settings-container"
-                         hx-get="/htmx/synthetic-settings"
-                         hx-trigger="load"
-                         hx-swap="innerHTML">
-                        <div class="loading">Loading synthetic monitoring settings...</div>
-                    </div>
-                </div>
-            </div>
-            {% endif %}
-
-            {% if changelog_available %}
-            <div class="settings-section" id="changelog-tab">
-                <div class="settings-section-header">
-                    <h2>Changelog</h2>
-                </div>
-                <div class="settings-section-body">
-                    <div id="changelog-list"
-                         hx-get="/htmx/changelog"
-                         hx-trigger="load"
-                         hx-swap="innerHTML">
-                        <div class="loading">Loading changelog...</div>
-                    </div>
-                </div>
-            </div>
-            {% endif %}
         </div>
     </div>
+
+    {% if user and user.role == 'admin' %}
+    <div class="settings-tab-content" data-tab-content="monitoring" style="display: none;">
+        <div id="monitoring-setup-container"
+             hx-get="/htmx/monitoring-setup"
+             hx-trigger="load"
+             hx-swap="innerHTML">
+            <div class="loading">Loading monitoring setup...</div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if changelog_available %}
+    <div class="settings-tab-content" data-tab-content="changelog" style="display: none;">
+        <div id="changelog-list"
+             hx-get="/htmx/changelog"
+             hx-trigger="load"
+             hx-swap="innerHTML">
+            <div class="loading">Loading changelog...</div>
+        </div>
+    </div>
+    {% endif %}
 </div>
+<script>
+(function() {
+    var tabs = document.querySelectorAll('.dashboard-tab[data-tab]');
+    tabs.forEach(function(tab) {
+        tab.addEventListener('click', function() {
+            var target = this.getAttribute('data-tab');
+            tabs.forEach(function(t) { t.classList.remove('active'); });
+            this.classList.add('active');
+            document.querySelectorAll('.settings-tab-content').forEach(function(c) {
+                c.style.display = 'none';
+            });
+            var content = document.querySelector('[data-tab-content="' + target + '"]');
+            if (content) content.style.display = 'block';
+        });
+    });
+})();
+</script>
 <script src="/static/js/changelog.js"></script>
 {% endblock %}
