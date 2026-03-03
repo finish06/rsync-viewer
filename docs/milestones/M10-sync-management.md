@@ -1,11 +1,11 @@
 # M10 — Rsync Client & Sync Management
 
 **Goal:** Provide decentralized rsync client containers that run at the edge and ship logs to the central Rsync Viewer hub. The viewer is always the observer, never the executor.
-**Status:** IN_PROGRESS
+**Status:** COMPLETE
 **Appetite:** 1 week
 **Target Maturity:** beta → ga
-**Started:** —
-**Completed:** —
+**Started:** 2026-02-28
+**Completed:** 2026-03-03
 
 ## Architecture
 
@@ -17,23 +17,29 @@ The viewer never runs rsync directly. Users deploy client containers alongside t
 
 ## Success Criteria
 
-- [ ] Custom Alpine Docker image (<30MB) with rsync + cron + curl
-- [ ] Pull mode and push mode compose examples work end-to-end
-- [ ] Logs appear in the Rsync Viewer dashboard automatically after sync
-- [ ] README covers setup, configuration, and troubleshooting
-- [ ] Graceful handling of API downtime (no crash, retry next cycle)
+- [x] Custom Alpine Docker image (<30MB) with rsync + cron + curl
+- [x] Pull mode and push mode compose examples work end-to-end
+- [x] Logs appear in the Rsync Viewer dashboard automatically after sync
+- [x] README covers setup, configuration, and troubleshooting
+- [x] Graceful handling of API downtime (no crash, retry next cycle)
 
 ## Hill Chart
 
 ```
-Rsync Client Docker Compose  ████████████████████░░░░░░░░░░░░░░░░  SPECCED
+Rsync Client Docker Compose  ████████████████████████████████████  DONE
+Synthetic Monitoring         ████████████████████████████████████  DONE
+Monitoring Setup Wizard      ████████████████████████████████████  DONE
+Alembic Migrations           ████████████████████████████████████  DONE
 ```
 
 ## Features
 
 | Feature | Spec | Position | Notes |
 |---------|------|----------|-------|
-| Rsync Client Docker Compose | specs/rsync-client-compose.md | SPECCED | Alpine image, pull/push modes, cron schedule, log shipping |
+| Rsync Client Docker Compose | specs/rsync-client-compose.md | DONE | Alpine image, pull/push modes, cron schedule, log shipping |
+| Synthetic Monitoring | specs/synthetic-monitoring.md | DONE | Background health check, Prometheus metrics, webhook alerts |
+| Monitoring Setup Wizard | specs/monitoring-setup-wizard.md | DONE | Settings UI compose generator, auto-provisioned API keys |
+| Alembic Migrations | specs/alembic-migrations.md | DONE | Versioned schema migrations, auto-upgrade on startup |
 
 ## Dependencies
 
@@ -64,7 +70,7 @@ See `docs/plans/rsync-client-compose-plan.md` for full implementation plan.
 
 | Cycle | Features | Status | Notes |
 |-------|----------|--------|-------|
-| cycle-13 | Rsync Client Docker Compose (SPECCED→VERIFIED) | PLANNED | Full completion in autonomous mode, ~3.5h |
+| cycle-13 | Rsync Client Docker Compose (SPECCED→VERIFIED) | COMPLETE | Delivered in v1.11.0 |
 
 ## Retrospective
 

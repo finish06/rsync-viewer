@@ -8,10 +8,10 @@
     "author": "finish06"
   },
   "maturity": {
-    "level": "beta",
-    "promoted_from": "alpha",
-    "promoted_date": "2026-02-24",
-    "next_promotion_criteria": "80%+ coverage sustained, protected branches enforced, 3+ environments, all quality gates blocking, 30+ days production stability, SLAs defined"
+    "level": "ga",
+    "promoted_from": "beta",
+    "promoted_date": "2026-03-03",
+    "next_promotion_criteria": "N/A — GA is the final maturity level"
   },
   "architecture": {
     "languages": [
@@ -138,12 +138,20 @@
     "nudged": false,
     "lastDetected": null
   },
+  "sla": {
+    "availability_percent": 99,
+    "api_response_p95_ms": 500,
+    "api_response_p99_ms": 2000,
+    "ingestion_success_rate_percent": 99.9,
+    "webhook_delivery_latency_seconds": 60,
+    "note": "Homelab best-effort targets — not contractual SLAs"
+  },
   "changelog": {
     "lastProcessedCommit": "a76a3f1",
     "lastVersionTag": null
   },
   "planning": {
-    "current_milestone": "M10",
+    "current_milestone": "M-GA",
     "current_cycle": "cycle-13",
     "wip_limit": 1,
     "parallel_agents": 1,
