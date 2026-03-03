@@ -132,6 +132,8 @@ async def run_synthetic_check(
                         details=error_msg,
                         detected_at=utc_now(),
                     )
+                    db_session.add(event)
+                    db_session.flush()
                     await dispatch_webhooks(db_session, event)
 
                 result = SyntheticCheckResult(
@@ -193,6 +195,8 @@ async def run_synthetic_check(
                 details=error_msg,
                 detected_at=utc_now(),
             )
+            db_session.add(event)
+            db_session.flush()
             await dispatch_webhooks(db_session, event)
 
         result = SyntheticCheckResult(

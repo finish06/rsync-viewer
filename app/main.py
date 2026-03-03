@@ -117,13 +117,22 @@ async def lifespan(app: FastAPI):
     # Start synthetic monitoring background task (AC-001, AC-012)
     synthetic_task = None
     if settings_cfg.synthetic_check_enabled:
+        synthetic_api_key = (
+            settings_cfg.synthetic_check_api_key or settings_cfg.default_api_key
+        )
+        if not settings_cfg.debug and not settings_cfg.synthetic_check_api_key:
+            logger.warning(
+                "Synthetic monitoring is enabled but SYNTHETIC_CHECK_API_KEY is not set "
+                "and DEBUG is false. The default API key will not work in production. "
+                "Set SYNTHETIC_CHECK_API_KEY to a provisioned key in the api_keys table."
+            )
         synthetic_task = asyncio.create_task(
             synthetic_check_background_task(
                 enabled=True,
                 interval_seconds=settings_cfg.synthetic_check_interval_seconds,
                 shutdown_event=shutdown_event,
                 base_url="http://127.0.0.1:8000",
-                api_key=settings_cfg.default_api_key,
+                api_key=synthetic_api_key,
                 engine=engine,
             )
         )
