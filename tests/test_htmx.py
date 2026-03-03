@@ -27,7 +27,9 @@ class TestHealthEndpoint:
         """Test health endpoint returns ok status"""
         response = await client.get("/health")
         assert response.status_code == 200
-        assert response.json() == {"status": "ok"}
+        data = response.json()
+        assert data["status"] == "ok"
+        assert "synthetic_check" in data
 
 
 class TestHtmxSyncTable:

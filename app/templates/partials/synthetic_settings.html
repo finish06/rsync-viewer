@@ -1,0 +1,54 @@
+{% if success_message %}
+<div class="settings-success" style="margin-bottom: 1rem;">{{ success_message }}</div>
+{% endif %}
+
+<div style="margin-bottom: 1rem;">
+    {% if synthetic.enabled %}
+        {% if synthetic.last_status == 'passing' %}
+        <span class="badge" style="background: var(--success-color, #22c55e); color: #fff; padding: 0.25rem 0.5rem; border-radius: 4px;">Passing</span>
+        {% elif synthetic.last_status == 'failing' %}
+        <span class="badge" style="background: var(--danger-color, #ef4444); color: #fff; padding: 0.25rem 0.5rem; border-radius: 4px;">Failing</span>
+        {% else %}
+        <span class="badge" style="background: var(--muted-color, #6b7280); color: #fff; padding: 0.25rem 0.5rem; border-radius: 4px;">Waiting for first check...</span>
+        {% endif %}
+
+        {% if synthetic.last_check_at %}
+        <span style="margin-left: 0.5rem; opacity: 0.7;">
+            Last check: {{ synthetic.last_check_at.strftime('%Y-%m-%d %H:%M:%S') if synthetic.last_check_at else 'N/A' }}
+            {% if synthetic.last_latency_ms %}
+            ({{ "%.0f"|format(synthetic.last_latency_ms) }}ms)
+            {% endif %}
+        </span>
+        {% endif %}
+
+        {% if synthetic.last_error %}
+        <div class="auth-error" style="margin-top: 0.5rem;">{{ synthetic.last_error }}</div>
+        {% endif %}
+    {% else %}
+        <span style="opacity: 0.6;">Synthetic monitoring is disabled.</span>
+    {% endif %}
+</div>
+
+<form hx-post="/htmx/synthetic-settings"
+      hx-target="#synthetic-settings-container"
+      hx-swap="innerHTML">
+    <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+            <input type="checkbox" name="enabled" {% if synthetic.enabled %}checked{% endif %}>
+            Enable synthetic monitoring
+        </label>
+    </div>
+
+    <div class="filter-group" style="max-width: 200px; margin-bottom: 1rem;">
+        <label for="synthetic-interval">Check interval (seconds)</label>
+        <input type="number" id="synthetic-interval" name="interval"
+               min="30" max="86400"
+               value="{{ synthetic.interval_seconds }}">
+    </div>
+
+    <p style="font-size: 0.85rem; opacity: 0.6; margin: 0 0 1rem 0;">
+        Interval changes take effect on the next check cycle. Enabling or disabling requires an app restart.
+    </p>
+
+    <button type="submit" class="btn btn-primary">Save</button>
+</form>

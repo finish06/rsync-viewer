@@ -302,6 +302,73 @@ async def htmx_oidc_settings_save(
     )
 
 
+# --- Synthetic Monitoring Settings HTMX routes ---
+
+
+@router.get("/htmx/synthetic-settings")
+async def htmx_synthetic_settings(
+    request: Request,
+    user: OptionalUserDep = None,
+):
+    """HTMX partial: Synthetic monitoring status and configuration."""
+    if not user or not role_at_least(user.role, ROLE_ADMIN):
+        raise HTTPException(status_code=403, detail="Admin only")
+
+    from app.services.synthetic_check import get_state
+
+    state = get_state()
+    return templates.TemplateResponse(
+        request,
+        "partials/synthetic_settings.html",
+        context={"synthetic": state},
+    )
+
+
+@router.post("/htmx/synthetic-settings")
+async def htmx_synthetic_settings_save(
+    request: Request,
+    user: OptionalUserDep = None,
+):
+    """HTMX: Toggle synthetic monitoring enable/disable and interval."""
+    if not user or not role_at_least(user.role, ROLE_ADMIN):
+        raise HTTPException(status_code=403, detail="Admin only")
+
+    from app.services.synthetic_check import get_state
+
+    form = await request.form()
+    enabled = str(form.get("enabled", "")) == "on"
+    interval_str = str(form.get("interval", "300")).strip()
+
+    try:
+        interval = int(interval_str)
+        if interval < 30:
+            interval = 30
+    except ValueError:
+        interval = 300
+
+    state = get_state()
+    state.enabled = enabled
+    state.interval_seconds = interval
+
+    logger.info(
+        "Synthetic monitoring settings updated",
+        extra={
+            "user_id": str(user.id),
+            "enabled": enabled,
+            "interval": interval,
+        },
+    )
+
+    return templates.TemplateResponse(
+        request,
+        "partials/synthetic_settings.html",
+        context={
+            "synthetic": state,
+            "success_message": "Synthetic monitoring settings saved.",
+        },
+    )
+
+
 @router.post("/htmx/settings/auth/test-discovery")
 async def htmx_oidc_test_discovery(
     request: Request,

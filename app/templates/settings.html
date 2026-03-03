@@ -94,6 +94,20 @@
                     </div>
                 </div>
             </div>
+
+            <div class="settings-section">
+                <div class="settings-section-header">
+                    <h2>Synthetic Monitoring</h2>
+                </div>
+                <div class="settings-section-body">
+                    <div id="synthetic-settings-container"
+                         hx-get="/htmx/synthetic-settings"
+                         hx-trigger="load"
+                         hx-swap="innerHTML">
+                        <div class="loading">Loading synthetic monitoring settings...</div>
+                    </div>
+                </div>
+            </div>
             {% endif %}
 
             {% if changelog_available %}

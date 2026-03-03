@@ -73,6 +73,21 @@ app_info = Gauge(
     registry=registry,
 )
 
+# --- Synthetic monitoring metrics (AC-008) ---
+
+synthetic_check_status = Gauge(
+    "rsync_synthetic_check_status",
+    "Synthetic check status (1=passing, 0=failing)",
+    registry=registry,
+)
+
+synthetic_check_duration = Histogram(
+    "rsync_synthetic_check_duration_seconds",
+    "Duration of synthetic check transactions",
+    buckets=[0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0, float("inf")],
+    registry=registry,
+)
+
 
 def set_app_info(version: str) -> None:
     """Set the application version info gauge."""
