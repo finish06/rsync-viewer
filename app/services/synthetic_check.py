@@ -4,14 +4,19 @@ Periodically POSTs a canned rsync log to the app's own API, verifies the
 response, DELETEs it on success, and fires webhooks on failure.
 """
 
+from __future__ import annotations
+
 import asyncio
 import logging
 import time
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 import httpx
+
+if TYPE_CHECKING:
+    from sqlmodel import Session
 
 from app.metrics import synthetic_check_duration, synthetic_check_status
 from app.models.failure_event import FailureEvent
@@ -42,7 +47,7 @@ sent 150 bytes  received 35 bytes  370.00 bytes/sec
 total size is 100  speedup is 0.54"""
 
 MINIMUM_INTERVAL_SECONDS = 30
-POST_TIMEOUT_SECONDS = 10.0
+REQUEST_TIMEOUT_SECONDS = 10.0
 
 
 @dataclass
@@ -79,7 +84,7 @@ async def run_synthetic_check(
     *,
     base_url: str,
     api_key: str,
-    db_session=None,
+    db_session: "Optional[Session]" = None,
 ) -> SyntheticCheckResult:
     """Execute one synthetic check cycle: POST, verify, DELETE.
 
@@ -95,7 +100,7 @@ async def run_synthetic_check(
     headers = {"X-API-Key": api_key}
 
     try:
-        async with httpx.AsyncClient(timeout=POST_TIMEOUT_SECONDS) as client:
+        async with httpx.AsyncClient(timeout=REQUEST_TIMEOUT_SECONDS) as client:
             # Step 1: POST canned log
             post_response = await client.post(
                 f"{base_url}/api/v1/sync-logs",
@@ -233,36 +238,38 @@ async def synthetic_check_background_task(
         return
 
     # Enforce minimum interval (AC-001 edge case)
-    effective_interval = max(interval_seconds, MINIMUM_INTERVAL_SECONDS)
+    initial_interval = max(interval_seconds, MINIMUM_INTERVAL_SECONDS)
 
     _state.enabled = True
-    _state.interval_seconds = effective_interval
+    _state.interval_seconds = initial_interval
 
     logger.info(
         "Synthetic monitoring started",
-        extra={"interval_seconds": effective_interval, "base_url": base_url},
+        extra={"interval_seconds": initial_interval, "base_url": base_url},
     )
 
     while not shutdown_event.is_set():
         try:
-            db_session = None
             if engine is not None:
-                from sqlmodel import Session
+                from sqlmodel import Session as _Session
 
-                db_session = Session(engine)
-
-            try:
+                with _Session(engine) as db_session:
+                    await run_synthetic_check(
+                        base_url=base_url,
+                        api_key=api_key,
+                        db_session=db_session,
+                    )
+            else:
                 await run_synthetic_check(
                     base_url=base_url,
                     api_key=api_key,
-                    db_session=db_session,
                 )
-            finally:
-                if db_session is not None:
-                    db_session.close()
 
         except Exception:
             logger.exception("Synthetic check cycle failed unexpectedly")
+
+        # Read interval from state each cycle so UI changes take effect (SIG-1)
+        effective_interval = max(_state.interval_seconds, MINIMUM_INTERVAL_SECONDS)
 
         # Wait for interval or shutdown
         try:

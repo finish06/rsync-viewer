@@ -107,12 +107,12 @@ class TestRunSyntheticCheck:
             )
 
         # POST was called with correct payload
-        call_kwargs = mock_client.post.call_args
-        assert "__synthetic_check" in str(call_kwargs)
+        post_kwargs = mock_client.post.call_args.kwargs
+        assert post_kwargs["json"]["source_name"] == "__synthetic_check"
 
         # DELETE was called with the returned ID
-        delete_call = mock_client.delete.call_args
-        assert "abc-123" in str(delete_call)
+        delete_args = mock_client.delete.call_args.args
+        assert delete_args[0].endswith("/abc-123")
 
     @pytest.mark.anyio
     async def test_ac004_post_failure_returns_failing(self):
@@ -547,7 +547,10 @@ class TestSyntheticBackgroundTask:
     @pytest.mark.anyio
     async def test_ac001_minimum_interval_enforced(self):
         """AC-001: Interval below 30s is clamped to 30s."""
-        from app.services.synthetic_check import synthetic_check_background_task
+        from app.services.synthetic_check import (
+            get_state,
+            synthetic_check_background_task,
+        )
 
         shutdown = asyncio.Event()
         shutdown.set()  # Immediately stop
@@ -568,6 +571,9 @@ class TestSyntheticBackgroundTask:
                 base_url="http://localhost:8000",
                 api_key="test-key",
             )
+
+        # Verify the interval was clamped to the minimum (30s)
+        assert get_state().interval_seconds == 30
 
 
 # ---------------------------------------------------------------------------
