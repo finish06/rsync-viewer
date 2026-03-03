@@ -264,12 +264,19 @@ class TestSyntheticWebhookDispatch:
                 db_session=mock_session,
             )
 
+        # Event is persisted before dispatch (CRIT-1 fix)
+        mock_session.add.assert_called_once()
+        mock_session.flush.assert_called_once()
+        persisted_event = mock_session.add.call_args[0][0]
+        assert isinstance(persisted_event, FailureEvent)
+        assert persisted_event.failure_type == "synthetic_failure"
+        assert persisted_event.source_name == "__synthetic_check"
+
+        # dispatch_webhooks called with session and persisted event
         mock_dispatch.assert_called_once()
         call_args = mock_dispatch.call_args
-        event = call_args[0][1]  # second positional arg
-        assert isinstance(event, FailureEvent)
-        assert event.failure_type == "synthetic_failure"
-        assert event.source_name == "__synthetic_check"
+        assert call_args[0][0] is mock_session
+        assert call_args[0][1] is persisted_event
 
     @pytest.mark.anyio
     async def test_ac005_no_webhook_on_delete_failure(self):
@@ -312,6 +319,46 @@ class TestSyntheticWebhookDispatch:
 
         # Webhook should NOT be called because POST succeeded
         mock_dispatch.assert_not_called()
+
+    @pytest.mark.anyio
+    async def test_ac004_event_persisted_before_dispatch_on_connection_error(self):
+        """CRIT-1: FailureEvent is flushed to DB before dispatch on connection error."""
+        import httpx
+
+        from app.services.synthetic_check import run_synthetic_check
+
+        mock_client = AsyncMock()
+        mock_client.post.side_effect = httpx.ConnectError("connection refused")
+        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+        mock_client.__aexit__ = AsyncMock(return_value=False)
+
+        mock_dispatch = AsyncMock()
+        mock_session = MagicMock()
+
+        with (
+            patch(
+                "app.services.synthetic_check.httpx.AsyncClient",
+                return_value=mock_client,
+            ),
+            patch(
+                "app.services.synthetic_check.dispatch_webhooks",
+                mock_dispatch,
+            ),
+        ):
+            await run_synthetic_check(
+                base_url="http://localhost:8000",
+                api_key="test-key",
+                db_session=mock_session,
+            )
+
+        # Event persisted before dispatch
+        mock_session.add.assert_called_once()
+        mock_session.flush.assert_called_once()
+        persisted_event = mock_session.add.call_args[0][0]
+        assert isinstance(persisted_event, FailureEvent)
+
+        # Dispatch called with persisted event
+        mock_dispatch.assert_called_once_with(mock_session, persisted_event)
 
 
 # ---------------------------------------------------------------------------
@@ -357,6 +404,34 @@ class TestSyntheticApiKey:
         post_call = mock_client.post.call_args
         headers = post_call.kwargs.get("headers", {})
         assert headers.get("X-API-Key") == "my-secret-key"
+
+
+class TestSyntheticApiKeyConfig:
+    """CRIT-2: Dedicated synthetic_check_api_key with fallback to default_api_key."""
+
+    def test_crit2_dedicated_key_used_when_set(self):
+        """synthetic_check_api_key takes precedence over default_api_key."""
+        from app.config import Settings
+
+        settings = Settings(
+            database_url="postgresql://x",
+            default_api_key="default-key",
+            synthetic_check_api_key="dedicated-key",
+        )
+        effective = settings.synthetic_check_api_key or settings.default_api_key
+        assert effective == "dedicated-key"
+
+    def test_crit2_falls_back_to_default_when_empty(self):
+        """Falls back to default_api_key when synthetic_check_api_key is empty."""
+        from app.config import Settings
+
+        settings = Settings(
+            database_url="postgresql://x",
+            default_api_key="default-key",
+            synthetic_check_api_key="",
+        )
+        effective = settings.synthetic_check_api_key or settings.default_api_key
+        assert effective == "default-key"
 
 
 # ---------------------------------------------------------------------------

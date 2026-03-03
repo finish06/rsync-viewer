@@ -36,6 +36,9 @@ class Settings(BaseSettings):
     force_local_login: bool = False  # Safety fallback: always show local login form
     synthetic_check_enabled: bool = False  # Enable synthetic monitoring
     synthetic_check_interval_seconds: int = 300  # Seconds between checks (min 30)
+    synthetic_check_api_key: str = (
+        ""  # Dedicated API key; falls back to default_api_key
+    )
     app_version: str = "1.11.0"
 
     @property
