@@ -86,7 +86,7 @@ Production deployment is to a self-hosted homelab server. No staging environment
 
 ## 6. Milestones & Roadmap
 
-### Current Maturity: Beta
+### Current Maturity: GA (v2.0.0, promoted 2026-03-03)
 
 ### Roadmap
 
@@ -298,13 +298,34 @@ Configurable webhook system that detects failed or anomalous syncs and sends ale
 - **Reliability:** No data loss on log submission; graceful handling of malformed rsync output
 - **Deployment:** Single `docker-compose up` for full stack deployment
 
-## 9. Open Questions
+## 9. Service Level Targets
+
+Homelab best-effort targets. Not contractual SLAs — these are monitoring thresholds to detect degradation.
+
+| Metric | Target | Measurement |
+|--------|--------|-------------|
+| Availability | 99% uptime | Synthetic check + /health endpoint |
+| API response (P95) | < 500ms | Prometheus histogram |
+| API response (P99) | < 2000ms | Prometheus histogram |
+| Ingestion success rate | 99.9% | sync_logs_total success vs error |
+| Webhook delivery latency | < 60s | Time from failure detection to webhook POST |
+
+## 10. Scalability
+
+Rsync Log Viewer is designed for single-instance homelab deployment:
+
+- **Target load:** 10-50 sync sources, ~1000 logs/day
+- **Database:** Single PostgreSQL instance with configurable data retention
+- **Horizontal scaling:** Not required; single Docker Compose stack
+- **Storage:** Log growth bounded by `DATA_RETENTION_DAYS` auto-cleanup
+
+## 11. Open Questions
 
 - What constitutes a "failed" sync for notification purposes? (non-zero exit code, missing files, zero bytes transferred?)
 - Should webhook configuration be stored in the database or environment variables?
 - Is there a need for notification rate limiting / deduplication?
 
-## 10. Revision History
+## 12. Revision History
 
 | Date | Version | Author | Changes |
 |------|---------|--------|---------|

@@ -5,6 +5,7 @@ on:
     branches: [main]
   push:
     branches: [main]
+    tags: ['v*']
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -55,7 +56,7 @@ jobs:
       - name: Build and run tests
         run: |
           docker compose -f docker-compose.dev.yml run --rm -e COVERAGE_FILE=/tmp/.coverage test \
-            pytest tests/ --ignore=tests/e2e --cov=app --cov-report=term-missing --cov-fail-under=80
+            pytest tests/ --ignore=tests/e2e --ignore=tests/smoke --cov=app --cov-report=term-missing --cov-fail-under=80
 
       - name: Cleanup
         if: always()
@@ -65,7 +66,7 @@ jobs:
     name: Build & Push Container
     runs-on: ubuntu-latest
     needs: [lint, type-check, test]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
     steps:
       - uses: actions/checkout@v4
 
@@ -79,13 +80,49 @@ jobs:
           username: ${{ secrets.REGISTRY_USERNAME }}
           password: ${{ secrets.REGISTRY_PASSWORD }}
 
+      - name: Determine tags
+        id: tags
+        run: |
+          TAGS="dockerhub.calebdunn.tech/rsync-viewer:latest"
+          TAGS="$TAGS,dockerhub.calebdunn.tech/rsync-viewer:sha-${{ github.sha }}"
+          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            VERSION="${{ github.ref_name }}"
+            TAGS="$TAGS,dockerhub.calebdunn.tech/rsync-viewer:${VERSION}"
+          fi
+          echo "tags=$TAGS" >> "$GITHUB_OUTPUT"
+
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
           context: .
           push: true
-          tags: |
-            dockerhub.calebdunn.tech/rsync-viewer:beta
-            dockerhub.calebdunn.tech/rsync-viewer:sha-${{ github.sha }}
+          tags: ${{ steps.tags.outputs.tags }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  smoke-test:
+    name: Smoke Tests
+    runs-on: ubuntu-latest
+    needs: [build-push]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install test dependencies
+        run: pip install httpx pytest
+
+      - name: Start services
+        run: docker compose -f docker-compose.dev.yml up -d --wait
+
+      - name: Run smoke tests
+        run: pytest tests/smoke/ -m smoke
+        env:
+          SMOKE_TEST_URL: http://localhost:8000
+
+      - name: Cleanup
+        if: always()
+        run: docker compose -f docker-compose.dev.yml down

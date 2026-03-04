@@ -39,7 +39,7 @@ class Settings(BaseSettings):
     synthetic_check_api_key: str = (
         ""  # Dedicated API key; falls back to default_api_key
     )
-    app_version: str = "1.11.0"
+    app_version: str = "2.0.0"
 
     @property
     def effective_encryption_key(self) -> str:

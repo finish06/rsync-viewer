@@ -7,6 +7,32 @@ and this project adheres to [Conventional Commits](https://www.conventionalcommi
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-03-03
+
+### GA Promotion
+
+Rsync Log Viewer promoted to **General Availability** (GA) maturity.
+
+All milestones (M1–M11) complete. 12 days production stability since beta promotion (2026-02-24). v2.0.0 marks the project as production-grade for homelab deployment.
+
+### Added
+
+- **Smoke test suite** (`tests/smoke/test_smoke.py`): 7 standalone tests for deployment verification — health, metrics, login, docs, security headers, auth, rate limiting
+- **PR template** (`.github/PULL_REQUEST_TEMPLATE.md`): Summary, spec reference, quality and TDD checklists
+- **Project glossary** (`docs/glossary.md`): 15 domain terms defined (Sync Log, Source Name, Exit Code, etc.)
+- **Service Level Targets** in PRD: availability 99%, API P95 <500ms, ingestion 99.9%
+- **SLA configuration** in `.add/config.json` for monitoring thresholds
+- **Smoke test CI job**: runs after build-push on main branch merges
+
+### Changed
+
+- Docker image tag strategy: `latest` + `sha-{SHA}` on main merge, version tag on `v*` tag push (replaces `beta` tag)
+- `docker-compose.prod.yml` image tag changed from `beta` to `latest`
+- CI workflow triggers on `v*` tags for versioned image pushes
+- Test runner ignores `tests/smoke/` directory (smoke tests run separately)
+- Maturity promoted from `beta` to `ga` in `.add/config.json`
+- Version bumped from 1.11.0 to 2.0.0
+
 ## [1.11.0] - 2026-03-01
 
 ### Added

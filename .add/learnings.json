@@ -275,6 +275,19 @@
       "date": "2026-02-27",
       "classified_by": "agent",
       "checkpoint_type": "verification-catch"
+    },
+    {
+      "id": "L-026",
+      "title": "GA promotion verify: Gates 1-2 clean, 77 pre-existing code quality items deferred",
+      "body": "GA promotion verify passed Gate 1 (ruff lint+format) and Gate 2 (mypy 0 errors in 62 files). Gate 3 skipped (no Docker in verify environment — runs in CI). Maturity-scaled GA checks found 77 blocking items (7 files >300 lines, 32 functions >50 lines, 33 missing docstrings, 5 deep-nesting functions) — all pre-existing, explicitly deferred in practical GA scope. Security and repo hygiene passed clean.",
+      "scope": "project",
+      "stack": ["python", "fastapi"],
+      "category": "process",
+      "severity": "medium",
+      "source": "rsync-viewer",
+      "date": "2026-03-03",
+      "classified_by": "agent",
+      "checkpoint_type": "post-verify"
     }
   ]
 }
