@@ -123,7 +123,7 @@ jobs:
         run: docker compose -f docker-compose.dev.yml up -d --wait
 
       - name: Run smoke tests
-        run: pytest tests/smoke/ -m smoke
+        run: pytest tests/smoke/ -m smoke --override-ini="confcutdir=tests/smoke"
         env:
           SMOKE_TEST_URL: http://localhost:8000
 
