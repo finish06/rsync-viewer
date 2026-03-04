@@ -1,32 +1,28 @@
 # Session Handoff
-**Written:** 2026-03-03
-
-## In Progress
-- Nothing — GA promotion complete
+**Written:** 2026-03-01
 
 ## Completed This Session
-- Promoted maturity from beta to GA (v2.0.0)
-- Created smoke test suite (7 tests in `tests/smoke/test_smoke.py`)
-- Created PR template (`.github/PULL_REQUEST_TEMPLATE.md`)
-- Created project glossary (`docs/glossary.md`, 15 terms)
-- Defined SLAs in `.add/config.json` and `docs/prd.md`
-- Updated Docker tag strategy: `latest` + `sha-{SHA}` + version tags (replaces `beta`)
-- Updated `docker-compose.prod.yml` to use `latest` tag
-- Added smoke test CI job (runs after build-push on main)
-- Bumped version from 1.11.0 to 2.0.0
-- Updated CHANGELOG with v2.0.0 GA entry
-- Created GA promotion milestone doc (`docs/milestones/M-GA-promotion.md`)
-- Added `smoke` pytest marker to `pytest.ini`
+- Synthetic monitoring spec + plan committed (90b542c on feature/synthetic-monitoring)
+- Full TDD cycle for synthetic monitoring — 21 tests, all 773 passing (PR #26)
+- E2E rsync client test confirmed already merged (PR #24)
+
+## PRs Open
+- **PR #26** (`feature/synthetic-monitoring`): Synthetic monitoring background task
+  - 21 new tests covering all 12 ACs
+  - New: `app/services/synthetic_check.py`, `app/templates/partials/synthetic_settings.html`, `tests/test_synthetic_check.py`
+  - Modified: `app/config.py`, `app/metrics.py`, `app/main.py`, `app/routes/settings.py`, `app/templates/settings.html`, `tests/test_htmx.py`
 
 ## Decisions Made
-- GA promotion accepted with 12 days stability (vs 30+ ideal) — zero incidents justified shorter window
-- Several GA checks deferred as homelab-appropriate: module READMEs, file length refactoring, N+1 CI detection, perf regression suite, two-reviewer policy
-- SLAs defined as monitoring thresholds, not contractual commitments
+- Synthetic check uses in-memory state (no new DB tables)
+- POST canned rsync log to self via HTTP, DELETE after verification
+- Webhook dispatch on failure uses existing FailureEvent pipeline
+- MINIMUM_INTERVAL_SECONDS = 30 to prevent runaway checks
 
 ## Blockers
 - None
 
 ## Next Steps
-1. Commit all changes and create PR for GA promotion
-2. Tag `v2.0.0` after merge to trigger versioned Docker image
-3. Post-GA: consider rsync client image (M10 LATER items), performance regression suite, module READMEs if project grows
+1. Review + merge PR #26 (synthetic monitoring)
+2. Update changelog for new features
+3. Production deployment
+4. Consider API key provisioning for synthetic check in non-DEBUG mode
