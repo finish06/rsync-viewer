@@ -1,11 +1,11 @@
 # Spec: OIDC Settings UI
 
-**Version:** 0.1.0
+**Version:** 0.2.0
 **Created:** 2026-02-26
 **PRD Reference:** docs/prd.md
 **Supersedes:** specs/oidc-authentication.md AC-009 (env var configuration)
 **Related:** specs/oidc-authentication.md (OIDC login flow, user creation/linking)
-**Status:** Complete
+**Status:** Implementing
 **Milestone:** M7 — OIDC Authentication
 
 ## 1. Overview
@@ -35,6 +35,8 @@ As an Admin, I want to configure OIDC authentication through the settings UI, so
 | AC-013 | A small info note in the UI explains the `FORCE_LOCAL_LOGIN` safety fallback | Should |
 | AC-014 | When OIDC is disabled via toggle, existing OIDC sessions remain valid until expiry but no new OIDC logins are allowed | Should |
 | AC-015 | OIDC settings UI displays the callback URL (`/auth/oidc/callback`) so the admin knows what to configure in their OIDC provider | Should |
+| AC-016 | The Callback URL info box and `FORCE_LOCAL_LOGIN` info note render correctly in both light and dark mode — no white/light boxes on dark backgrounds. Info boxes must use theme-aware CSS variables (`--card-bg` or a new `--bg-secondary`) instead of hardcoded light colors | Must |
+| AC-017 | All inline `background: var(--bg-secondary, #f5f5f5)` styles in the OIDC template are replaced with a proper CSS class that respects dark mode theming | Must |
 
 ## 3. User Test Cases
 
@@ -116,6 +118,17 @@ As an Admin, I want to configure OIDC authentication through the settings UI, so
 1. Navigate to Settings
 **Expected Result:** Authentication section is not visible. Direct URL/HTMX request to authentication endpoints returns 403.
 **Screenshot Checkpoint:** tests/screenshots/oidc-settings/step-07-non-admin-denied.png
+**Maps to:** TBD
+
+### TC-008: OIDC settings dark mode rendering
+
+**Precondition:** Admin is logged in. Theme is set to dark mode. OIDC is configured.
+**Steps:**
+1. Navigate to Settings > Authentication
+2. Observe the Callback URL info box at the top
+3. Observe the `FORCE_LOCAL_LOGIN` info note below the toggles
+**Expected Result:** Both info boxes have a dark background consistent with the dark theme (e.g., `--card-bg` / `#1f2937` or similar). Text is readable. No white or light-colored boxes that contrast harshly with the dark page background.
+**Screenshot Checkpoint:** tests/screenshots/oidc-settings/step-08-dark-mode.png
 **Maps to:** TBD
 
 ## 4. Data Model
@@ -229,6 +242,8 @@ N/A — This feature uses server-rendered HTMX endpoints, not REST API.
 | App starts with no `ENCRYPTION_KEY` env var | App refuses to start or logs fatal error (encryption key is required for SMTP and OIDC) |
 | Discovery returns unexpected schema | Show generic error: "Discovery response missing required endpoints" |
 | Very long issuer URL | Validate max 512 characters, show inline error |
+| Dark mode active | All info boxes, badges, and form elements use theme-aware CSS variables. No hardcoded light colors leak through. |
+| `--bg-secondary` CSS variable undefined | Info boxes must not fall back to `#f5f5f5`. Either define `--bg-secondary` in both light and dark themes, or use an existing variable like `--table-head-bg`. |
 
 ## 8. Dependencies
 
@@ -242,3 +257,4 @@ N/A — This feature uses server-rendered HTMX endpoints, not REST API.
 | Date | Version | Author | Changes |
 |------|---------|--------|---------|
 | 2026-02-26 | 0.1.0 | finish06 | Initial spec from /add:spec interview |
+| 2026-03-04 | 0.2.0 | finish06 + Claude | AC-016–AC-017, TC-008: Dark mode fix for Callback URL and FORCE_LOCAL_LOGIN info boxes (white boxes on dark background) |

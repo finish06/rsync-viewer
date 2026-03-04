@@ -19,6 +19,7 @@
     --code-bg: #1f2937;
     --code-text: #f9fafb;
     --focus-ring: rgba(37, 99, 235, 0.1);
+    --bg-secondary: #f3f4f6;
     --input-bg: #ffffff;
     --input-text: inherit;
 }
@@ -44,6 +45,7 @@
     --code-bg: #0f172a;
     --code-text: #e2e8f0;
     --focus-ring: rgba(59, 130, 246, 0.2);
+    --bg-secondary: #1f2937;
     --input-bg: #374151;
     --input-text: #f9fafb;
 }
@@ -1360,6 +1362,14 @@ main {
     padding: 0.75rem;
     border-radius: 4px;
     font-size: 0.875rem;
+}
+
+.info-box {
+    padding: 0.5rem 0.75rem;
+    background: var(--bg-secondary);
+    border-radius: 4px;
+    font-size: 0.8rem;
+    color: var(--text-muted);
 }
 
 /* Print: force light theme */

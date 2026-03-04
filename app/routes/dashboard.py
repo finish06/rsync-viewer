@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime, timedelta
 from typing import Optional
 from uuid import UUID
 
@@ -198,13 +199,39 @@ async def htmx_notifications(
     status: Optional[str] = Query(None),
     webhook_name: Optional[str] = Query(None),
     source_name: Optional[str] = Query(None),
+    date_from: Optional[str] = Query(None),
+    date_to: Optional[str] = Query(None),
     offset: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
 ):
     """HTMX partial: notification history list with filters and pagination."""
 
+    # Parse date params (AC-016)
+    parsed_date_from = None
+    parsed_date_to = None
+    if date_from:
+        try:
+            parsed_date_from = datetime.strptime(date_from, "%Y-%m-%d")
+        except ValueError:
+            pass
+    if date_to:
+        try:
+            parsed_date_to = datetime.strptime(date_to, "%Y-%m-%d") + timedelta(days=1)
+        except ValueError:
+            pass
+
     # Build base query
     statement = select(NotificationLog)
+
+    # Apply date filters (AC-016)
+    if parsed_date_from:
+        statement = statement.where(
+            NotificationLog.created_at >= parsed_date_from  # type: ignore[arg-type]
+        )
+    if parsed_date_to:
+        statement = statement.where(
+            NotificationLog.created_at < parsed_date_to  # type: ignore[arg-type]
+        )
 
     # Apply filters
     if status:
@@ -274,6 +301,8 @@ async def htmx_notifications(
             "selected_status": status or "",
             "selected_webhook_name": webhook_name or "",
             "selected_source_name": source_name or "",
+            "date_from": date_from or "",
+            "date_to": date_to or "",
             "webhook_names": all_webhook_names,
             "source_names": all_source_names,
         },

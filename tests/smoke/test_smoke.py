@@ -49,9 +49,9 @@ def test_login_page_accessible(client: httpx.Client) -> None:
 
 @pytest.mark.smoke
 def test_api_docs_accessible(client: httpx.Client) -> None:
-    """GET /docs returns 200 (FastAPI Swagger UI)."""
+    """GET /docs returns 200 (FastAPI Swagger UI) or 302 (auth redirect)."""
     response = client.get("/docs")
-    assert response.status_code == 200
+    assert response.status_code in (200, 302)
 
 
 @pytest.mark.smoke

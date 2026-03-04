@@ -1,3 +1,11 @@
+<!-- Quick Select (AC-015, AC-020) -->
+<div class="quick-select" id="notif-quick-select">
+    <button class="quick-select-btn active" data-range="7d">Last 7 Days</button>
+    <button class="quick-select-btn" data-range="30d">Last 30 Days</button>
+    <button class="quick-select-btn" data-range="max">Max</button>
+    <button class="quick-select-btn" data-range="custom">Custom</button>
+</div>
+
 <!-- Notification Filters -->
 <div class="notification-filters">
     <form class="notification-filter-form" hx-get="/htmx/notifications" hx-target="#notifications-container" hx-swap="innerHTML">
@@ -94,7 +102,7 @@
 <div class="pagination">
     {% if offset > 0 %}
     <button class="btn btn-secondary"
-            hx-get="/htmx/notifications?offset={{ offset - limit }}&limit={{ limit }}{% if selected_status %}&status={{ selected_status }}{% endif %}{% if selected_webhook_name %}&webhook_name={{ selected_webhook_name }}{% endif %}{% if selected_source_name %}&source_name={{ selected_source_name }}{% endif %}"
+            hx-get="/htmx/notifications?offset={{ offset - limit }}&limit={{ limit }}{% if selected_status %}&status={{ selected_status }}{% endif %}{% if selected_webhook_name %}&webhook_name={{ selected_webhook_name }}{% endif %}{% if selected_source_name %}&source_name={{ selected_source_name }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}"
             hx-target="#notifications-container">
         Previous
     </button>
@@ -106,7 +114,7 @@
 
     {% if offset + limit < total %}
     <button class="btn btn-secondary"
-            hx-get="/htmx/notifications?offset={{ offset + limit }}&limit={{ limit }}{% if selected_status %}&status={{ selected_status }}{% endif %}{% if selected_webhook_name %}&webhook_name={{ selected_webhook_name }}{% endif %}{% if selected_source_name %}&source_name={{ selected_source_name }}{% endif %}"
+            hx-get="/htmx/notifications?offset={{ offset + limit }}&limit={{ limit }}{% if selected_status %}&status={{ selected_status }}{% endif %}{% if selected_webhook_name %}&webhook_name={{ selected_webhook_name }}{% endif %}{% if selected_source_name %}&source_name={{ selected_source_name }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}"
             hx-target="#notifications-container">
         Next
     </button>

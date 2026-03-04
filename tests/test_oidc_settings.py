@@ -524,5 +524,43 @@ class TestOidcSettingsInfoNote:
         assert "FORCE_LOCAL_LOGIN" in response.text
 
 
+# --- S-AC-016 / S-AC-017: Dark mode theming ---
+
+
+class TestOidcSettingsDarkMode:
+    """S-AC-016: Info boxes render correctly in dark mode.
+    S-AC-017: No inline bg-secondary with hardcoded fallback.
+    """
+
+    @pytest.mark.anyio
+    async def test_sac017_no_inline_bg_secondary(self, test_engine, db_session):
+        """S-AC-017: No inline background: var(--bg-secondary, #f5f5f5) styles."""
+        _setup_overrides(db_session)
+        admin = _create_user(db_session, "oidc-dark-mode", ROLE_ADMIN)
+
+        async with _make_client(admin) as client:
+            response = await client.get("/htmx/settings/auth")
+        _cleanup()
+
+        assert response.status_code == 200
+        html = response.text
+        # Must not contain inline bg-secondary with hardcoded light fallback
+        assert "var(--bg-secondary, #f5f5f5)" not in html
+
+    @pytest.mark.anyio
+    async def test_sac016_info_boxes_use_css_class(self, test_engine, db_session):
+        """S-AC-016: Info boxes use a CSS class instead of inline styles."""
+        _setup_overrides(db_session)
+        admin = _create_user(db_session, "oidc-css-class", ROLE_ADMIN)
+
+        async with _make_client(admin) as client:
+            response = await client.get("/htmx/settings/auth")
+        _cleanup()
+
+        assert response.status_code == 200
+        html = response.text
+        assert "info-box" in html
+
+
 # --- S-AC-010: OIDC login flow reads config from DB ---
 # (This will be tested in test_oidc_auth.py when the auth flow is implemented)
