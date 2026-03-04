@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-REGISTRY="dockerhub.calebdunn.tech"
+REGISTRY="ghcr.io/finish06"
 IMAGE_NAME="rsync-viewer"
 TAG=$(date +"%m%d%Y")
 

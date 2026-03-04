@@ -7,6 +7,10 @@ on:
     branches: [main]
     tags: ['v*']
 
+permissions:
+  contents: read
+  packages: write
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -73,21 +77,21 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Login to registry
+      - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
         with:
-          registry: dockerhub.calebdunn.tech
-          username: ${{ secrets.REGISTRY_USERNAME }}
-          password: ${{ secrets.REGISTRY_PASSWORD }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Determine tags
         id: tags
         run: |
-          TAGS="dockerhub.calebdunn.tech/rsync-viewer:latest"
-          TAGS="$TAGS,dockerhub.calebdunn.tech/rsync-viewer:sha-${{ github.sha }}"
+          TAGS="ghcr.io/finish06/rsync-viewer:latest"
+          TAGS="$TAGS,ghcr.io/finish06/rsync-viewer:sha-${{ github.sha }}"
           if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
             VERSION="${{ github.ref_name }}"
-            TAGS="$TAGS,dockerhub.calebdunn.tech/rsync-viewer:${VERSION}"
+            TAGS="$TAGS,ghcr.io/finish06/rsync-viewer:${VERSION}"
           fi
           echo "tags=$TAGS" >> "$GITHUB_OUTPUT"
 
