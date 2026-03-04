@@ -1,5 +1,11 @@
 <div class="analytics-panel">
     <section class="analytics-controls">
+        <div class="quick-select" id="analytics-quick-select">
+            <button class="quick-select-btn" data-range="7d" onclick="analyticsSelectRange('7d')">Last 7 Days</button>
+            <button class="quick-select-btn active" data-range="30d" onclick="analyticsSelectRange('30d')">Last 30 Days</button>
+            <button class="quick-select-btn" data-range="max" onclick="analyticsSelectRange('max')">Max</button>
+            <button class="quick-select-btn" data-range="custom" onclick="analyticsSelectRange('custom')">Custom</button>
+        </div>
         <form id="analytics-form" class="analytics-filter-form">
             <div class="analytics-filter-row">
                 <div class="filter-group">
@@ -249,7 +255,38 @@
         document.getElementById('export-json').href = '/api/v1/analytics/export?format=json&' + exportParams.toString();
     }
 
-    // Default date range: last 30 days
+    // Quick-select range handler (AC-012, AC-013, AC-014)
+    window.analyticsSelectRange = function(range) {
+        var btns = document.querySelectorAll('#analytics-quick-select .quick-select-btn');
+        btns.forEach(function(b) { b.classList.remove('active'); });
+        var clicked = document.querySelector('#analytics-quick-select [data-range="' + range + '"]');
+        if (clicked) clicked.classList.add('active');
+
+        var now = new Date();
+        var startEl = document.getElementById('analytics-start');
+        var endEl = document.getElementById('analytics-end');
+
+        if (range === '7d') {
+            var s7 = new Date(now);
+            s7.setDate(s7.getDate() - 7);
+            startEl.value = s7.toISOString().split('T')[0];
+            endEl.value = now.toISOString().split('T')[0];
+            fetchAnalytics();
+        } else if (range === '30d') {
+            var s30 = new Date(now);
+            s30.setDate(s30.getDate() - 30);
+            startEl.value = s30.toISOString().split('T')[0];
+            endEl.value = now.toISOString().split('T')[0];
+            fetchAnalytics();
+        } else if (range === 'max') {
+            startEl.value = '';
+            endEl.value = '';
+            fetchAnalytics();
+        }
+        // 'custom' highlights but does NOT auto-submit
+    };
+
+    // Default date range: last 30 days (AC-014)
     var now = new Date();
     var start = new Date(now);
     start.setDate(start.getDate() - 30);
