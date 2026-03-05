@@ -292,11 +292,14 @@ async def run_synthetic_check(
     try:
         async with httpx.AsyncClient(timeout=REQUEST_TIMEOUT_SECONDS) as client:
             # Step 1: POST canned log
+            now = utc_now()
             post_response = await client.post(
                 f"{base_url}/api/v1/sync-logs",
                 json={
                     "source_name": SYNTHETIC_SOURCE_NAME,
                     "raw_content": CANNED_RSYNC_LOG,
+                    "start_time": (now - timedelta(seconds=1)).isoformat(),
+                    "end_time": now.isoformat(),
                 },
                 headers=headers,
             )
