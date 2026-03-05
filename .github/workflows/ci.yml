@@ -2,13 +2,12 @@ name: CI
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, beta]
   push:
-    branches: [main]
-    tags: ['v*']
+    branches: [main, beta]
 
 permissions:
-  contents: read
+  contents: write
   packages: write
 
 concurrency:
@@ -70,9 +69,53 @@ jobs:
     name: Build & Push Container
     runs-on: ubuntu-latest
     needs: [lint, type-check, test]
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
+    if: github.event_name == 'push'
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine version for main
+        id: version
+        if: github.ref == 'refs/heads/main'
+        run: |
+          LATEST_TAG=$(git tag -l 'v*' --sort=-v:refname | head -n1)
+          if [ -z "$LATEST_TAG" ]; then
+            LATEST_TAG="v0.0.0"
+          fi
+
+          VERSION="${LATEST_TAG#v}"
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
+
+          # Determine bump type from conventional commits since last tag
+          if [ "$LATEST_TAG" = "v0.0.0" ]; then
+            SUBJECTS=$(git log --pretty=format:"%s")
+          else
+            SUBJECTS=$(git log "${LATEST_TAG}..HEAD" --pretty=format:"%s")
+          fi
+
+          if echo "$SUBJECTS" | grep -qE '^[a-z]+(\(.+\))?!:'; then
+            MAJOR=$((MAJOR + 1)); MINOR=0; PATCH=0
+            echo "bump=major" >> "$GITHUB_OUTPUT"
+          elif echo "$SUBJECTS" | grep -qE '^feat(\(.+\))?:'; then
+            MINOR=$((MINOR + 1)); PATCH=0
+            echo "bump=minor" >> "$GITHUB_OUTPUT"
+          else
+            PATCH=$((PATCH + 1))
+            echo "bump=patch" >> "$GITHUB_OUTPUT"
+          fi
+
+          NEW_VERSION="v${MAJOR}.${MINOR}.${PATCH}"
+          echo "version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
+          echo "Bumping from $LATEST_TAG to $NEW_VERSION"
+
+      - name: Create version tag
+        if: github.ref == 'refs/heads/main'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a ${{ steps.version.outputs.version }} -m "Release ${{ steps.version.outputs.version }}"
+          git push origin ${{ steps.version.outputs.version }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -87,12 +130,13 @@ jobs:
       - name: Determine tags
         id: tags
         run: |
-          TAGS="ghcr.io/finish06/rsync-viewer:latest"
-          TAGS="$TAGS,ghcr.io/finish06/rsync-viewer:sha-${{ github.sha }}"
-          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
-            VERSION="${{ github.ref_name }}"
-            TAGS="$TAGS,ghcr.io/finish06/rsync-viewer:${VERSION}"
+          if [[ "${{ github.ref }}" == "refs/heads/beta" ]]; then
+            TAGS="ghcr.io/finish06/rsync-viewer:beta"
+          else
+            TAGS="ghcr.io/finish06/rsync-viewer:latest"
+            TAGS="$TAGS,ghcr.io/finish06/rsync-viewer:${{ steps.version.outputs.version }}"
           fi
+          TAGS="$TAGS,ghcr.io/finish06/rsync-viewer:sha-${{ github.sha }}"
           echo "tags=$TAGS" >> "$GITHUB_OUTPUT"
 
       - name: Build and push
@@ -108,7 +152,7 @@ jobs:
     name: Smoke Tests
     runs-on: ubuntu-latest
     needs: [build-push]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push'
     steps:
       - uses: actions/checkout@v4
 
