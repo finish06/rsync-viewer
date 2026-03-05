@@ -167,7 +167,7 @@ jobs:
         run: docker compose -f docker-compose.dev.yml up -d --wait
 
       - name: Run smoke tests
-        run: pytest tests/smoke/ -c /dev/null --noconftest --rootdir tests/smoke -o "markers=smoke: Smoke tests"
+        run: 'pytest tests/smoke/ -c /dev/null --noconftest --rootdir tests/smoke -o "markers=smoke: Smoke tests"'
         env:
           SMOKE_TEST_URL: http://localhost:8000
 
