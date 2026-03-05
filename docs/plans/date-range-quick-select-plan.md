@@ -225,8 +225,33 @@ Since maturity is POC, formal TDD is optional. Recommended tests:
 7. TASK-006 (default to 7 days + reset behavior)
 8. Manual walkthrough of TC-001 through TC-005
 
+## Phase 6: Analytics Quick-Select (v0.2.0) — 1.5h
+
+| Task ID | Description | Effort | Dependencies | AC |
+|---------|-------------|--------|--------------|-----|
+| TASK-008 | Add `.quick-select` button group above the Analytics filter form in `partials/analytics.html`. Buttons: Last 7 Days, Last 30 Days, Max, Custom. | 20min | None | AC-011, AC-020 |
+| TASK-009 | Add JS logic in `partials/analytics.html` for quick-select: set From/To inputs, auto-trigger `fetchAnalytics()`. "Custom" highlights but does NOT auto-submit. "Max" clears date fields. Default on load: "Last 30 Days". | 45min | TASK-008 | AC-012, AC-013, AC-014 |
+| TASK-010 | Update export links to reflect the active date range when quick-select changes. | 15min | TASK-009 | AC-012 |
+
+**Files Modified:**
+- `app/templates/partials/analytics.html` — add button group + JS logic
+
+## Phase 7: Notifications Quick-Select (v0.2.0) — 2h
+
+| Task ID | Description | Effort | Dependencies | AC |
+|---------|-------------|--------|--------------|-----|
+| TASK-011 | Add `date_from` and `date_to` query params to `GET /htmx/notifications` in `app/routes/dashboard.py`. Filter `NotificationLog.created_at` with `>= date_from` and `<= date_to + 1 day`. | 30min | None | AC-016 |
+| TASK-012 | Add `.quick-select` button group above the Notifications filter form in `partials/notifications_list.html`. | 20min | TASK-011 | AC-015, AC-020 |
+| TASK-013 | Add JS/HTMX logic for quick-select on Notifications: compute dates client-side, include `date_from`/`date_to` in HTMX `hx-get` params. Default: "Last 7 Days". | 30min | TASK-012 | AC-017, AC-018 |
+| TASK-014 | Include `date_from` and `date_to` in pagination prev/next HTMX links. Pass them through the template context. | 20min | TASK-011 | AC-019 |
+
+**Files Modified:**
+- `app/routes/dashboard.py` — add date params to `htmx_notifications`
+- `app/templates/partials/notifications_list.html` — add button group + JS, update pagination links
+
 ## Plan History
 
 | Date | Version | Changes |
 |------|---------|---------|
 | 2026-02-20 | 1.0.0 | Initial plan from /add:plan |
+| 2026-03-04 | 2.0.0 | Added Phase 6 (Analytics) and Phase 7 (Notifications) for v0.2.0 scope |

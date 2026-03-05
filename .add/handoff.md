@@ -1,28 +1,29 @@
 # Session Handoff
-**Written:** 2026-03-01
+**Written:** 2026-03-04
+
+## In Progress
+- Away mode session (8h planned). Active branch: `feature/date-range-notifications-analytics`
+- PR #29 open: date-range quick-select for Analytics/Notifications + OIDC dark mode fix
 
 ## Completed This Session
-- Synthetic monitoring spec + plan committed (90b542c on feature/synthetic-monitoring)
-- Full TDD cycle for synthetic monitoring — 21 tests, all 773 passing (PR #26)
-- E2E rsync client test confirmed already merged (PR #24)
-
-## PRs Open
-- **PR #26** (`feature/synthetic-monitoring`): Synthetic monitoring background task
-  - 21 new tests covering all 12 ACs
-  - New: `app/services/synthetic_check.py`, `app/templates/partials/synthetic_settings.html`, `tests/test_synthetic_check.py`
-  - Modified: `app/config.py`, `app/metrics.py`, `app/main.py`, `app/routes/settings.py`, `app/templates/settings.html`, `tests/test_htmx.py`
+- Date-range quick-select v2 (AC-011–AC-020): full TDD cycle, 11 tests, all passing
+  - Backend: `date_from`/`date_to` params added to `/htmx/notifications` endpoint
+  - Frontend: quick-select buttons added to analytics and notifications templates
+  - Pagination links include date params (AC-019)
+- OIDC dark mode fix (AC-016, AC-017): full TDD cycle, 2 tests
+  - `--bg-secondary` CSS var defined in both themes
+  - `.info-box` class replaces inline styles
+- PR #29 created and pushed (825 tests, lint clean)
 
 ## Decisions Made
-- Synthetic check uses in-memory state (no new DB tables)
-- POST canned rsync log to self via HTTP, DELETE after verification
-- Webhook dispatch on failure uses existing FailureEvent pipeline
-- MINIMUM_INTERVAL_SECONDS = 30 to prevent runaway checks
+- Test assertions for notifications date filtering check `<tbody>` only (not full HTML) because source names appear in filter dropdowns regardless of date filtering
+- Used `--bg-secondary: #f3f4f6` (light) / `#1f2937` (dark) — matches existing `--table-head-bg` dark value
 
 ## Blockers
-- None
+- None currently
 
 ## Next Steps
-1. Review + merge PR #26 (synthetic monitoring)
-2. Update changelog for new features
-3. Production deployment
-4. Consider API key provisioning for synthetic check in non-DEBUG mode
+1. Review/merge PR #29
+2. Create plans for synthetic-monitoring v0.2.0 and changelog-presentation
+3. TDD cycles for synthetic monitoring (DB persistence, runtime toggle, check history)
+4. TDD cycle for changelog presentation improvements
