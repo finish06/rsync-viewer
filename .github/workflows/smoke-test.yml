@@ -1,0 +1,47 @@
+name: Smoke Tests
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke-test:
+    name: Smoke Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install test dependencies
+        run: pip install httpx pytest
+
+      - name: Start services
+        run: docker compose up -d --wait
+
+      - name: Wait for app to be ready
+        run: |
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8000/health > /dev/null 2>&1; then
+              echo "App is ready"
+              exit 0
+            fi
+            echo "Waiting for app... ($i/30)"
+            sleep 2
+          done
+          echo "App failed to start"
+          docker compose logs app
+          exit 1
+
+      - name: Run smoke tests
+        run: 'pytest tests/smoke/ -c /dev/null --noconftest --rootdir tests/smoke -o "markers=smoke: Smoke tests"'
+        env:
+          SMOKE_TEST_URL: http://localhost:8000
+
+      - name: Cleanup
+        if: always()
+        run: docker compose down
