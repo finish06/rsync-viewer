@@ -139,7 +139,7 @@ async def settings_page(request: Request, user: OptionalUserDep = None):
 
 
 @router.get("/htmx/changelog")
-async def htmx_changelog_list(request: Request):
+async def htmx_changelog_list(request: Request, show_all: bool = False):
     """HTMX partial: changelog version accordion list."""
     versions = [
         v
@@ -147,12 +147,15 @@ async def htmx_changelog_list(request: Request):
         if v.version != "Unreleased"
     ]
     current_settings = get_settings()
+    has_more = len(versions) > 5 and not show_all
+    display_versions = versions if show_all else versions[:5]
     return templates.TemplateResponse(
         request,
         "partials/changelog_list.html",
         context={
-            "versions": versions,
+            "versions": display_versions,
             "app_version": current_settings.app_version,
+            "has_more": has_more,
         },
     )
 

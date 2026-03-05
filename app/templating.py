@@ -8,9 +8,14 @@ import re
 from datetime import timedelta
 from typing import Optional
 
+import markupsafe
 from fastapi.templating import Jinja2Templates
 
 from app.config import get_settings
+
+_MD_BOLD = re.compile(r"\*\*(.+?)\*\*")
+_MD_CODE = re.compile(r"`([^`]+)`")
+_MD_LINK = re.compile(r"\[([^\]]+)\]\(([^)]+)\)")
 
 DISCORD_URL_PATTERN = re.compile(
     r"^https://(discord\.com|discordapp\.com)/api/webhooks/\d+/.+"
@@ -69,6 +74,15 @@ def format_rate(sync) -> str:
     return f"{rate:.2f} PB/s"
 
 
+def render_changelog_md(text: str) -> markupsafe.Markup:
+    """Render inline markdown (bold, code, links) to HTML with XSS prevention."""
+    escaped = str(markupsafe.escape(text))
+    escaped = _MD_BOLD.sub(r"<strong>\1</strong>", escaped)
+    escaped = _MD_CODE.sub(r"<code>\1</code>", escaped)
+    escaped = _MD_LINK.sub(r'<a href="\2">\1</a>', escaped)
+    return markupsafe.Markup(escaped)
+
+
 settings = get_settings()
 
 templates = Jinja2Templates(directory="app/templates")
@@ -76,3 +90,4 @@ templates.env.globals["app_version"] = settings.app_version
 templates.env.filters["format_bytes"] = format_bytes
 templates.env.filters["format_duration"] = format_duration
 templates.env.filters["format_rate"] = format_rate
+templates.env.filters["render_changelog_md"] = render_changelog_md

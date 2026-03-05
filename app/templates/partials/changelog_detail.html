@@ -1,10 +1,27 @@
-<div class="changelog-detail" style="padding: 0.75rem 1rem 1rem 1.5rem;">
+{% set badge_map = {
+    "Added": "badge-added",
+    "Fixed": "badge-fixed",
+    "Changed": "badge-changed",
+    "Removed": "badge-removed",
+    "Documentation": "badge-docs",
+    "GA Promotion": "badge-promotion"
+} %}
+<div class="changelog-detail">
     {% for section_name, items in version.sections.items() %}
-    <div class="changelog-section" style="margin-bottom: 0.75rem;">
-        <h4 style="font-size: 0.875rem; font-weight: 600; margin-bottom: 0.25rem;">{{ section_name }}</h4>
-        <ul style="margin: 0; padding-left: 1.25rem;">
+    <div class="changelog-section">
+        <span class="changelog-section-badge {{ badge_map.get(section_name, 'badge-default') }}">{{ section_name }}</span>
+        <ul class="changelog-items">
             {% for item in items %}
-            <li style="font-size: 0.875rem; margin-bottom: 0.125rem;">{{ item }}</li>
+            <li>
+                {{ item.text | render_changelog_md }}
+                {% if item.children %}
+                <ul class="changelog-nested-list">
+                    {% for child in item.children %}
+                    <li>{{ child | render_changelog_md }}</li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+            </li>
             {% endfor %}
         </ul>
     </div>
