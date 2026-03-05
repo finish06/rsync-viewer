@@ -311,32 +311,45 @@ async def htmx_oidc_settings_save(
 @router.get("/htmx/synthetic-settings")
 async def htmx_synthetic_settings(
     request: Request,
+    session: Session = Depends(get_session),
     user: OptionalUserDep = None,
 ):
     """HTMX partial: Synthetic monitoring status and configuration."""
     if not user or not role_at_least(user.role, ROLE_ADMIN):
         raise HTTPException(status_code=403, detail="Admin only")
 
-    from app.services.synthetic_check import get_state
+    from app.services.synthetic_check import get_db_config, get_state
 
     state = get_state()
+    db_config = get_db_config(session)
     return templates.TemplateResponse(
         request,
         "partials/synthetic_settings.html",
-        context={"synthetic": state},
+        context={"synthetic": state, "db_config": db_config},
     )
 
 
 @router.post("/htmx/synthetic-settings")
 async def htmx_synthetic_settings_save(
     request: Request,
+    session: Session = Depends(get_session),
     user: OptionalUserDep = None,
 ):
-    """HTMX: Toggle synthetic monitoring enable/disable and interval."""
+    """HTMX: Toggle synthetic monitoring enable/disable and interval.
+
+    Writes to DB and starts/stops the background task at runtime (AC-013, AC-014).
+    """
     if not user or not role_at_least(user.role, ROLE_ADMIN):
         raise HTTPException(status_code=403, detail="Admin only")
 
-    from app.services.synthetic_check import get_state
+    from app.database import engine as app_engine
+    from app.services.synthetic_check import (
+        get_db_config,
+        get_state,
+        save_db_config,
+        start_synthetic_monitoring,
+        stop_synthetic_monitoring,
+    )
 
     form = await request.form()
     enabled = str(form.get("enabled", "")) == "on"
@@ -349,9 +362,12 @@ async def htmx_synthetic_settings_save(
     except ValueError:
         interval = 300
 
-    state = get_state()
-    state.enabled = enabled
-    state.interval_seconds = interval
+    save_db_config(session, enabled=enabled, interval_seconds=interval)
+
+    if enabled:
+        await start_synthetic_monitoring(app_engine)
+    else:
+        await stop_synthetic_monitoring()
 
     logger.info(
         "Synthetic monitoring settings updated",
@@ -362,12 +378,42 @@ async def htmx_synthetic_settings_save(
         },
     )
 
+    state = get_state()
+    db_config = get_db_config(session)
     return templates.TemplateResponse(
         request,
         "partials/synthetic_settings.html",
         context={
             "synthetic": state,
-            "success_message": "Synthetic monitoring settings saved.",
+            "db_config": db_config,
+            "success_message": "Synthetic monitoring settings updated. Changes take effect immediately.",
+        },
+    )
+
+
+@router.get("/htmx/synthetic-history")
+async def htmx_synthetic_history(
+    request: Request,
+    session: Session = Depends(get_session),
+    user: OptionalUserDep = None,
+):
+    """HTMX partial: Synthetic check history timeline and stats (AC-017)."""
+    if not user or not role_at_least(user.role, ROLE_ADMIN):
+        raise HTTPException(status_code=403, detail="Admin only")
+
+    from app.services.synthetic_check import get_check_history, get_uptime_percentage
+
+    history = get_check_history(session, limit=50)
+    uptime = get_uptime_percentage(session, hours=24)
+    recent = history[:10]
+
+    return templates.TemplateResponse(
+        request,
+        "partials/synthetic_history.html",
+        context={
+            "history": history,
+            "recent": recent,
+            "uptime": uptime,
         },
     )
 

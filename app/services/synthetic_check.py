@@ -2,6 +2,8 @@
 
 Periodically POSTs a canned rsync log to the app's own API, verifies the
 response, DELETEs it on success, and fires webhooks on failure.
+
+v0.2.0 adds DB-backed config, runtime start/stop, and result storage.
 """
 
 from __future__ import annotations
@@ -10,7 +12,7 @@ import asyncio
 import logging
 import time
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING, Optional
 
 import httpx
@@ -48,6 +50,7 @@ total size is 100  speedup is 0.54"""
 
 MINIMUM_INTERVAL_SECONDS = 30
 REQUEST_TIMEOUT_SECONDS = 10.0
+MAX_RESULT_ROWS = 100
 
 
 @dataclass
@@ -74,10 +77,197 @@ class SyntheticCheckState:
 # Module-level state — accessed by health endpoint and settings UI
 _state = SyntheticCheckState()
 
+# Module-level background task state for runtime start/stop (AC-013)
+_background_task: Optional[asyncio.Task] = None  # type: ignore[type-arg]
+_shutdown_event: Optional[asyncio.Event] = None
+
 
 def get_state() -> SyntheticCheckState:
     """Return current synthetic check state."""
     return _state
+
+
+# ---------------------------------------------------------------------------
+# DB persistence helpers (AC-014, AC-016)
+# ---------------------------------------------------------------------------
+
+
+def get_db_config(session: "Session"):
+    """Return the singleton config row, seeding from env vars if absent."""
+    from sqlmodel import select
+
+    from app.config import get_settings
+    from app.models.synthetic_check_config import SyntheticCheckConfig
+
+    row = session.exec(select(SyntheticCheckConfig)).first()
+    if row is not None:
+        return row
+
+    # Seed from environment (bootstrap defaults)
+    settings = get_settings()
+    row = SyntheticCheckConfig(
+        id=1,
+        enabled=settings.synthetic_check_enabled,
+        interval_seconds=settings.synthetic_check_interval_seconds,
+        api_key=settings.synthetic_check_api_key or None,
+    )
+    session.add(row)
+    session.commit()
+    session.refresh(row)
+    return row
+
+
+def save_db_config(
+    session: "Session",
+    *,
+    enabled: bool,
+    interval_seconds: int,
+):
+    """Update the singleton config row."""
+    config = get_db_config(session)
+    config.enabled = enabled
+    config.interval_seconds = max(interval_seconds, MINIMUM_INTERVAL_SECONDS)
+    config.updated_at = utc_now()
+    session.add(config)
+    session.commit()
+    session.refresh(config)
+    return config
+
+
+def store_check_result(
+    session: "Session",
+    outcome: SyntheticCheckResult,
+) -> None:
+    """Insert a check result row and prune to MAX_RESULT_ROWS."""
+    from sqlmodel import col, select
+
+    from app.models.synthetic_check_result import SyntheticCheckResultRecord
+
+    record = SyntheticCheckResultRecord(
+        checked_at=utc_now(),
+        status=outcome.status,
+        latency_ms=outcome.latency_ms,
+        error=outcome.error,
+    )
+    session.add(record)
+    session.flush()
+
+    # Prune: keep only the newest MAX_RESULT_ROWS
+    count_stmt = select(SyntheticCheckResultRecord.id).order_by(
+        col(SyntheticCheckResultRecord.checked_at).desc()
+    )
+    all_ids = session.exec(count_stmt).all()
+    if len(all_ids) > MAX_RESULT_ROWS:
+        ids_to_delete = all_ids[MAX_RESULT_ROWS:]
+        for old_id in ids_to_delete:
+            old_row = session.get(SyntheticCheckResultRecord, old_id)
+            if old_row:
+                session.delete(old_row)
+
+    session.commit()
+
+
+def get_check_history(
+    session: "Session",
+    limit: int = 50,
+) -> list:
+    """Return the last N check results, newest first."""
+    from sqlmodel import col, select
+
+    from app.models.synthetic_check_result import SyntheticCheckResultRecord
+
+    stmt = (
+        select(SyntheticCheckResultRecord)
+        .order_by(col(SyntheticCheckResultRecord.checked_at).desc())
+        .limit(limit)
+    )
+    return list(session.exec(stmt).all())
+
+
+def get_uptime_percentage(
+    session: "Session",
+    hours: int = 24,
+) -> Optional[float]:
+    """Return pass/total ratio over the given window. None if no data."""
+    from sqlmodel import col, select
+
+    from app.models.synthetic_check_result import SyntheticCheckResultRecord
+
+    cutoff = datetime.now(timezone.utc) - timedelta(hours=hours)
+    stmt = select(SyntheticCheckResultRecord).where(
+        col(SyntheticCheckResultRecord.checked_at) >= cutoff
+    )
+    results = list(session.exec(stmt).all())
+    if not results:
+        return None
+    passing = sum(1 for r in results if r.status == "passing")
+    return round((passing / len(results)) * 100, 1)
+
+
+# ---------------------------------------------------------------------------
+# Runtime start/stop (AC-013)
+# ---------------------------------------------------------------------------
+
+
+async def start_synthetic_monitoring(engine) -> None:
+    """Stop any existing task, read DB config, start new task if enabled."""
+    global _background_task, _shutdown_event
+
+    await stop_synthetic_monitoring()
+
+    from sqlmodel import Session as _Session
+
+    from app.config import get_settings
+
+    with _Session(engine) as session:
+        config = get_db_config(session)
+        if not config.enabled:
+            _state.enabled = False
+            logger.info("Synthetic monitoring disabled (DB config)")
+            return
+
+        settings = get_settings()
+        api_key = (
+            config.api_key
+            or settings.synthetic_check_api_key
+            or settings.default_api_key
+        )
+
+    _shutdown_event = asyncio.Event()
+    _background_task = asyncio.create_task(
+        synthetic_check_background_task(
+            enabled=True,
+            interval_seconds=config.interval_seconds,
+            shutdown_event=_shutdown_event,
+            base_url="http://127.0.0.1:8000",
+            api_key=api_key,
+            engine=engine,
+        )
+    )
+
+
+async def stop_synthetic_monitoring() -> None:
+    """Stop the running background task if any."""
+    global _background_task, _shutdown_event
+
+    if _shutdown_event is not None:
+        _shutdown_event.set()
+
+    if _background_task is not None:
+        _background_task.cancel()
+        try:
+            await _background_task
+        except asyncio.CancelledError:
+            pass
+
+    _background_task = None
+    _shutdown_event = None
+    _state.enabled = False
+
+
+# ---------------------------------------------------------------------------
+# Core check logic
+# ---------------------------------------------------------------------------
 
 
 async def run_synthetic_check(
@@ -227,8 +417,6 @@ async def synthetic_check_background_task(
 ) -> None:
     """Background task that periodically runs synthetic checks.
 
-    Mirrors the retention_background_task pattern from app/services/retention.py.
-
     Args:
         enabled: Whether synthetic checks are active.
         interval_seconds: Seconds between checks (clamped to minimum 30).
@@ -258,11 +446,16 @@ async def synthetic_check_background_task(
                 from sqlmodel import Session as _Session
 
                 with _Session(engine) as db_session:
-                    await run_synthetic_check(
+                    result = await run_synthetic_check(
                         base_url=base_url,
                         api_key=api_key,
                         db_session=db_session,
                     )
+                    # Store result in DB (AC-016)
+                    try:
+                        store_check_result(db_session, result)
+                    except Exception:
+                        logger.exception("Failed to store synthetic check result")
             else:
                 await run_synthetic_check(
                     base_url=base_url,

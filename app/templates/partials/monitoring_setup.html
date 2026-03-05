@@ -93,3 +93,16 @@
         </div>
     </div>
 </div>
+
+<div class="settings-section">
+    <div class="settings-section-header">
+        <h2>Check History</h2>
+    </div>
+    <div class="settings-section-body">
+        <div hx-get="/htmx/synthetic-history"
+             hx-trigger="load"
+             hx-swap="innerHTML">
+            <div class="loading">Loading check history...</div>
+        </div>
+    </div>
+</div>

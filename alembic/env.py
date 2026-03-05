@@ -15,6 +15,8 @@ import app.models.notification_log  # noqa: F401 — NotificationLog
 import app.models.smtp_config  # noqa: F401 — SmtpConfig
 import app.models.oidc_config  # noqa: F401 — OidcConfig
 import app.models.user  # noqa: F401 — User, RefreshToken, PasswordResetToken
+import app.models.synthetic_check_config  # noqa: F401 — SyntheticCheckConfig
+import app.models.synthetic_check_result  # noqa: F401 — SyntheticCheckResultRecord
 
 from app.config import get_settings
 

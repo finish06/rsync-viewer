@@ -22,6 +22,8 @@ from app.models.notification_log import NotificationLog  # noqa: F401 — ensure
 from app.models.webhook_options import WebhookOptions  # noqa: F401 — ensure table creation
 from app.models.smtp_config import SmtpConfig  # noqa: F401 — ensure table creation
 from app.models.oidc_config import OidcConfig  # noqa: F401 — ensure table creation
+from app.models.synthetic_check_config import SyntheticCheckConfig  # noqa: F401
+from app.models.synthetic_check_result import SyntheticCheckResultRecord  # noqa: F401
 from app.utils import utc_now
 
 # Test secret key — must match get_test_settings().secret_key
