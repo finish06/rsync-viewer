@@ -4,8 +4,8 @@ These tests run against a live instance (no DB fixtures, no test client).
 Configure target via SMOKE_TEST_URL environment variable.
 
 Usage:
-    pytest tests/smoke/ -m smoke
-    SMOKE_TEST_URL=https://rsync.example.com pytest tests/smoke/ -m smoke
+    pytest tests/smoke/ -c /dev/null --noconftest --rootdir tests/smoke -o "markers=smoke: Smoke tests"
+    SMOKE_TEST_URL=https://rsync.example.com pytest tests/smoke/ -c /dev/null --noconftest --rootdir tests/smoke -o "markers=smoke: Smoke tests"
 """
 
 import os

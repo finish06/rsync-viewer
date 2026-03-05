@@ -7,6 +7,27 @@ and this project adheres to [Conventional Commits](https://www.conventionalcommi
 
 ## [Unreleased]
 
+### Added
+
+- Synthetic monitoring v0.2.0 — DB-backed config, runtime enable/disable, history dashboard
+- Hide synthetic check logs from default views and API responses (tri-state filter: hide/show/only)
+- Align analytics filter controls with sync logs view layout (quick-select, dropdowns, conditional date pickers)
+- Changelog presentation — color-coded section badges, inline markdown, CSS accordion, pagination
+- Date-range quick-select buttons for Analytics and Notifications tabs
+- Beta branch CI workflow and auto-version tagging on main
+
+### Fixed
+
+- Include start_time and end_time in synthetic check POST payload
+- OIDC settings info boxes render correctly in dark mode
+- Quote YAML value containing colon in CI smoke test step
+- Fully isolate smoke tests from root conftest with --rootdir
+
+### Documentation
+
+- Mark AC-005 (API key rotation) as covered by per-user API key management spec
+- Add and update specs for UI polish features
+
 ## [2.0.0] - 2026-03-03
 
 ### GA Promotion
