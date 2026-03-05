@@ -46,6 +46,17 @@
                     </select>
                 </div>
 
+                {% if synthetic_monitoring_enabled %}
+                <div class="filter-group">
+                    <label for="synthetic">Synthetic:</label>
+                    <select name="synthetic" id="synthetic">
+                        <option value="hide" selected>Hide</option>
+                        <option value="show">Show</option>
+                        <option value="only">Only Synthetic</option>
+                    </select>
+                </div>
+                {% endif %}
+
                 <div class="filter-group date-filter" style="display: none;">
                     <label for="start_date">From:</label>
                     <input type="date" name="start_date" id="start_date">
@@ -60,6 +71,7 @@
                     <button type="submit" class="btn btn-primary">Filter</button>
                     <button type="button" class="btn btn-secondary" onclick="resetFilters()">Reset</button>
                 </div>
+
             </form>
         </section>
 
@@ -122,6 +134,8 @@ function getFilterParams() {
     if (source) params.set('source_name', source);
     params.set('show_dry_run', document.getElementById('show_dry_run').value);
     params.set('hide_empty', document.getElementById('hide_empty').value);
+    var syntheticEl = document.getElementById('synthetic');
+    if (syntheticEl) params.set('synthetic', syntheticEl.value);
     return params;
 }
 

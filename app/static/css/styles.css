@@ -178,7 +178,6 @@ main {
     border-color: var(--primary-color);
     box-shadow: 0 0 0 3px var(--focus-ring);
 }
-
 /* Buttons */
 .btn {
     padding: 0.5rem 1rem;

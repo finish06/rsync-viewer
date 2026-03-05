@@ -6,6 +6,7 @@
             <button class="quick-select-btn" data-range="max" onclick="analyticsSelectRange('max')">Max</button>
             <button class="quick-select-btn" data-range="custom" onclick="analyticsSelectRange('custom')">Custom</button>
         </div>
+
         <form id="analytics-form" class="analytics-filter-form">
             <div class="analytics-filter-row">
                 <div class="filter-group">
@@ -36,6 +37,17 @@
                         {% endfor %}
                     </select>
                 </div>
+
+                {% if synthetic_monitoring_enabled %}
+                <div class="filter-group">
+                    <label for="analytics-synthetic">Synthetic</label>
+                    <select name="synthetic" id="analytics-synthetic">
+                        <option value="hide" selected>Hide</option>
+                        <option value="show">Show</option>
+                        <option value="only">Only Synthetic</option>
+                    </select>
+                </div>
+                {% endif %}
 
                 <div class="filter-group filter-group-btn">
                     <button type="submit" class="btn btn-primary">Update</button>
@@ -200,6 +212,8 @@
         var endVal = document.getElementById('analytics-end').value;
         if (startVal) params.set('start', startVal);
         if (endVal) params.set('end', endVal);
+        var syntheticEl = document.getElementById('analytics-synthetic');
+        if (syntheticEl) params.set('synthetic', syntheticEl.value);
 
         fetch('/api/v1/analytics/sources?' + params.toString())
             .then(function(r) { return r.json(); })
@@ -239,6 +253,8 @@
 
         var params = new URLSearchParams({period: period, start: startVal, end: endVal});
         if (source) params.set('source', source);
+        var syntheticEl = document.getElementById('analytics-synthetic');
+        if (syntheticEl) params.set('synthetic', syntheticEl.value);
 
         fetch('/api/v1/analytics/summary?' + params.toString())
             .then(function(r) { return r.json(); })
@@ -251,6 +267,7 @@
         if (startVal) exportParams.set('start', startVal);
         if (endVal) exportParams.set('end', endVal);
         if (source) exportParams.set('source', source);
+        if (syntheticEl) exportParams.set('synthetic', syntheticEl.value);
         document.getElementById('export-csv').href = '/api/v1/analytics/export?format=csv&' + exportParams.toString();
         document.getElementById('export-json').href = '/api/v1/analytics/export?format=json&' + exportParams.toString();
     }

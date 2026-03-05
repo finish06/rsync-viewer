@@ -14,6 +14,7 @@ from app.models.failure_event import FailureEvent
 from app.models.webhook import WebhookEndpoint
 from app.models.notification_log import NotificationLog
 from app.services.sync_filters import apply_sync_filters
+from app.services.synthetic_check import SYNTHETIC_SOURCE_NAME, get_db_config
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +31,7 @@ async def htmx_sync_table(
     end_date: Optional[str] = Query(None),
     show_dry_run: str = Query("hide"),
     hide_empty: str = Query("hide"),
+    synthetic: str = Query("hide"),
     offset: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
     load_all: bool = Query(False),
@@ -44,6 +46,7 @@ async def htmx_sync_table(
         end_date=end_date,
         show_dry_run=show_dry_run,
         hide_empty=hide_empty,
+        synthetic=synthetic,
     )
 
     # Get total count
@@ -59,9 +62,12 @@ async def htmx_sync_table(
         )
     syncs = session.exec(statement).all()
 
-    # Get sources for filter
+    # Get sources for filter (AC-007: never show __synthetic_check)
     sources = session.exec(
-        select(SyncLog.source_name).distinct().order_by(SyncLog.source_name)
+        select(SyncLog.source_name)
+        .where(SyncLog.source_name != SYNTHETIC_SOURCE_NAME)
+        .distinct()
+        .order_by(SyncLog.source_name)
     ).all()
 
     return templates.TemplateResponse(
@@ -79,6 +85,7 @@ async def htmx_sync_table(
             "end_date": end_date or "",
             "show_dry_run": show_dry_run,
             "hide_empty": hide_empty,
+            "synthetic": synthetic,
         },
     )
 
@@ -87,13 +94,21 @@ async def htmx_sync_table(
 async def htmx_analytics(request: Request, session: Session = Depends(get_session)):
     """HTMX partial: analytics tab with charts, comparison, and export."""
     sources = session.exec(
-        select(SyncLog.source_name).distinct().order_by(SyncLog.source_name)
+        select(SyncLog.source_name)
+        .where(SyncLog.source_name != SYNTHETIC_SOURCE_NAME)
+        .distinct()
+        .order_by(SyncLog.source_name)
     ).all()
+
+    synthetic_monitoring_enabled = get_db_config(session).enabled
 
     return templates.TemplateResponse(
         request,
         "partials/analytics.html",
-        context={"sources": sources},
+        context={
+            "sources": sources,
+            "synthetic_monitoring_enabled": synthetic_monitoring_enabled,
+        },
     )
 
 
@@ -106,6 +121,7 @@ async def htmx_charts(
     end_date: Optional[str] = Query(None),
     show_dry_run: str = Query("hide"),
     hide_empty: str = Query("hide"),
+    synthetic: str = Query("hide"),
 ):
     """HTMX partial: sync statistics charts"""
 
@@ -117,6 +133,7 @@ async def htmx_charts(
         end_date=end_date,
         show_dry_run=show_dry_run,
         hide_empty=hide_empty,
+        synthetic=synthetic,
     )
 
     # Get recent syncs (limit 50, ordered by time ascending for charts)
