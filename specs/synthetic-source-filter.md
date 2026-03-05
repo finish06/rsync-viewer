@@ -1,9 +1,9 @@
 # Spec: Synthetic Source Filter
 
-**Version:** 0.1.0
+**Version:** 1.0.0
 **Created:** 2026-03-05
 **PRD Reference:** docs/prd.md
-**Status:** Draft
+**Status:** Complete
 
 ## 1. Overview
 
