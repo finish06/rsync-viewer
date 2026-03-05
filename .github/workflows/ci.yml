@@ -63,7 +63,7 @@ jobs:
 
       - name: Cleanup
         if: always()
-        run: docker compose down
+        run: docker compose -f docker-compose.dev.yml down
   build-push:
     name: Build & Push Container
     runs-on: ubuntu-latest
@@ -165,6 +165,20 @@ jobs:
       - name: Start services
         run: docker compose up -d --wait
 
+      - name: Wait for app to be ready
+        run: |
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8000/health > /dev/null 2>&1; then
+              echo "App is ready"
+              exit 0
+            fi
+            echo "Waiting for app... ($i/30)"
+            sleep 2
+          done
+          echo "App failed to start"
+          docker compose logs app
+          exit 1
+
       - name: Run smoke tests
         run: 'pytest tests/smoke/ -c /dev/null --noconftest --rootdir tests/smoke -o "markers=smoke: Smoke tests"'
         env:
@@ -172,4 +186,4 @@ jobs:
 
       - name: Cleanup
         if: always()
-        run: docker compose -f docker-compose.dev.yml down
+        run: docker compose down
