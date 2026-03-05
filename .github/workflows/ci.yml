@@ -138,12 +138,22 @@ jobs:
           TAGS="$TAGS,ghcr.io/finish06/rsync-viewer:sha-${{ github.sha }}"
           echo "tags=$TAGS" >> "$GITHUB_OUTPUT"
 
+      - name: Determine app version
+        id: app-version
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/beta" ]]; then
+            echo "version=beta" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=${{ steps.version.outputs.version }}" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
           context: .
           push: true
           tags: ${{ steps.tags.outputs.tags }}
+          build-args: APP_VERSION=${{ steps.app-version.outputs.version }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
