@@ -22,7 +22,7 @@ As a homelab administrator exposing rsync-viewer to my network, I want the appli
 | AC-002 | Unauthenticated endpoints have stricter rate limits (default: 20 requests/minute) | Must |
 | AC-003 | Rate limit responses include standard headers: X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Reset | Must |
 | AC-004 | API keys are salted and hashed (bcrypt or argon2) before database storage | Must |
-| AC-005 | API key rotation: new keys can be generated while old keys remain valid for a grace period | Should |
+| AC-005 | API key rotation: covered by per-user API key management (`user-management.md`) — users can create multiple keys and delete old ones, no grace period needed | Covered |
 | AC-006 | All API inputs are validated with type checking, length limits, and format validation | Must |
 | AC-007 | Request body size is limited (default: 10MB) to prevent resource exhaustion | Must |
 | AC-008 | Security headers are set on all responses: Content-Security-Policy, X-Content-Type-Options, X-Frame-Options, Strict-Transport-Security | Must |
