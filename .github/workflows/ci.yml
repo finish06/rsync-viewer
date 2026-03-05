@@ -63,8 +63,7 @@ jobs:
 
       - name: Cleanup
         if: always()
-        run: docker compose -f docker-compose.dev.yml down
-
+        run: docker compose down
   build-push:
     name: Build & Push Container
     runs-on: ubuntu-latest
@@ -164,7 +163,7 @@ jobs:
         run: pip install httpx pytest
 
       - name: Start services
-        run: docker compose -f docker-compose.dev.yml up -d --wait
+        run: docker compose up -d --wait
 
       - name: Run smoke tests
         run: 'pytest tests/smoke/ -c /dev/null --noconftest --rootdir tests/smoke -o "markers=smoke: Smoke tests"'
