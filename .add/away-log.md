@@ -15,3 +15,17 @@
 ## Progress Log
 | Time | Task | Status | Notes |
 |------|------|--------|-------|
+| Session 1 | Commit spec updates | Done | 4 specs updated, smoke test fix, merged to main |
+| Session 1 | Update date-range plan | Done | Added Phase 6 (Analytics) and Phase 7 (Notifications) |
+| Session 2 | TDD: date-range v2 RED | Done | 11 tests written, 10 failing as expected |
+| Session 2 | TDD: date-range v2 GREEN | Done | Backend date filtering + frontend quick-select buttons |
+| Session 2 | TDD: OIDC dark mode RED | Done | 2 tests written, both failing |
+| Session 2 | TDD: OIDC dark mode GREEN | Done | --bg-secondary CSS var + .info-box class |
+| Session 2 | VERIFY | Done | 825 tests pass, lint clean, format clean |
+| Session 2 | Push + PR | Done | PR #29 created |
+
+## Queued for Return
+- Update synthetic-monitoring-plan.md for v0.2.0
+- Create changelog-presentation-plan.md
+- TDD cycle: synthetic monitoring v0.2.0 (DB persistence, runtime toggle, check history)
+- TDD cycle: changelog presentation improvements

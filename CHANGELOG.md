@@ -7,6 +7,33 @@ and this project adheres to [Conventional Commits](https://www.conventionalcommi
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-03-05
+
+### Added
+
+- **Synthetic monitoring v0.2.0** — DB-backed config, runtime enable/disable, history dashboard
+- **Synthetic source filter** — hide `__synthetic_check` from default views and API responses (tri-state filter: hide/show/only)
+- Align analytics filter controls with sync logs view layout (quick-select, dropdowns, conditional date pickers)
+- Changelog presentation — color-coded section badges, inline markdown, CSS accordion, pagination
+- Date-range quick-select buttons for Analytics and Notifications tabs
+- Beta branch CI workflow and auto-version tagging on main
+- Standalone smoke test workflow with manual dispatch (`gh workflow run smoke-test.yml`)
+
+### Fixed
+
+- Include start_time and end_time in synthetic check POST payload
+- OIDC settings info boxes render correctly in dark mode
+- Smoke test CI: use correct docker-compose.yml (app + db, not dev-only)
+- Smoke test CI: add app healthcheck and wait-for-ready retry loop
+- Isolate smoke tests from root conftest with `-c /dev/null --noconftest`
+- Quote YAML value containing colon in CI smoke test step
+
+### Documentation
+
+- Mark AC-005 (API key rotation) as covered by per-user API key management spec
+- Mark synthetic source filter spec as complete (v1.0.0)
+- Add and update specs for UI polish features
+
 ## [2.0.0] - 2026-03-03
 
 ### GA Promotion

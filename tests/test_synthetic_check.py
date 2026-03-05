@@ -802,6 +802,7 @@ class TestSyntheticSettingsUI:
         """POST /htmx/synthetic-settings toggles enable/disable (admin only)."""
         import os
         from datetime import timedelta
+        from unittest.mock import AsyncMock, patch
 
         import jwt as pyjwt
         from httpx import ASGITransport, AsyncClient
@@ -868,10 +869,14 @@ class TestSyntheticSettingsUI:
                 headers={"X-CSRF-Token": csrf_token},
                 cookies={"access_token": jwt_token, "csrf_token": csrf_token},
             ) as admin_client:
-                response = await admin_client.post(
-                    "/htmx/synthetic-settings",
-                    data={"enabled": "on", "interval": "120"},
-                )
+                with patch(
+                    "app.services.synthetic_check.start_synthetic_monitoring",
+                    AsyncMock(),
+                ):
+                    response = await admin_client.post(
+                        "/htmx/synthetic-settings",
+                        data={"enabled": "on", "interval": "120"},
+                    )
             assert response.status_code == 200
         finally:
             sc_module._state = original_state

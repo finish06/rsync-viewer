@@ -1,0 +1,63 @@
+<div id="synthetic-history-container"
+     hx-get="/htmx/synthetic-history"
+     hx-trigger="every 60s"
+     hx-swap="outerHTML">
+
+    {% if uptime is not none %}
+    <div style="margin-bottom: 1rem; display: flex; align-items: center; gap: 0.75rem;">
+        <span style="font-weight: 600;">Uptime (24h):</span>
+        {% if uptime >= 99 %}
+        <span class="badge" style="background: var(--success-color, #22c55e); color: #fff; padding: 0.25rem 0.5rem; border-radius: 4px;">{{ "%.1f"|format(uptime) }}%</span>
+        {% elif uptime >= 90 %}
+        <span class="badge" style="background: var(--warning-color, #f59e0b); color: #fff; padding: 0.25rem 0.5rem; border-radius: 4px;">{{ "%.1f"|format(uptime) }}%</span>
+        {% else %}
+        <span class="badge" style="background: var(--danger-color, #ef4444); color: #fff; padding: 0.25rem 0.5rem; border-radius: 4px;">{{ "%.1f"|format(uptime) }}%</span>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {% if history %}
+    <div style="margin-bottom: 1rem;">
+        <span style="font-weight: 600; font-size: 0.85rem;">Timeline (last {{ history|length }} checks):</span>
+        <div style="display: flex; gap: 2px; flex-wrap: wrap; margin-top: 0.5rem;">
+            {% for check in history|reverse %}
+            <div title="{{ check.checked_at.strftime('%Y-%m-%d %H:%M:%S') }} — {{ check.status }}{% if check.error %}: {{ check.error[:80] }}{% endif %}"
+                 style="width: 10px; height: 10px; border-radius: 50%;
+                        background: {% if check.status == 'passing' %}var(--success-color, #22c55e){% else %}var(--danger-color, #ef4444){% endif %};">
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if recent %}
+    <table class="data-table" style="font-size: 0.85rem;">
+        <thead>
+            <tr>
+                <th>Time</th>
+                <th>Status</th>
+                <th>Latency</th>
+                <th>Error</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for check in recent %}
+            <tr>
+                <td>{{ check.checked_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                <td>
+                    {% if check.status == 'passing' %}
+                    <span class="badge" style="background: var(--success-color, #22c55e); color: #fff; padding: 0.15rem 0.4rem; border-radius: 4px; font-size: 0.75rem;">Pass</span>
+                    {% else %}
+                    <span class="badge" style="background: var(--danger-color, #ef4444); color: #fff; padding: 0.15rem 0.4rem; border-radius: 4px; font-size: 0.75rem;">Fail</span>
+                    {% endif %}
+                </td>
+                <td>{{ "%.0f"|format(check.latency_ms) }}ms</td>
+                <td style="max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ check.error or '—' }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p style="opacity: 0.6; font-size: 0.85rem;">No check history yet. Results will appear after the first check cycle.</p>
+    {% endif %}
+</div>

@@ -13,6 +13,7 @@ from app.api.deps import OptionalUserDep
 from app.templating import templates
 from app.models.sync_log import SyncLog
 from app.services.auth import role_at_least, ROLE_OPERATOR
+from app.services.synthetic_check import SYNTHETIC_SOURCE_NAME, get_db_config
 from app.services.changelog_parser import parse_changelog
 from app.services.oidc import get_oidc_config
 
@@ -29,15 +30,25 @@ async def index(
 ):
     """Main dashboard page"""
 
-    # Get unique sources for filter dropdown
+    # Get unique sources for filter dropdown (AC-011: exclude synthetic)
     sources = session.exec(
-        select(SyncLog.source_name).distinct().order_by(SyncLog.source_name)
+        select(SyncLog.source_name)
+        .where(SyncLog.source_name != SYNTHETIC_SOURCE_NAME)
+        .distinct()
+        .order_by(SyncLog.source_name)
     ).all()
+
+    # Check if synthetic monitoring is enabled (AC-004/AC-005)
+    synthetic_monitoring_enabled = get_db_config(session).enabled
 
     return templates.TemplateResponse(
         request,
         "index.html",
-        context={"sources": sources, "user": user},
+        context={
+            "sources": sources,
+            "user": user,
+            "synthetic_monitoring_enabled": synthetic_monitoring_enabled,
+        },
     )
 
 
@@ -139,7 +150,7 @@ async def settings_page(request: Request, user: OptionalUserDep = None):
 
 
 @router.get("/htmx/changelog")
-async def htmx_changelog_list(request: Request):
+async def htmx_changelog_list(request: Request, show_all: bool = False):
     """HTMX partial: changelog version accordion list."""
     versions = [
         v
@@ -147,12 +158,15 @@ async def htmx_changelog_list(request: Request):
         if v.version != "Unreleased"
     ]
     current_settings = get_settings()
+    has_more = len(versions) > 5 and not show_all
+    display_versions = versions if show_all else versions[:5]
     return templates.TemplateResponse(
         request,
         "partials/changelog_list.html",
         context={
-            "versions": versions,
+            "versions": display_versions,
             "app_version": current_settings.app_version,
+            "has_more": has_more,
         },
     )
 

@@ -12,6 +12,7 @@ from sqlmodel import select, func, case, col, extract
 
 from app.api.deps import SessionDep
 from app.models.sync_log import SyncLog
+from app.services.synthetic_check import SYNTHETIC_SOURCE_NAME
 from app.schemas.analytics import (
     ExportRecord,
     SourceStats,
@@ -48,6 +49,10 @@ async def get_summary(
     start: date = Query(..., description="Start date (ISO 8601)"),
     end: date = Query(..., description="End date (ISO 8601)"),
     source: Optional[str] = Query(None, description="Filter by source name"),
+    synthetic: str = Query(
+        "hide",
+        description="Synthetic log filter: 'hide' (default), 'only', or 'show'",
+    ),
 ):
     """AC-001, AC-003: Return daily/weekly/monthly summary with aggregated stats."""
     start_dt = datetime(start.year, start.month, start.day, 0, 0, 0)
@@ -85,7 +90,13 @@ async def get_summary(
         .order_by(trunc)
     )
 
-    if source:
+    # Synthetic filter
+    if synthetic == "hide":
+        statement = statement.where(SyncLog.source_name != SYNTHETIC_SOURCE_NAME)
+    elif synthetic == "only":
+        statement = statement.where(SyncLog.source_name == SYNTHETIC_SOURCE_NAME)
+
+    if synthetic != "only" and source:
         statement = statement.where(SyncLog.source_name == source)
 
     results = session.exec(statement).all()
@@ -123,6 +134,10 @@ async def get_source_stats(
     session: SessionDep,
     start: Optional[date] = Query(None, description="Start date filter"),
     end: Optional[date] = Query(None, description="End date filter"),
+    synthetic: str = Query(
+        "hide",
+        description="Synthetic log filter: 'hide' (default), 'only', or 'show'",
+    ),
 ):
     """AC-002: Return per-source stats (total syncs, success rate, avg duration, etc.)."""
     duration_expr = extract("epoch", SyncLog.end_time - SyncLog.start_time)
@@ -138,6 +153,12 @@ async def get_source_stats(
         func.avg(SyncLog.bytes_received).label("avg_bytes"),
         func.max(SyncLog.start_time).label("last_sync_at"),
     ).group_by(SyncLog.source_name)
+
+    # Synthetic filter
+    if synthetic == "hide":
+        statement = statement.where(SyncLog.source_name != SYNTHETIC_SOURCE_NAME)
+    elif synthetic == "only":
+        statement = statement.where(SyncLog.source_name == SYNTHETIC_SOURCE_NAME)
 
     if start:
         start_dt = datetime(start.year, start.month, start.day, 0, 0, 0)
@@ -184,6 +205,10 @@ async def export_data(
     source: Optional[str] = Query(None, description="Filter by source name"),
     limit: int = Query(default=10000, ge=1, description="Max records"),
     offset: int = Query(default=0, ge=0, description="Pagination offset"),
+    synthetic: str = Query(
+        "hide",
+        description="Synthetic log filter: 'hide' (default), 'only', or 'show'",
+    ),
 ):
     """AC-004, AC-005, AC-010: Export sync events with filters and pagination."""
     if format not in ("csv", "json"):
@@ -208,7 +233,13 @@ async def export_data(
         SyncLog.is_dry_run,
     ).order_by(SyncLog.start_time.desc())
 
-    if source:
+    # Synthetic filter
+    if synthetic == "hide":
+        statement = statement.where(SyncLog.source_name != SYNTHETIC_SOURCE_NAME)
+    elif synthetic == "only":
+        statement = statement.where(SyncLog.source_name == SYNTHETIC_SOURCE_NAME)
+
+    if synthetic != "only" and source:
         statement = statement.where(SyncLog.source_name == source)
     if start:
         start_dt = datetime(start.year, start.month, start.day, 0, 0, 0)

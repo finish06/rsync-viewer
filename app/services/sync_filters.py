@@ -8,6 +8,7 @@ from datetime import datetime
 from typing import Any, Optional
 
 from app.models.sync_log import SyncLog
+from app.services.synthetic_check import SYNTHETIC_SOURCE_NAME
 
 
 class InvalidDateError(ValueError):
@@ -37,6 +38,7 @@ def apply_sync_filters(
     end_date: Optional[str] = None,
     show_dry_run: str = "hide",
     hide_empty: str = "hide",
+    synthetic: str = "hide",
 ) -> Any:
     """Apply standard sync log filters to a SQLModel select statement.
 
@@ -56,14 +58,24 @@ def apply_sync_filters(
     hide_empty : str
         ``"hide"`` (exclude zero-file runs), ``"only"`` (only zero-file runs),
         or ``"show"`` (no filter).
+    synthetic : str
+        ``"hide"`` (exclude synthetic checks), ``"only"`` (only synthetic),
+        or ``"show"`` (no filter).
 
     Returns
     -------
     select
         The filtered statement.
     """
-    if source_name:
+    # Synthetic filter — applied before source_name so "only" can override
+    if synthetic == "hide":
+        statement = statement.where(SyncLog.source_name != SYNTHETIC_SOURCE_NAME)
+    elif synthetic == "only":
+        statement = statement.where(SyncLog.source_name == SYNTHETIC_SOURCE_NAME)
+
+    if synthetic != "only" and source_name:
         statement = statement.where(SyncLog.source_name == source_name)
+
     if start_date:
         statement = statement.where(SyncLog.start_time >= _parse_date(start_date))
     if end_date:

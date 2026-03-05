@@ -25,6 +25,7 @@ from app.schemas.sync_log import (
 )
 from app.metrics import record_sync
 from app.services.rsync_parser import RsyncParser
+from app.services.synthetic_check import SYNTHETIC_SOURCE_NAME
 from app.services.webhook_dispatcher import dispatch_webhooks
 
 logger = logging.getLogger(__name__)
@@ -188,6 +189,10 @@ async def list_sync_logs(
     limit: int = Query(
         20, ge=1, le=100, description="Maximum number of records to return"
     ),
+    synthetic: str = Query(
+        "hide",
+        description="Synthetic log filter: 'hide' (default), 'only', or 'show'",
+    ),
 ):
     """
     List sync logs with optional filtering and pagination.
@@ -207,7 +212,13 @@ async def list_sync_logs(
     # Build base query with filters
     statement = select(SyncLog)
 
-    if source_name:
+    # Synthetic filter (AC-008)
+    if synthetic == "hide":
+        statement = statement.where(SyncLog.source_name != SYNTHETIC_SOURCE_NAME)
+    elif synthetic == "only":
+        statement = statement.where(SyncLog.source_name == SYNTHETIC_SOURCE_NAME)
+
+    if synthetic != "only" and source_name:
         statement = statement.where(SyncLog.source_name == source_name)
     if start_date:
         statement = statement.where(SyncLog.start_time >= start_date)
@@ -353,7 +364,12 @@ async def list_sources(
 
     Useful for populating filter dropdowns in the UI.
     """
-    statement = select(SyncLog.source_name).distinct().order_by(SyncLog.source_name)
+    statement = (
+        select(SyncLog.source_name)
+        .where(SyncLog.source_name != SYNTHETIC_SOURCE_NAME)
+        .distinct()
+        .order_by(SyncLog.source_name)
+    )
     sources = session.exec(statement).all()
     return SourceListResponse(sources=list(sources))
 

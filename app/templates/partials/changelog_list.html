@@ -2,19 +2,35 @@
     {% for v in versions %}
     <div class="changelog-version">
         <div class="changelog-version-header"
+             data-version="{{ v.version }}"
              hx-get="/htmx/changelog/{{ v.version }}"
              hx-target="#changelog-detail-{{ loop.index }}"
              hx-swap="innerHTML"
-             style="cursor: pointer; padding: 0.75rem 1rem; border-bottom: 1px solid var(--border-color, #e0e0e0); display: flex; align-items: center; gap: 0.5rem;">
+             {% if v.version == app_version %}hx-trigger="click, load"{% else %}hx-trigger="click"{% endif %}>
+            <span class="changelog-chevron{% if v.version == app_version %} expanded{% endif %}">&#9654;</span>
             <strong>{{ v.version }}</strong>
             {% if v.date %}
-            <span style="color: var(--text-muted, #888); font-size: 0.875rem;">{{ v.date }}</span>
+            <span class="changelog-version-date">{{ v.date }}</span>
             {% endif %}
             {% if v.version == app_version %}
-            <span class="badge badge-current" style="background: var(--accent-color, #22c55e); color: #fff; padding: 0.125rem 0.5rem; border-radius: 4px; font-size: 0.75rem;">Current</span>
+            <span class="badge-current">Current</span>
             {% endif %}
         </div>
-        <div id="changelog-detail-{{ loop.index }}"></div>
+        <div class="changelog-content{% if v.version == app_version %} expanded{% endif %}"
+             id="changelog-content-{{ loop.index }}">
+            <div id="changelog-detail-{{ loop.index }}"
+                 hx-on::after-swap="this.closest('.changelog-content').classList.add('expanded'); var c=this.closest('.changelog-version').querySelector('.changelog-chevron'); if(c) c.classList.add('expanded');"></div>
+        </div>
     </div>
     {% endfor %}
+    {% if has_more %}
+    <div class="changelog-show-more">
+        <button class="btn btn-secondary btn-small"
+                hx-get="/htmx/changelog?show_all=true"
+                hx-target=".changelog-list"
+                hx-swap="outerHTML">
+            Show older versions
+        </button>
+    </div>
+    {% endif %}
 </div>

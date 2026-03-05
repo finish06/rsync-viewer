@@ -9,7 +9,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from app.services.changelog_parser import parse_changelog
-from app.schemas.changelog import ChangelogVersion
+from app.schemas.changelog import ChangelogItem, ChangelogVersion
 
 
 # ── Sample CHANGELOG.md content for tests ──────────────────────────────────
@@ -230,7 +230,7 @@ class TestSettingsChangelog:
                 ChangelogVersion(
                     version="1.0.0",
                     date="2026-01-26",
-                    sections={"Added": ["Initial release"]},
+                    sections={"Added": [ChangelogItem(text="Initial release")]},
                 )
             ],
         ):
@@ -265,12 +265,12 @@ class TestChangelogEndpoints:
                 ChangelogVersion(
                     version="1.7.0",
                     date="2026-02-24",
-                    sections={"Added": ["New feature"]},
+                    sections={"Added": [ChangelogItem(text="New feature")]},
                 ),
                 ChangelogVersion(
                     version="1.6.0",
                     date="2026-02-23",
-                    sections={"Fixed": ["Bug fix"]},
+                    sections={"Fixed": [ChangelogItem(text="Bug fix")]},
                 ),
             ],
         ):
@@ -289,8 +289,11 @@ class TestChangelogEndpoints:
                     version="1.7.0",
                     date="2026-02-24",
                     sections={
-                        "Added": ["Setup guide", "Architecture diagram"],
-                        "Fixed": ["E2E test isolation"],
+                        "Added": [
+                            ChangelogItem(text="Setup guide"),
+                            ChangelogItem(text="Architecture diagram"),
+                        ],
+                        "Fixed": [ChangelogItem(text="E2E test isolation")],
                     },
                 ),
             ],
@@ -325,12 +328,12 @@ class TestCurrentBadge:
                     ChangelogVersion(
                         version="1.7.0",
                         date="2026-02-24",
-                        sections={"Added": ["New feature"]},
+                        sections={"Added": [ChangelogItem(text="New feature")]},
                     ),
                     ChangelogVersion(
                         version="1.6.0",
                         date="2026-02-23",
-                        sections={"Fixed": ["Bug fix"]},
+                        sections={"Fixed": [ChangelogItem(text="Bug fix")]},
                     ),
                 ],
             ),

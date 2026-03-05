@@ -4,13 +4,14 @@ Handles the Keep a Changelog format:
   ## [version] - date
   ### Section
   - Item
+    - Sub-item
 """
 
 import re
 from functools import lru_cache
 from pathlib import Path
 
-from app.schemas.changelog import ChangelogVersion
+from app.schemas.changelog import ChangelogItem, ChangelogVersion
 
 # Matches: ## [1.7.0] - 2026-02-24  or  ## [Unreleased]
 VERSION_HEADER = re.compile(
@@ -20,8 +21,11 @@ VERSION_HEADER = re.compile(
 # Matches: ### Added, ### Fixed, etc.
 SECTION_HEADER = re.compile(r"^###\s+(?P<section>.+)$")
 
-# Matches: - Item text
+# Matches: - Item text (top-level list item, no leading whitespace)
 LIST_ITEM = re.compile(r"^-\s+(?P<text>.+)$")
+
+# Matches:   - Sub-item text (indented 2+ spaces)
+SUB_LIST_ITEM = re.compile(r"^\s{2,}-\s+(?P<text>.+)$")
 
 
 def _parse_content(content: str) -> list[ChangelogVersion]:
@@ -32,7 +36,7 @@ def _parse_content(content: str) -> list[ChangelogVersion]:
     versions: list[ChangelogVersion] = []
     current_version: str | None = None
     current_date: str | None = None
-    current_sections: dict[str, list[str]] = {}
+    current_sections: dict[str, list[ChangelogItem]] = {}
     current_section: str | None = None
 
     for line in content.splitlines():
@@ -58,10 +62,22 @@ def _parse_content(content: str) -> list[ChangelogVersion]:
             current_section = section_match.group("section").strip()
             continue
 
+        # Check for indented sub-item first (before top-level item)
+        sub_item_match = SUB_LIST_ITEM.match(line)
+        if (
+            sub_item_match
+            and current_version is not None
+            and current_section is not None
+        ):
+            items = current_sections.get(current_section, [])
+            if items:
+                items[-1].children.append(sub_item_match.group("text").strip())
+            continue
+
         item_match = LIST_ITEM.match(line)
         if item_match and current_version is not None and current_section is not None:
             current_sections.setdefault(current_section, []).append(
-                item_match.group("text").strip()
+                ChangelogItem(text=item_match.group("text").strip())
             )
             continue
 

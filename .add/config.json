@@ -11,7 +11,7 @@
     "level": "ga",
     "promoted_from": "beta",
     "promoted_date": "2026-03-03",
-    "next_promotion_criteria": "N/A — GA is the final maturity level"
+    "next_promotion_criteria": "N/A \u2014 GA is the final maturity level"
   },
   "architecture": {
     "languages": [
@@ -71,7 +71,9 @@
     },
     "production": {
       "deploy_trigger": "merge to main",
-      "verify": ["smoke_tests"],
+      "verify": [
+        "smoke_tests"
+      ],
       "url": null,
       "requires_approval": true
     }
@@ -108,7 +110,9 @@
     "default_branch": "main",
     "commit_convention": "conventional",
     "pr_template": true,
-    "protected_branches": ["main"]
+    "protected_branches": [
+      "main"
+    ]
   },
   "branding": {
     "accentColor": "#b00149",
@@ -144,10 +148,10 @@
     "api_response_p99_ms": 2000,
     "ingestion_success_rate_percent": 99.9,
     "webhook_delivery_latency_seconds": 60,
-    "note": "Homelab best-effort targets — not contractual SLAs"
+    "note": "Homelab best-effort targets \u2014 not contractual SLAs"
   },
   "changelog": {
-    "lastProcessedCommit": "a76a3f1",
+    "lastProcessedCommit": "a103f5e",
     "lastVersionTag": null
   },
   "planning": {

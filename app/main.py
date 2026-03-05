@@ -34,7 +34,10 @@ from app.middleware import (
     SecurityHeadersMiddleware,
 )
 from app.services.retention import retention_background_task
-from app.services.synthetic_check import synthetic_check_background_task
+from app.services.synthetic_check import (
+    start_synthetic_monitoring,
+    stop_synthetic_monitoring,
+)
 from app.services.sync_filters import InvalidDateError
 
 # Model imports — ensure SQLModel tables are created
@@ -49,6 +52,8 @@ from app.models.webhook import WebhookEndpoint  # noqa: F401
 from app.models.notification_log import NotificationLog  # noqa: F401
 from app.models.webhook_options import WebhookOptions  # noqa: F401
 from app.models.oidc_config import OidcConfig  # noqa: F401
+from app.models.synthetic_check_config import SyntheticCheckConfig  # noqa: F401
+from app.models.synthetic_check_result import SyntheticCheckResultRecord  # noqa: F401
 
 # HTMX route modules
 from app.routes import (
@@ -114,40 +119,21 @@ async def lifespan(app: FastAPI):
             )
         )
 
-    # Start synthetic monitoring background task (AC-001, AC-012)
-    synthetic_task = None
-    if settings_cfg.synthetic_check_enabled:
-        synthetic_api_key = (
-            settings_cfg.synthetic_check_api_key or settings_cfg.default_api_key
-        )
-        if not settings_cfg.debug and not settings_cfg.synthetic_check_api_key:
-            logger.warning(
-                "Synthetic monitoring is enabled but SYNTHETIC_CHECK_API_KEY is not set "
-                "and DEBUG is false. The default API key will not work in production. "
-                "Set SYNTHETIC_CHECK_API_KEY to a provisioned key in the api_keys table."
-            )
-        synthetic_task = asyncio.create_task(
-            synthetic_check_background_task(
-                enabled=True,
-                interval_seconds=settings_cfg.synthetic_check_interval_seconds,
-                shutdown_event=shutdown_event,
-                base_url="http://127.0.0.1:8000",
-                api_key=synthetic_api_key,
-                engine=engine,
-            )
-        )
+    # Start synthetic monitoring from DB config (AC-015)
+    # Seeds DB row from env vars on first run, then reads DB thereafter.
+    await start_synthetic_monitoring(engine)
 
     yield
 
     # Shutdown background tasks
     shutdown_event.set()
-    for task in (retention_task, synthetic_task):
-        if task is not None:
-            task.cancel()
-            try:
-                await task
-            except asyncio.CancelledError:
-                pass
+    if retention_task is not None:
+        retention_task.cancel()
+        try:
+            await retention_task
+        except asyncio.CancelledError:
+            pass
+    await stop_synthetic_monitoring()
 
 
 app = FastAPI(
