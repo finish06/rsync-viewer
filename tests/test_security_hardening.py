@@ -1,8 +1,10 @@
 """Tests for security hardening (specs/security-hardening.md)."""
 
 from datetime import timedelta
-from app.utils import utc_now
 from pathlib import Path
+
+from app.config import get_settings
+from app.utils import utc_now
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -258,7 +260,7 @@ class TestSecretsAudit:
 
 
 class TestCsrfProtection:
-    """AC-011: CSRF protection for state-changing form submissions."""
+    """AC-011, AC-011a, AC-011b, AC-011c: CSRF protection for form and HTMX submissions."""
 
     def test_ac011_csrf_token_generation(self):
         """CSRF tokens can be generated."""
@@ -300,6 +302,215 @@ class TestCsrfProtection:
             )
             # Should be rejected (403 Forbidden) without CSRF token
             assert response.status_code == 403
+
+    async def test_ac011c_htmx_post_without_csrf_header_rejected(
+        self, test_engine, db_session
+    ):
+        """AC-011c: HTMX POST to CSRF-protected path without X-CSRF-Token returns 403."""
+        import os
+        from httpx import ASGITransport, AsyncClient
+        from app.main import app
+        from app.database import get_session
+        from app.models.user import User
+        from app.services.auth import hash_password, ROLE_OPERATOR
+
+        os.environ["SECRET_KEY"] = "test-secret-key"
+        os.environ["DEBUG"] = "true"
+        os.environ["DEFAULT_API_KEY"] = "test-api-key"
+        get_settings.cache_clear()
+
+        user = User(
+            username="csrf-test-user",
+            email="csrf@test.local",
+            password_hash=hash_password("TestPass1!"),
+            role=ROLE_OPERATOR,
+        )
+        db_session.add(user)
+        db_session.flush()
+
+        from tests.conftest import _make_test_jwt, get_test_settings
+
+        jwt_token = _make_test_jwt(str(user.id), user.username, user.role)
+
+        def get_test_session():
+            yield db_session
+
+        app.dependency_overrides[get_session] = get_test_session
+        app.dependency_overrides[get_settings] = get_test_settings
+
+        # Client has JWT (authenticated) but NO CSRF token
+        async with AsyncClient(
+            transport=ASGITransport(app=app),
+            base_url="http://test",
+            cookies={"access_token": jwt_token},
+        ) as no_csrf_client:
+            response = await no_csrf_client.post(
+                "/htmx/api-keys",
+                data={"name": "test-key"},
+            )
+            assert response.status_code == 403
+            body = response.json()
+            assert body["error_code"] == "CSRF_VALIDATION_FAILED"
+
+        app.dependency_overrides.clear()
+        get_settings.cache_clear()
+
+    async def test_ac011a_htmx_post_with_csrf_header_succeeds(
+        self, client, test_engine, db_session
+    ):
+        """AC-011a: HTMX POST with matching X-CSRF-Token header and cookie succeeds."""
+        # The default client fixture has both csrf_token cookie and X-CSRF-Token header
+        response = await client.post(
+            "/htmx/api-keys",
+            data={"name": "csrf-ok-key"},
+        )
+        # Should NOT be 403 — CSRF passes; may be 200 or other success code
+        assert response.status_code != 403
+
+    async def test_ac011c_htmx_delete_without_csrf_rejected(
+        self, test_engine, db_session
+    ):
+        """AC-011c: HTMX DELETE to CSRF-protected path without token returns 403."""
+        import os
+        from httpx import ASGITransport, AsyncClient
+        from app.main import app
+        from app.database import get_session
+        from app.models.user import User
+        from app.services.auth import hash_password, ROLE_OPERATOR
+
+        os.environ["SECRET_KEY"] = "test-secret-key"
+        os.environ["DEBUG"] = "true"
+        os.environ["DEFAULT_API_KEY"] = "test-api-key"
+        get_settings.cache_clear()
+
+        user = User(
+            username="csrf-del-user",
+            email="csrfdel@test.local",
+            password_hash=hash_password("TestPass1!"),
+            role=ROLE_OPERATOR,
+        )
+        db_session.add(user)
+        db_session.flush()
+
+        from tests.conftest import _make_test_jwt, get_test_settings
+
+        jwt_token = _make_test_jwt(str(user.id), user.username, user.role)
+
+        def get_test_session():
+            yield db_session
+
+        app.dependency_overrides[get_session] = get_test_session
+        app.dependency_overrides[get_settings] = get_test_settings
+
+        async with AsyncClient(
+            transport=ASGITransport(app=app),
+            base_url="http://test",
+            cookies={"access_token": jwt_token},
+        ) as no_csrf_client:
+            response = await no_csrf_client.delete(
+                "/htmx/api-keys/00000000-0000-0000-0000-000000000000",
+            )
+            assert response.status_code == 403
+            body = response.json()
+            assert body["error_code"] == "CSRF_VALIDATION_FAILED"
+
+        app.dependency_overrides.clear()
+        get_settings.cache_clear()
+
+    async def test_ac011c_mismatched_csrf_token_rejected(self, test_engine, db_session):
+        """AC-011c: CSRF token in header that doesn't match cookie is rejected."""
+        import os
+        from httpx import ASGITransport, AsyncClient
+        from app.main import app
+        from app.database import get_session
+        from app.csrf import generate_csrf_token
+        from app.models.user import User
+        from app.services.auth import hash_password, ROLE_OPERATOR
+
+        os.environ["SECRET_KEY"] = "test-secret-key"
+        os.environ["DEBUG"] = "true"
+        os.environ["DEFAULT_API_KEY"] = "test-api-key"
+        get_settings.cache_clear()
+
+        user = User(
+            username="csrf-mismatch-user",
+            email="mismatch@test.local",
+            password_hash=hash_password("TestPass1!"),
+            role=ROLE_OPERATOR,
+        )
+        db_session.add(user)
+        db_session.flush()
+
+        from tests.conftest import _make_test_jwt, get_test_settings
+
+        jwt_token = _make_test_jwt(str(user.id), user.username, user.role)
+
+        def get_test_session():
+            yield db_session
+
+        app.dependency_overrides[get_session] = get_test_session
+        app.dependency_overrides[get_settings] = get_test_settings
+
+        cookie_token = generate_csrf_token()
+        header_token = generate_csrf_token()  # Different token
+
+        async with AsyncClient(
+            transport=ASGITransport(app=app),
+            base_url="http://test",
+            headers={"X-CSRF-Token": header_token},
+            cookies={"csrf_token": cookie_token, "access_token": jwt_token},
+        ) as client:
+            response = await client.post(
+                "/htmx/api-keys",
+                data={"name": "mismatch-key"},
+            )
+            assert response.status_code == 403
+            body = response.json()
+            assert body["error_code"] == "CSRF_VALIDATION_FAILED"
+
+        app.dependency_overrides.clear()
+        get_settings.cache_clear()
+
+    def test_ac011b_csrf_cookie_not_httponly(self):
+        """AC-011b: CSRF cookie must not be httponly so JS can read it."""
+        import re
+
+        # Verify in the source code that httponly=False for csrf cookies
+        pages_path = (
+            Path(__file__).resolve().parent.parent / "app" / "routes" / "pages.py"
+        )
+        auth_path = (
+            Path(__file__).resolve().parent.parent / "app" / "routes" / "auth.py"
+        )
+
+        for filepath in [pages_path, auth_path]:
+            content = filepath.read_text()
+            # Find all set_cookie calls for csrf_token
+            csrf_cookies = re.findall(
+                r'set_cookie\("csrf_token".*?httponly=(\w+)', content
+            )
+            assert len(csrf_cookies) > 0, (
+                f"No csrf_token cookies found in {filepath.name}"
+            )
+            for match in csrf_cookies:
+                assert match == "False", (
+                    f"CSRF cookie in {filepath.name} has httponly={match}, "
+                    f"must be httponly=False for double-submit cookie pattern"
+                )
+
+    def test_ac011a_base_template_sends_csrf_header(self):
+        """AC-011a: base.html includes htmx:configRequest listener for CSRF header."""
+        base_path = (
+            Path(__file__).resolve().parent.parent / "app" / "templates" / "base.html"
+        )
+        content = base_path.read_text()
+        assert "htmx:configRequest" in content, (
+            "base.html missing htmx:configRequest event listener for CSRF"
+        )
+        assert "X-CSRF-Token" in content, (
+            "base.html missing X-CSRF-Token header injection in HTMX config"
+        )
+        assert "csrf_token" in content, "base.html missing csrf_token cookie read"
 
 
 class TestConfigSettings:

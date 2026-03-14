@@ -55,7 +55,7 @@ async def login_submit(
             },
             status_code=401,
         )
-        response.set_cookie("csrf_token", csrf_token, httponly=True, samesite="lax")
+        response.set_cookie("csrf_token", csrf_token, httponly=False, samesite="lax")
         return response
 
     if not user.is_active:
@@ -70,7 +70,7 @@ async def login_submit(
             },
             status_code=403,
         )
-        response.set_cookie("csrf_token", csrf_token, httponly=True, samesite="lax")
+        response.set_cookie("csrf_token", csrf_token, httponly=False, samesite="lax")
         return response
 
     # Generate JWT
@@ -229,7 +229,7 @@ async def register_submit(
             },
             status_code=422,
         )
-        response.set_cookie("csrf_token", csrf_token, httponly=True, samesite="lax")
+        response.set_cookie("csrf_token", csrf_token, httponly=False, samesite="lax")
         return response
 
     # Delegate to shared registration service (AC-008)
@@ -253,7 +253,7 @@ async def register_submit(
             },
             status_code=exc.status_code,
         )
-        response.set_cookie("csrf_token", csrf_token, httponly=True, samesite="lax")
+        response.set_cookie("csrf_token", csrf_token, httponly=False, samesite="lax")
         return response
 
     # Redirect to login with success message

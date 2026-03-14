@@ -29,6 +29,9 @@ As a homelab administrator exposing rsync-viewer to my network, I want the appli
 | AC-009 | No secrets or credentials exist in the codebase (all via environment variables) | Must |
 | AC-010 | All required secrets are documented in `.env.example` | Must |
 | AC-011 | CSRF protection is implemented for state-changing HTML form submissions | Should |
+| AC-011a | CSRF tokens are sent as `X-CSRF-Token` header on all HTMX state-changing requests via double-submit cookie pattern | Must |
+| AC-011b | CSRF cookie is not `httponly` so client-side JS can read it for the double-submit header | Must |
+| AC-011c | HTMX POST/PUT/DELETE/PATCH to CSRF-protected paths without valid token returns 403 | Must |
 | AC-012 | Rate limit exceeded returns HTTP 429 with Retry-After header | Must |
 
 ## 3. User Test Cases
@@ -85,6 +88,18 @@ As a homelab administrator exposing rsync-viewer to my network, I want the appli
 **Expected Result:** No hardcoded secrets found. `.env.example` lists every required secret with placeholder values and descriptions.
 **Screenshot Checkpoint:** N/A
 **Maps to:** AC-009, AC-010
+
+### TC-006: CSRF protection for HTMX requests
+
+**Precondition:** Authenticated user session with CSRF cookie set
+**Steps:**
+1. Make an HTMX POST to `/htmx/api-keys` without `X-CSRF-Token` header
+2. Make an HTMX POST to `/htmx/api-keys` with valid `X-CSRF-Token` header matching cookie
+3. Make an HTMX DELETE to `/htmx/api-keys/{id}` without `X-CSRF-Token` header
+4. Verify the CSRF cookie is not httponly (JS-readable)
+**Expected Result:** Requests without token return 403 CSRF_VALIDATION_FAILED. Requests with valid token succeed. Cookie is accessible to JavaScript.
+**Screenshot Checkpoint:** N/A (security)
+**Maps to:** AC-011a, AC-011b, AC-011c
 
 ## 4. Data Model
 
@@ -186,6 +201,8 @@ Headers: `Retry-After: 45`
 | Expired API key used | Return 401 with message indicating key has expired |
 | Database migration with existing plaintext keys | Hash all existing keys, preserve functionality |
 | CSP blocks legitimate HTMX requests | CSP policy must allow HTMX script-src and connect-src |
+| CSRF cookie set as httponly | Cookie must NOT be httponly — JS needs to read it for double-submit header pattern |
+| HTMX request missing CSRF header | Middleware returns 403; `htmx:configRequest` listener in base.html auto-attaches token |
 | Large file list in rsync output exceeds body limit | Body limit applies to raw request; parsed content can be larger |
 
 ## 8. Dependencies
