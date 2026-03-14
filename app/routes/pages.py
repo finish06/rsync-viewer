@@ -111,7 +111,7 @@ async def login_page(
             "hide_local_login": hide_local_login,
         },
     )
-    response.set_cookie("csrf_token", csrf_token, httponly=True, samesite="lax")
+    response.set_cookie("csrf_token", csrf_token, httponly=False, samesite="lax")
     return response
 
 
@@ -132,7 +132,7 @@ async def register_page(request: Request):
         "register.html",
         context={"csrf_token": csrf_token},
     )
-    response.set_cookie("csrf_token", csrf_token, httponly=True, samesite="lax")
+    response.set_cookie("csrf_token", csrf_token, httponly=False, samesite="lax")
     return response
 
 
@@ -194,7 +194,7 @@ async def forgot_password_page(request: Request):
         "forgot_password.html",
         context={"csrf_token": csrf_token},
     )
-    response.set_cookie("csrf_token", csrf_token, httponly=True, samesite="lax")
+    response.set_cookie("csrf_token", csrf_token, httponly=False, samesite="lax")
     return response
 
 
@@ -210,5 +210,5 @@ async def reset_password_page(
         "reset_password.html",
         context={"csrf_token": csrf_token, "token": token or ""},
     )
-    response.set_cookie("csrf_token", csrf_token, httponly=True, samesite="lax")
+    response.set_cookie("csrf_token", csrf_token, httponly=False, samesite="lax")
     return response

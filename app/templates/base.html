@@ -14,6 +14,12 @@
         })();
     </script>
     <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+    <script>
+        document.addEventListener('htmx:configRequest', function(event) {
+            var csrf = document.cookie.match('(^|;)\\s*csrf_token=([^;]+)');
+            if (csrf) event.detail.headers['X-CSRF-Token'] = csrf[2];
+        });
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <link rel="stylesheet" href="/static/css/styles.css?v={{ app_version }}">
 </head>

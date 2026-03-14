@@ -7,6 +7,18 @@ and this project adheres to [Conventional Commits](https://www.conventionalcommi
 
 ## [Unreleased]
 
+## [2.2.1] - 2026-03-14
+
+### Fixed
+
+- **CSRF validation failed on all HTMX requests** — CSRF cookie was `httponly=True`, preventing JavaScript from reading it to send as the `X-CSRF-Token` header. All HTMX state-changing requests (API keys, webhooks, SMTP settings, admin users) returned 403 in production.
+- Add `htmx:configRequest` listener in `base.html` to automatically attach CSRF token header on every HTMX request
+
+### Added
+
+- AC-011a/b/c acceptance criteria in security-hardening spec for HTMX CSRF double-submit cookie pattern
+- 7 regression tests covering CSRF header validation, cookie httponly flag, and token mismatch scenarios
+
 ## [2.1.0] - 2026-03-05
 
 ### Added
