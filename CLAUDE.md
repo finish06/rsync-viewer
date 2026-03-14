@@ -55,18 +55,65 @@ mypy app/                           # Type check
 ```
 rsync-viewer/
 ├── app/                            # Application source code
-│   ├── api/endpoints/              # REST API route handlers
+│   ├── api/
+│   │   ├── endpoints/              # REST API route handlers
+│   │   │   ├── sync_logs.py        # Log ingestion + querying (CRUD)
+│   │   │   ├── monitors.py         # Sync source staleness monitors
+│   │   │   ├── failures.py         # Failure event queries
+│   │   │   ├── webhooks.py         # Webhook endpoint management
+│   │   │   ├── analytics.py        # Aggregated stats + export
+│   │   │   ├── auth.py             # JWT auth (register/login/refresh/reset)
+│   │   │   ├── api_keys.py         # Per-user API key management
+│   │   │   └── users.py            # Admin user management
+│   │   └── deps.py                 # Auth dependencies (API key, JWT, RBAC)
+│   ├── routes/                     # HTMX / UI route handlers
+│   │   ├── pages.py                # Page-level routes (/, /login, /settings, etc.)
+│   │   ├── auth.py                 # Login/logout/register/OIDC form handlers
+│   │   ├── dashboard.py            # HTMX partials (sync table, charts, analytics)
+│   │   ├── settings.py             # SMTP, OIDC, synthetic monitoring settings
+│   │   ├── api_keys.py             # HTMX API key CRUD
+│   │   ├── webhooks.py             # HTMX webhook CRUD
+│   │   └── admin.py                # Admin user management UI
 │   ├── models/                     # SQLModel database models
+│   │   ├── sync_log.py             # SyncLog + ApiKey
+│   │   ├── user.py                 # User + RefreshToken + PasswordResetToken
+│   │   ├── monitor.py              # SyncSourceMonitor
+│   │   ├── failure_event.py        # FailureEvent
+│   │   ├── webhook.py              # WebhookEndpoint
+│   │   ├── webhook_options.py      # WebhookOptions (Discord config)
+│   │   ├── notification_log.py     # NotificationLog
+│   │   ├── smtp_config.py          # SmtpConfig
+│   │   ├── oidc_config.py          # OidcConfig
+│   │   ├── synthetic_check_config.py   # SyntheticCheckConfig
+│   │   └── synthetic_check_result.py   # SyntheticCheckResultRecord
 │   ├── schemas/                    # Pydantic request/response schemas
-│   ├── services/                   # Business logic (rsync parser)
+│   ├── services/                   # Business logic
+│   │   ├── rsync_parser.py         # Parse raw rsync output
+│   │   ├── auth.py                 # JWT token creation/validation, RBAC
+│   │   ├── webhook_dispatcher.py   # Webhook delivery with retry + auto-disable
+│   │   ├── webhook_test.py         # Test webhook delivery
+│   │   ├── stale_checker.py        # Monitor staleness detection
+│   │   ├── retention.py            # Background data cleanup
+│   │   ├── synthetic_check.py      # Self-test POST/DELETE loop
+│   │   ├── email.py                # SMTP email sending
+│   │   ├── oidc.py                 # OpenID Connect integration
+│   │   ├── registration.py         # User registration logic
+│   │   ├── sync_filters.py         # Query filter helpers
+│   │   └── changelog_parser.py     # CHANGELOG.md parser
 │   ├── static/                     # CSS assets
 │   ├── templates/                  # Jinja2 HTML templates
-│   ├── config.py                   # Application settings
-│   ├── database.py                 # Database connection
+│   ├── config.py                   # Application settings (env vars)
+│   ├── database.py                 # Database connection + pooling
+│   ├── middleware.py               # Auth redirect, CSRF, security headers, logging
+│   ├── metrics.py                  # Prometheus metrics collector
+│   ├── csrf.py                     # CSRF token generation/validation
+│   ├── errors.py                   # Structured error response helpers
+│   ├── templating.py               # Jinja2 template engine + filters
+│   ├── utils.py                    # Shared utilities (utc_now, etc.)
 │   └── main.py                     # FastAPI application entry point
 ├── tests/                          # Test suite
 ├── specs/                          # Feature specifications
-├── docs/                           # Documentation (PRD, plans)
+├── docs/                           # Documentation (PRD, plans, architecture)
 ├── .add/                           # ADD methodology state
 ├── scripts/                        # Utility scripts
 ├── docker-compose.yml              # Docker configuration
@@ -92,7 +139,7 @@ All gates defined in `.add/config.json`. Run `/add:verify` to check.
 - **Git host:** GitHub (finish06/rsync-viewer)
 - **Branching:** Feature branches off `main`
 - **Commits:** Conventional commits (feat:, fix:, test:, refactor:, docs:)
-- **CI/CD:** GitHub Actions (to be scaffolded)
+- **CI/CD:** GitHub Actions (`.github/workflows/ci.yml`, `smoke-test.yml`)
 
 ## Collaboration
 

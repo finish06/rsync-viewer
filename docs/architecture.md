@@ -54,28 +54,58 @@ The main application entry point. Registers middleware, routers, exception handl
 
 Middleware runs in this order (outermost first):
 
-1. **SecurityHeadersMiddleware** — Adds X-Content-Type-Options, X-Frame-Options, CSP headers
+1. **SecurityHeadersMiddleware** — Adds X-Content-Type-Options, X-Frame-Options, CSP, HSTS headers
 2. **BodySizeLimitMiddleware** — Rejects requests exceeding `MAX_REQUEST_BODY_SIZE`
 3. **PrometheusMiddleware** — Tracks API request counts and durations
 4. **SlowAPIMiddleware** — Enforces rate limiting per API key or IP
-5. **CsrfMiddleware** — Validates CSRF tokens on form submissions
-6. **RequestLoggingMiddleware** — Structured JSON logging with request IDs
+5. **CsrfMiddleware** — Validates CSRF double-submit cookie tokens on HTMX form submissions
+6. **AuthRedirectMiddleware** — Redirects unauthenticated browser requests to `/login` (skips API routes + public paths)
+7. **RequestLoggingMiddleware** — Structured JSON logging with request IDs and correlation
 
 ### REST API (`app/api/endpoints/`)
 
-- **sync_logs** — CRUD for rsync log ingestion and querying
+- **sync_logs** — CRUD for rsync log ingestion and querying (cursor + offset pagination)
 - **monitors** — Sync source monitoring (staleness detection)
 - **failures** — Failure event tracking and queries
 - **webhooks** — Webhook endpoint management
-- **analytics** — Aggregated statistics and trends
+- **analytics** — Aggregated statistics, trends, and CSV/JSON export
+- **auth** — JWT authentication (register, login, refresh, password reset)
+- **api_keys** — Per-user API key management (create, list, revoke)
+- **users** — Admin user management (list, role change, enable/disable, delete)
+
+### HTMX UI Routes (`app/routes/`)
+
+- **pages** — Page-level routes (`/`, `/login`, `/register`, `/settings`, `/admin/users`)
+- **auth** — Login/logout form handlers + OIDC SSO flow
+- **dashboard** — HTMX partials for sync table, charts, analytics, notifications, changelog
+- **settings** — SMTP, OIDC, and synthetic monitoring configuration forms
+- **api_keys** — HTMX API key CRUD
+- **webhooks** — HTMX webhook CRUD with toggle and test
+- **admin** — User management table with role/status controls
+
+### Auth & RBAC (`app/api/deps.py`)
+
+Dual authentication: API keys (X-API-Key header) and JWT (Bearer header or httpOnly cookie). Three roles: `viewer` < `operator` < `admin`. Per-user API keys support role overrides. Legacy keys (no user_id) default to operator.
 
 ### Parser Service (`app/services/rsync_parser.py`)
 
 Parses raw rsync output to extract structured data: bytes transferred, file counts, transfer speed, speedup ratio, file lists, and dry-run detection.
 
-### Notification Service (`app/services/notification.py`)
+### Webhook Dispatcher (`app/services/webhook_dispatcher.py`)
 
-Sends webhook notifications when failure events occur. Supports generic JSON webhooks and Discord-formatted embeds with retry logic.
+Sends webhook notifications when failure events occur. Supports generic JSON webhooks and Discord-formatted embeds with retry logic (30s → 60s → 120s backoff, max 3 attempts). Auto-disables endpoints after 10 consecutive failures.
+
+### Synthetic Monitoring (`app/services/synthetic_check.py`)
+
+Background self-test loop: periodically POSTs a canned rsync log to the app's own API, verifies the response, DELETEs the created log, and fires webhooks on failure. DB-backed config with runtime start/stop via settings UI.
+
+### Stale Source Checker (`app/services/stale_checker.py`)
+
+Evaluates enabled monitors to detect sources that haven't synced within their expected interval (plus grace multiplier). Creates FailureEvents for stale sources.
+
+### Auth Service (`app/services/auth.py`)
+
+JWT token management: access token creation/validation, refresh token rotation, bcrypt password hashing, and RBAC role hierarchy.
 
 ### Retention Service (`app/services/retention.py`)
 
