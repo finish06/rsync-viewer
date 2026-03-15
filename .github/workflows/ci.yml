@@ -105,7 +105,7 @@ jobs:
           fi
 
           # Skip auto-tagging if HEAD already has a version tag
-          HEAD_TAGS=$(git tag --points-at HEAD | grep -E '^v[0-9]')
+          HEAD_TAGS=$(git tag --points-at HEAD | grep -E '^v[0-9]' || true)
           if [ -n "$HEAD_TAGS" ]; then
             echo "HEAD already tagged: $HEAD_TAGS — skipping auto-bump"
             echo "version=$HEAD_TAGS" >> "$GITHUB_OUTPUT"
