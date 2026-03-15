@@ -152,17 +152,21 @@ def store_check_result(
     session.add(record)
     session.flush()
 
-    # Prune: keep only the newest MAX_RESULT_ROWS
-    count_stmt = select(SyntheticCheckResultRecord.id).order_by(
-        col(SyntheticCheckResultRecord.checked_at).desc()
+    # Prune: keep only the newest MAX_RESULT_ROWS (bulk delete)
+    from sqlmodel import delete
+
+    keep_ids_stmt = (
+        select(SyntheticCheckResultRecord.id)
+        .order_by(col(SyntheticCheckResultRecord.checked_at).desc())
+        .limit(MAX_RESULT_ROWS)
     )
-    all_ids = session.exec(count_stmt).all()
-    if len(all_ids) > MAX_RESULT_ROWS:
-        ids_to_delete = all_ids[MAX_RESULT_ROWS:]
-        for old_id in ids_to_delete:
-            old_row = session.get(SyntheticCheckResultRecord, old_id)
-            if old_row:
-                session.delete(old_row)
+    keep_ids = list(session.exec(keep_ids_stmt).all())
+    if keep_ids:
+        session.exec(
+            delete(SyntheticCheckResultRecord).where(
+                SyntheticCheckResultRecord.id.not_in(keep_ids)  # type: ignore[union-attr,attr-defined]
+            )
+        )
 
     session.commit()
 
@@ -239,7 +243,7 @@ async def start_synthetic_monitoring(engine) -> None:
             enabled=True,
             interval_seconds=config.interval_seconds,
             shutdown_event=_shutdown_event,
-            base_url="http://127.0.0.1:8000",
+            base_url=settings.base_url,
             api_key=api_key,
             engine=engine,
         )

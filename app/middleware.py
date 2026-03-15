@@ -194,6 +194,8 @@ CSRF_PROTECTED_PREFIXES = (
     "/htmx/settings/auth",
     "/htmx/api-keys",
     "/htmx/admin/users",
+    "/htmx/synthetic-settings",
+    "/htmx/monitoring-setup",
 )
 
 # Methods that are state-changing and require CSRF validation

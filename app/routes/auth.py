@@ -28,6 +28,13 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
+def _safe_return_url(url: str) -> str:
+    """Validate return_url is a safe relative path (prevent open redirect)."""
+    if url.startswith("/") and not url.startswith("//"):
+        return url
+    return "/"
+
+
 @router.post("/login")
 async def login_submit(
     request: Request,
@@ -38,7 +45,7 @@ async def login_submit(
     form = await request.form()
     username = str(form.get("username", "")).strip()
     password = str(form.get("password", ""))
-    return_url = str(form.get("return_url", "/")).strip() or "/"
+    return_url = _safe_return_url(str(form.get("return_url", "/")).strip())
 
     # Validate credentials
     user = session.exec(select(User).where(User.username == username)).first()
@@ -87,6 +94,7 @@ async def login_submit(
         "access_token",
         access_token,
         httponly=True,
+        secure=not settings.debug,
         samesite="lax",
         max_age=settings.jwt_access_expiry_minutes * 60,
     )
@@ -174,13 +182,14 @@ async def oidc_callback(
 
         # Issue local JWT session
         access_token = create_access_token(user.id, user.username, user.role)
-        return_url = state_data.get("return_url", "/")
+        return_url = _safe_return_url(state_data.get("return_url", "/"))
 
         redirect = RedirectResponse(url=return_url, status_code=302)
         redirect.set_cookie(
             "access_token",
             access_token,
             httponly=True,
+            secure=not settings.debug,
             samesite="lax",
             max_age=settings.jwt_access_expiry_minutes * 60,
         )

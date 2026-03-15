@@ -3,6 +3,8 @@ from datetime import timedelta
 from typing import Annotated, Callable, Optional
 from uuid import UUID
 
+import asyncio
+
 import bcrypt
 import jwt as pyjwt
 from fastapi import Cookie, Depends, HTTPException, Header, Request, status
@@ -95,7 +97,9 @@ async def verify_api_key(
     if settings.debug and x_api_key == settings.default_api_key:
         return None  # Allow dev key without DB lookup
 
-    matched_key = _lookup_and_verify_api_key(x_api_key, session)
+    matched_key = await asyncio.get_event_loop().run_in_executor(
+        None, _lookup_and_verify_api_key, x_api_key, session
+    )
     if not matched_key:
         logger.warning("Invalid or inactive API key", extra={"endpoint": "sync-logs"})
         raise HTTPException(
@@ -246,7 +250,9 @@ async def _try_verify_api_key(
     if settings.debug and x_api_key == settings.default_api_key:
         return None  # Valid dev key — returns None (no ApiKey model)
 
-    matched_key = _lookup_and_verify_api_key(x_api_key, session)
+    matched_key = await asyncio.get_event_loop().run_in_executor(
+        None, _lookup_and_verify_api_key, x_api_key, session
+    )
     if not matched_key:
         logger.warning("Invalid or inactive API key", extra={"endpoint": "dual-auth"})
         raise HTTPException(

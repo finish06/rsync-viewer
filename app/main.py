@@ -6,10 +6,9 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
-from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
-from slowapi.util import get_remote_address
 from starlette.responses import Response as StarletteResponse
 from app.config import get_settings
 from app.database import engine
@@ -26,6 +25,7 @@ from app.api.endpoints import (
 from app.errors import make_error_response, INTERNAL_ERROR, VALIDATION_ERROR
 from app.logging_config import setup_logging
 from app.metrics import PrometheusMiddleware, get_metrics_output, set_app_info
+from app.rate_limit import limiter
 from app.middleware import (
     AuthRedirectMiddleware,
     BodySizeLimitMiddleware,
@@ -81,25 +81,21 @@ logger = logging.getLogger(__name__)
 settings_cfg = get_settings()
 
 
-def _get_rate_limit_key(request: Request) -> str:
-    """Rate limit key: API key if present, else client IP."""
-    api_key = request.headers.get("X-API-Key")
-    if api_key:
-        return f"apikey:{api_key}"
-    return get_remote_address(request)
-
-
-limiter = Limiter(
-    key_func=_get_rate_limit_key,
-    default_limits=[settings_cfg.rate_limit_authenticated],
-    headers_enabled=True,
-)
+# limiter is imported from app.rate_limit
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Configure logging on startup
     setup_logging(log_level=settings_cfg.log_level, log_format=settings_cfg.log_format)
+
+    # Fail fast if production is using default secrets
+    if not settings_cfg.debug and settings_cfg.secret_key == "change-me":
+        raise RuntimeError(
+            "SECRET_KEY must be changed from the default in production. "
+            "Set the SECRET_KEY environment variable."
+        )
+
     # Database migrations are handled by entrypoint.sh (alembic upgrade head)
     # before the application starts. No create_all() needed.
 

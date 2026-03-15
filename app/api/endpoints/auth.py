@@ -4,7 +4,7 @@ from datetime import timedelta
 from uuid import UUID
 
 import jwt as pyjwt
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Request, Response, status
 from sqlmodel import select
 
 from app.api.deps import SessionDep
@@ -29,6 +29,7 @@ from app.services.auth import (
     verify_password,
     verify_token,
 )
+from app.rate_limit import AUTH_RATE_LIMIT, PASSWORD_RESET_RATE_LIMIT, limiter
 from app.services.registration import RegistrationError, register_user
 from app.utils import utc_now
 
@@ -43,7 +44,10 @@ router = APIRouter(prefix="/auth", tags=["auth"])
     status_code=status.HTTP_201_CREATED,
     summary="Register a new user account",
 )
-async def register(user_data: UserCreate, session: SessionDep) -> User:
+@limiter.limit(AUTH_RATE_LIMIT)
+async def register(
+    request: Request, response: Response, user_data: UserCreate, session: SessionDep
+) -> User:
     """Register a new user. First registered user gets Admin role."""
     settings = get_settings()
     if not settings.registration_enabled:
@@ -71,7 +75,10 @@ async def register(user_data: UserCreate, session: SessionDep) -> User:
     response_model=TokenResponse,
     summary="Authenticate and receive JWT tokens",
 )
-async def login(credentials: UserLogin, session: SessionDep) -> TokenResponse:
+@limiter.limit(AUTH_RATE_LIMIT)
+async def login(
+    request: Request, response: Response, credentials: UserLogin, session: SessionDep
+) -> TokenResponse:
     """Authenticate with username and password, receive access and refresh tokens."""
     user = session.exec(
         select(User).where(User.username == credentials.username)
@@ -221,8 +228,12 @@ async def refresh(body: RefreshTokenRequest, session: SessionDep) -> TokenRespon
     response_model=PasswordResetResponse,
     summary="Request a password reset",
 )
+@limiter.limit(PASSWORD_RESET_RATE_LIMIT)
 async def request_password_reset(
-    body: PasswordResetRequest, session: SessionDep
+    request: Request,
+    response: Response,
+    body: PasswordResetRequest,
+    session: SessionDep,
 ) -> PasswordResetResponse:
     """Request a password reset. Token is logged to console (no SMTP in MVP).
 

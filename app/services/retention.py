@@ -5,6 +5,7 @@ Handles automatic cleanup of old sync logs based on configurable retention perio
 
 import asyncio
 import logging
+from datetime import timedelta
 
 from sqlmodel import Session, func, select, delete
 
@@ -34,7 +35,7 @@ def cleanup_old_sync_logs(session: Session, retention_days: int) -> int:
     if retention_days <= 0:
         return 0
 
-    cutoff = utc_now() - __import__("datetime").timedelta(days=retention_days)
+    cutoff = utc_now() - timedelta(days=retention_days)
 
     # Count before deleting (for logging)
     count = session.exec(
