@@ -7,6 +7,29 @@ and this project adheres to [Conventional Commits](https://www.conventionalcommi
 
 ## [Unreleased]
 
+## [2.3.0] - 2026-03-14
+
+### Security
+
+- **Upgrade PyJWT** to >=2.12.0 — fixes CVE-2026-32597
+- **Upgrade pip** to 26.0.1 — fixes CVE-2026-1703
+
+### Fixed
+
+- Fix 4 mypy `no-any-return` errors in `email.py` and `oidc.py` — add explicit `str()` casts for Fernet encrypt/decrypt returns
+
+### Added
+
+- **Sequence diagrams** (`docs/sequence-diagram.md`) — 12 Mermaid diagrams covering ingestion, auth, OIDC, webhooks, synthetic monitoring, admin, health, metrics, retention
+- **62 new tests** for HTMX routes — 18 for `/htmx/api-keys` (59% → 93% coverage), 44 for `/htmx/webhooks` (75% → 99% coverage)
+- Expanded `CLAUDE.md` key directories from ~10 to 40+ entries with all endpoints, routes, models, services, middleware
+- Updated `docs/architecture.md` with auth, RBAC, OIDC, synthetic monitoring, HTMX routes, full 7-layer middleware stack
+
+### Changed
+
+- Overall test coverage 93% → 95% (923 tests total)
+- Cleaned up 10 stale merged remote branches
+
 ## [2.2.1] - 2026-03-14
 
 ### Fixed
