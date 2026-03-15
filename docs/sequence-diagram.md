@@ -173,10 +173,18 @@ sequenceDiagram
     UI->>OIDC: Exchange code for tokens
     OIDC->>IDP: POST /token (authorization code)
     IDP-->>OIDC: access_token + id_token
-    UI->>OIDC: Extract user info from id_token
-    UI->>DB: Find or create User
-    UI->>DB: INSERT RefreshToken
-    UI-->>BR: 302 Redirect → /<br/>(Set-Cookie: access_token, refresh_token)
+    UI->>OIDC: decode_id_token() with JWKS verification
+    OIDC->>IDP: GET jwks_uri (cached, TTL configurable)
+    IDP-->>OIDC: JWKS public keys
+    OIDC->>OIDC: Verify signature + iss + aud + exp + nonce
+    alt Verification fails
+        OIDC-->>UI: ValueError
+        UI-->>BR: 302 Redirect → /login?error=oidc_failed
+    else Verification succeeds
+        OIDC-->>UI: Validated claims
+        UI->>DB: Find or create User
+        UI-->>BR: 302 Redirect → /<br/>(Set-Cookie: access_token)
+    end
 ```
 
 ## API Key Management (HTMX)
@@ -299,10 +307,22 @@ sequenceDiagram
     SM-->>App: SyntheticCheckState
 
     alt Synthetic monitoring enabled
-        App-->>C: 200 {"status": "ok", "synthetic_check": {status, last_check_at, latency_ms}}
+        App-->>C: 200 {"status": "ok", "version": "...", "synthetic_check": {status, last_check_at, latency_ms}}
     else Synthetic monitoring disabled
-        App-->>C: 200 {"status": "ok", "synthetic_check": null}
+        App-->>C: 200 {"status": "ok", "version": "...", "synthetic_check": null}
     end
+```
+
+## Version Info (GET /version)
+
+```mermaid
+sequenceDiagram
+    participant C as Client / Operator
+    participant App as FastAPI
+
+    C->>App: GET /version
+    App->>App: Read settings.app_version<br/>platform.python_version()<br/>platform.system() / machine()<br/>time.monotonic() - start_time
+    App-->>C: 200 {version, python_version, os, arch, hostname, uptime_seconds, start_time}
 ```
 
 ## Prometheus Metrics (GET /metrics)
@@ -367,4 +387,4 @@ sequenceDiagram
 
 ---
 
-*Last updated: 2026-03-14. Generated from codebase analysis.*
+*Last updated: 2026-03-15. Generated from codebase analysis. 13 flows documented.*
