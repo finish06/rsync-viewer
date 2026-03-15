@@ -7,6 +7,34 @@ and this project adheres to [Conventional Commits](https://www.conventionalcommi
 
 ## [Unreleased]
 
+## [2.3.1] - 2026-03-15
+
+### Security
+
+- **Fix open redirect** on post-login `return_url` — validate relative paths only
+- **Wire up rate limiting** on register, login, and password-reset endpoints (SlowAPI)
+- **Escape OIDC discovery output** — prevent reflected XSS via `html.escape()`
+- **Startup guard** — block production startup with default `secret_key="change-me"`
+- **Secure cookie flag** — `access_token` cookie sets `secure=True` in non-debug mode
+- **Expand CSRF protection** to `/htmx/synthetic-settings` and `/htmx/monitoring-setup`
+
+### Fixed
+
+- Offload bcrypt API key verification to thread pool (`run_in_executor`) — prevents event loop blocking
+- Replace per-row DELETE with bulk DELETE in synthetic check result pruning
+- Cap `load_all` dashboard query from 10,000 to 500 rows
+- Replace hardcoded `http://127.0.0.1:8000` with configurable `base_url` setting
+- Replace `__import__("datetime")` anti-pattern with proper import in retention service
+
+### Changed
+
+- Extract `is_last_admin()` service function (was duplicated 4x across admin routes)
+- Replace 8 bare `"admin"` string literals with `ROLE_ADMIN` constant
+- Extract `_extract_discord_options()` helper (deduplicates webhook create/update)
+- Extract `PASSWORD_RESET_TOKEN_EXPIRY` constant shared across auth endpoints
+- Deduplicate API key list query in revoke handler
+- Move rate limiter to shared `app/rate_limit.py` module
+
 ## [2.3.0] - 2026-03-14
 
 ### Security

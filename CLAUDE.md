@@ -105,6 +105,7 @@ rsync-viewer/
 │   ├── config.py                   # Application settings (env vars)
 │   ├── database.py                 # Database connection + pooling
 │   ├── middleware.py               # Auth redirect, CSRF, security headers, logging
+│   ├── rate_limit.py              # Shared SlowAPI rate limiter instance
 │   ├── metrics.py                  # Prometheus metrics collector
 │   ├── csrf.py                     # CSRF token generation/validation
 │   ├── errors.py                   # Structured error response helpers
