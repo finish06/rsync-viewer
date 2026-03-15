@@ -55,7 +55,7 @@ async def htmx_sync_table(
 
     # Apply pagination and ordering
     if load_all:
-        statement = statement.order_by(SyncLog.start_time.desc()).limit(10000)  # type: ignore[attr-defined]
+        statement = statement.order_by(SyncLog.start_time.desc()).limit(500)  # type: ignore[attr-defined]
     else:
         statement = (
             statement.order_by(SyncLog.start_time.desc()).offset(offset).limit(limit)  # type: ignore[attr-defined]

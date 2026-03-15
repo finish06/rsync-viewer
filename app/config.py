@@ -40,6 +40,7 @@ class Settings(BaseSettings):
         ""  # Dedicated API key; falls back to default_api_key
     )
     app_version: str = "dev"
+    base_url: str = "http://127.0.0.1:8000"  # Used by synthetic monitoring
 
     @property
     def effective_encryption_key(self) -> str:

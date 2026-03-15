@@ -107,3 +107,19 @@ def decode_token(token: str) -> dict[str, Any]:
         settings.secret_key,
         algorithms=[settings.jwt_algorithm],
     )
+
+
+# Password reset token expiry
+PASSWORD_RESET_TOKEN_EXPIRY = timedelta(hours=1)
+
+
+def is_last_admin(session: Any) -> bool:
+    """Check if there is only one active admin user remaining."""
+    from sqlmodel import func, select
+
+    from app.models.user import User
+
+    admin_count: int = session.exec(
+        select(func.count()).where(User.role == ROLE_ADMIN, User.is_active.is_(True))  # type: ignore[attr-defined]
+    ).one()
+    return admin_count <= 1

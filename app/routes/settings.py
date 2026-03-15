@@ -1,3 +1,4 @@
+import html as _html
 import logging
 import re
 import secrets as secrets_module
@@ -445,7 +446,9 @@ async def htmx_oidc_test_discovery(
             "jwks_uri",
         ):
             if key in discovery:
-                endpoints.append(f"<li><strong>{key}:</strong> {discovery[key]}</li>")
+                endpoints.append(
+                    f"<li><strong>{key}:</strong> {_html.escape(str(discovery[key]))}</li>"
+                )
 
         if not endpoints:
             return HTMLResponse(
