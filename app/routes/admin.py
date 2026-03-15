@@ -2,13 +2,13 @@ import logging
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request
-from sqlmodel import Session, select, func
+from sqlmodel import Session, select
 
 from app.database import get_session
 from app.api.deps import OptionalUserDep
 from app.templating import templates
 from app.models.user import User
-from app.services.auth import role_at_least, ROLE_ADMIN, VALID_ROLES
+from app.services.auth import is_last_admin, role_at_least, ROLE_ADMIN, VALID_ROLES
 
 logger = logging.getLogger(__name__)
 
@@ -78,11 +78,8 @@ async def htmx_admin_change_role(
     if not target:
         raise HTTPException(status_code=404, detail="User not found")
 
-    if target.role == "admin" and new_role != "admin":
-        admin_count = session.exec(
-            select(func.count()).where(User.role == "admin", User.is_active.is_(True))  # type: ignore[attr-defined]
-        ).one()
-        if admin_count <= 1:
+    if target.role == ROLE_ADMIN and new_role != ROLE_ADMIN:
+        if is_last_admin(session):
             raise HTTPException(status_code=400, detail="Cannot demote the last admin")
 
     target.role = new_role
@@ -133,11 +130,8 @@ async def htmx_admin_delete_user(
     if not target:
         raise HTTPException(status_code=404, detail="User not found")
 
-    if target.role == "admin":
-        admin_count = session.exec(
-            select(func.count()).where(User.role == "admin", User.is_active.is_(True))  # type: ignore[attr-defined]
-        ).one()
-        if admin_count <= 1:
+    if target.role == ROLE_ADMIN:
+        if is_last_admin(session):
             raise HTTPException(status_code=400, detail="Cannot delete the last admin")
 
     session.delete(target)

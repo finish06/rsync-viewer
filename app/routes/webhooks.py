@@ -25,6 +25,29 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
+DISCORD_DEFAULT_COLOR = 0xFF0045  # Raspberry
+
+
+def _extract_discord_options(form) -> dict[str, object]:  # type: ignore[type-arg]
+    """Extract Discord webhook options from form data."""
+    color_raw = _form_str(form, "discord_color", "#FF0045").strip()
+    try:
+        color_int = int(color_raw.lstrip("#"), 16)
+    except ValueError:
+        color_int = DISCORD_DEFAULT_COLOR
+    opts: dict[str, object] = {
+        "color": color_int,
+        "username": _form_str(form, "discord_username", "Rsync Viewer").strip()
+        or "Rsync Viewer",
+    }
+    avatar_url_val = _form_str(form, "discord_avatar_url").strip()
+    if avatar_url_val:
+        opts["avatar_url"] = avatar_url_val
+    footer = _form_str(form, "discord_footer").strip()
+    if footer:
+        opts["footer"] = footer
+    return opts
+
 
 @router.get("/htmx/webhooks")
 async def htmx_webhooks_list(
@@ -137,23 +160,7 @@ async def htmx_webhook_create(
 
     # Create options for Discord webhooks
     if webhook_type == "discord":
-        color_raw = _form_str(form, "discord_color", "#FF0045").strip()
-        try:
-            color_int = int(color_raw.lstrip("#"), 16)
-        except ValueError:
-            color_int = 16711749
-        opts: dict[str, object] = {
-            "color": color_int,
-            "username": _form_str(form, "discord_username", "Rsync Viewer").strip()
-            or "Rsync Viewer",
-        }
-        avatar_url_val = _form_str(form, "discord_avatar_url").strip()
-        if avatar_url_val:
-            opts["avatar_url"] = avatar_url_val
-        footer = _form_str(form, "discord_footer").strip()
-        if footer:
-            opts["footer"] = footer
-
+        opts = _extract_discord_options(form)
         wh_opts = WebhookOptions(webhook_endpoint_id=webhook.id, options=opts)
         session.add(wh_opts)
 
@@ -265,22 +272,7 @@ async def htmx_webhook_update(
 
     # Update or create Discord options
     if webhook_type == "discord":
-        color_raw = _form_str(form, "discord_color", "#FF0045").strip()
-        try:
-            color_int = int(color_raw.lstrip("#"), 16)
-        except ValueError:
-            color_int = 16711749
-        opts: dict[str, object] = {
-            "color": color_int,
-            "username": _form_str(form, "discord_username", "Rsync Viewer").strip()
-            or "Rsync Viewer",
-        }
-        avatar_url_val = _form_str(form, "discord_avatar_url").strip()
-        if avatar_url_val:
-            opts["avatar_url"] = avatar_url_val
-        footer = _form_str(form, "discord_footer").strip()
-        if footer:
-            opts["footer"] = footer
+        opts = _extract_discord_options(form)
 
         existing_opts = session.exec(
             select(WebhookOptions).where(

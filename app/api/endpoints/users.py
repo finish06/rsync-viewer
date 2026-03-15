@@ -4,12 +4,17 @@ import logging
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, status
-from sqlmodel import func, select
+from sqlmodel import select
 
 from app.api.deps import AdminDep, SessionDep
 from app.models.user import User
 from app.schemas.user import RoleUpdate, StatusUpdate, UserResponse
-from app.services.auth import VALID_ROLES
+from app.services.auth import (
+    PASSWORD_RESET_TOKEN_EXPIRY,
+    ROLE_ADMIN,
+    VALID_ROLES,
+    is_last_admin,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -55,11 +60,8 @@ async def change_user_role(
         )
 
     # If demoting an admin, check at least one admin remains
-    if target.role == "admin" and body.role != "admin":
-        admin_count = session.exec(
-            select(func.count()).where(User.role == "admin", User.is_active.is_(True))
-        ).one()
-        if admin_count <= 1:
+    if target.role == ROLE_ADMIN and body.role != ROLE_ADMIN:
+        if is_last_admin(session):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Cannot demote the last admin",
@@ -128,11 +130,8 @@ async def delete_user(
         )
 
     # Cannot delete last admin
-    if target.role == "admin":
-        admin_count = session.exec(
-            select(func.count()).where(User.role == "admin", User.is_active.is_(True))
-        ).one()
-        if admin_count <= 1:
+    if target.role == ROLE_ADMIN:
+        if is_last_admin(session):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Cannot delete the last admin",
@@ -155,7 +154,6 @@ async def admin_reset_password(
     from app.models.user import PasswordResetToken
     from app.services.auth import hash_token
     from app.utils import utc_now
-    from datetime import timedelta
 
     target = session.get(User, user_id)
     if not target:
@@ -168,7 +166,7 @@ async def admin_reset_password(
     reset_token = PasswordResetToken(
         user_id=target.id,
         token_hash=hash_token(raw_token),
-        expires_at=utc_now() + timedelta(hours=1),
+        expires_at=utc_now() + PASSWORD_RESET_TOKEN_EXPIRY,
     )
     session.add(reset_token)
     session.commit()

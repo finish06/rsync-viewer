@@ -21,6 +21,7 @@ from app.schemas.user import (
     UserResponse,
 )
 from app.services.auth import (
+    PASSWORD_RESET_TOKEN_EXPIRY,
     create_access_token,
     create_refresh_token,
     decode_token,
@@ -258,7 +259,7 @@ async def request_password_reset(
     reset_record = PasswordResetToken(
         user_id=user.id,
         token_hash=hash_token(raw_token),
-        expires_at=utc_now() + timedelta(hours=1),
+        expires_at=utc_now() + PASSWORD_RESET_TOKEN_EXPIRY,
     )
     session.add(reset_record)
     session.commit()

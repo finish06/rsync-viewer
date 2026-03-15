@@ -147,18 +147,4 @@ async def htmx_api_key_revoke(
     session.commit()
 
     # Return updated list
-    statement = (
-        select(ApiKeyModel)
-        .where(
-            ApiKeyModel.is_active.is_(True),  # type: ignore[attr-defined]
-            ApiKeyModel.user_id == user.id,
-        )
-        .order_by(ApiKeyModel.created_at.desc())  # type: ignore[attr-defined]
-    )
-    api_keys = session.exec(statement).all()
-
-    return templates.TemplateResponse(
-        request,
-        "partials/api_keys_list.html",
-        context={"api_keys": api_keys, "user": user},
-    )
+    return await htmx_api_keys_list(request, session, user)
