@@ -34,7 +34,7 @@ def encrypt_client_secret(secret: str) -> str:
     fernet = _get_fernet()
     if not fernet:
         raise ValueError("ENCRYPTION_KEY is not configured")
-    return fernet.encrypt(secret.encode()).decode()
+    return str(fernet.encrypt(secret.encode()).decode())
 
 
 def decrypt_client_secret(encrypted: str) -> str:
@@ -42,7 +42,7 @@ def decrypt_client_secret(encrypted: str) -> str:
     fernet = _get_fernet()
     if not fernet:
         raise ValueError("ENCRYPTION_KEY is not configured")
-    return fernet.decrypt(encrypted.encode()).decode()
+    return str(fernet.decrypt(encrypted.encode()).decode())
 
 
 # --- Config CRUD (singleton pattern) ---

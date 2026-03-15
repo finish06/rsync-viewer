@@ -31,7 +31,7 @@ def encrypt_password(password: str) -> str:
     fernet = _get_fernet()
     if not fernet:
         raise ValueError("SMTP_ENCRYPTION_KEY is not configured")
-    return fernet.encrypt(password.encode()).decode()
+    return str(fernet.encrypt(password.encode()).decode())
 
 
 def decrypt_password(encrypted: str) -> str:
@@ -39,7 +39,7 @@ def decrypt_password(encrypted: str) -> str:
     fernet = _get_fernet()
     if not fernet:
         raise ValueError("SMTP_ENCRYPTION_KEY is not configured")
-    return fernet.decrypt(encrypted.encode()).decode()
+    return str(fernet.decrypt(encrypted.encode()).decode())
 
 
 def get_smtp_config(session: Session) -> Optional[SmtpConfig]:
