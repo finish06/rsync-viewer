@@ -142,6 +142,7 @@ PUBLIC_PATHS = {
     "/register",
     "/health",
     "/metrics",
+    "/version",
     "/forgot-password",
     "/reset-password",
 }
