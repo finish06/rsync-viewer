@@ -89,9 +89,20 @@ synthetic_check_duration = Histogram(
 )
 
 
+build_info = Gauge(
+    "rsync_viewer_build_info",
+    "Build identity for Grafana annotations",
+    ["version", "python_version"],
+    registry=registry,
+)
+
+
 def set_app_info(version: str) -> None:
-    """Set the application version info gauge."""
+    """Set the application version info gauge and build info."""
+    import platform
+
     app_info.labels(version=version).set(1)
+    build_info.labels(version=version, python_version=platform.python_version()).set(1)
 
 
 def record_sync(

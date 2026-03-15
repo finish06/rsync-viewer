@@ -1,6 +1,10 @@
 import asyncio
 import logging
+import platform
+import socket
+import time
 from contextlib import asynccontextmanager
+from datetime import datetime, timezone
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
@@ -81,6 +85,14 @@ logger = logging.getLogger(__name__)
 settings_cfg = get_settings()
 
 
+def _safe_hostname() -> str:
+    """Get hostname, defaulting to 'unknown' on failure."""
+    try:
+        return socket.gethostname()
+    except Exception:
+        return "unknown"
+
+
 # limiter is imported from app.rate_limit
 
 
@@ -98,6 +110,11 @@ async def lifespan(app: FastAPI):
 
     # Database migrations are handled by entrypoint.sh (alembic upgrade head)
     # before the application starts. No create_all() needed.
+
+    # Record startup time for /version endpoint
+    app.state.start_time = datetime.now(timezone.utc)
+    app.state.start_monotonic = time.monotonic()
+    app.state.hostname = _safe_hostname()
 
     # Set Prometheus app info
     set_app_info(version=settings_cfg.app_version)
@@ -315,4 +332,29 @@ async def health():
             "last_latency_ms": state.last_latency_ms,
         }
 
-    return {"status": "ok", "synthetic_check": synthetic_check}
+    return {
+        "status": "ok",
+        "version": settings_cfg.app_version,
+        "synthetic_check": synthetic_check,
+    }
+
+
+# Module-level defaults for /version (overwritten by lifespan on real startup)
+_start_time = datetime.now(timezone.utc)
+_start_monotonic = time.monotonic()
+_hostname = _safe_hostname()
+
+
+@app.get("/version")
+async def version_endpoint():
+    """Build and runtime metadata (AC-001). Unauthenticated."""
+    uptime = time.monotonic() - getattr(app.state, "start_monotonic", _start_monotonic)
+    return {
+        "version": settings_cfg.app_version,
+        "python_version": platform.python_version(),
+        "os": platform.system(),
+        "arch": platform.machine(),
+        "hostname": getattr(app.state, "hostname", _hostname),
+        "uptime_seconds": round(uptime, 1),
+        "start_time": getattr(app.state, "start_time", _start_time).isoformat(),
+    }
