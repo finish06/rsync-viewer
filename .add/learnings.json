@@ -288,6 +288,19 @@
       "date": "2026-03-03",
       "classified_by": "agent",
       "checkpoint_type": "post-verify"
+    },
+    {
+      "id": "L-027",
+      "title": "CVEs accumulated unnoticed — need automated dependency auditing in CI",
+      "body": "PyJWT CVE-2026-32597 and pip CVE-2026-1703 went undetected until a manual pip-audit during /add:verify. GA maturity requires dependency audit as a blocking check. Action: add GitHub Actions workflow running pip-audit on every PR and weekly schedule. This is a process gap, not a one-time fix.",
+      "scope": "workstation",
+      "stack": ["python"],
+      "category": "anti-pattern",
+      "severity": "critical",
+      "source": "rsync-viewer",
+      "date": "2026-03-14",
+      "classified_by": "agent",
+      "checkpoint_type": "retro"
     }
   ]
 }

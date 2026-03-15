@@ -1,0 +1,13 @@
+{
+  "$schema": "https://github.com/MountainUnicorn/add/retro-scores.schema.json",
+  "scores": [
+    {
+      "date": "2026-03-14",
+      "collab_score": 6.0,
+      "add_effectiveness": 6.5,
+      "swarm_effectiveness": 7.0,
+      "retro_file": ".add/retros/retro-2026-03-14.md",
+      "context": "collaborative"
+    }
+  ]
+}

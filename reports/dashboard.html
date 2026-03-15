@@ -1,0 +1,986 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>rsync-viewer - ADD Project Dashboard</title>
+<style>
+  :root {
+    --bg-dark: #0f0f23;
+    --bg-mid: #1a1a2e;
+    --bg-light: #16213e;
+    --accent: #b00149;
+    --accent-mid: #d4326d;
+    --accent-light: #ff6b9d;
+    --success: #22c55e;
+    --warning: #f59e0b;
+    --info: #0ea5e9;
+    --purple: #a855f7;
+    --text-primary: #e4e4e4;
+    --text-secondary: #a0a0a0;
+    --text-muted: #6b7280;
+    --card-bg: rgba(255,255,255,0.05);
+    --card-border: rgba(255,255,255,0.08);
+    --card-radius: 16px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: linear-gradient(135deg, var(--bg-dark) 0%, var(--bg-mid) 50%, var(--bg-light) 100%);
+    color: var(--text-primary);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  .mono { font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', monospace; }
+
+  /* Header */
+  .header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(15,15,35,0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--card-border);
+    padding: 16px 32px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+  .header-brand {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: 2px;
+  }
+  .header-project {
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+  .pill {
+    display: inline-block;
+    padding: 4px 14px;
+    border-radius: 99px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .pill-ga { background: var(--success); color: #000; }
+  .pill-beta { background: var(--accent-light); color: #000; }
+  .pill-alpha { background: var(--accent); color: #fff; }
+  .pill-poc { background: var(--warning); color: #000; }
+  .header-meta {
+    margin-left: auto;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .header-nav {
+    width: 100%;
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+  .header-nav a {
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 500;
+    transition: color 0.2s;
+  }
+  .header-nav a:hover { color: var(--accent-light); }
+
+  /* Layout */
+  .container {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 32px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+  }
+  .section-title {
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--accent-mid);
+    margin-bottom: 16px;
+  }
+
+  /* Cards */
+  .card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: var(--card-radius);
+    padding: 28px;
+  }
+  .card-title {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 16px;
+  }
+
+  /* Grid */
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+  .grid-4 {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+  }
+  @media (max-width: 900px) {
+    .grid-2 { grid-template-columns: 1fr; }
+    .grid-4 { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  /* Metric cards */
+  .metric-card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+  }
+  .metric-value {
+    font-size: 36px;
+    font-weight: 700;
+    background: linear-gradient(90deg, var(--accent), var(--accent-mid), var(--accent-light));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .metric-label {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-top: 4px;
+  }
+
+  /* Flow bar */
+  .flow-bar {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin: 20px 0;
+  }
+  .flow-step {
+    flex: 1;
+    text-align: center;
+    padding: 14px 8px;
+    font-size: 13px;
+    font-weight: 600;
+    position: relative;
+  }
+  .flow-step .flow-count {
+    font-size: 28px;
+    font-weight: 700;
+    display: block;
+    margin-bottom: 4px;
+  }
+  .flow-arrow {
+    width: 32px;
+    flex-shrink: 0;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 20px;
+  }
+
+  /* Donut chart */
+  .donut-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 32px;
+    margin-top: 20px;
+  }
+  .donut-legend {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+  .legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* Hill chart */
+  .hill-container {
+    position: relative;
+    width: 100%;
+    height: 260px;
+    margin-top: 16px;
+  }
+  .hill-labels {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 8px;
+    font-size: 12px;
+    color: var(--text-muted);
+    font-style: italic;
+  }
+
+  /* Spec dots on hill */
+  .hill-dot {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    cursor: default;
+  }
+  .hill-dot .tooltip {
+    display: none;
+    position: absolute;
+    bottom: 18px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.85);
+    color: #fff;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    white-space: nowrap;
+    z-index: 10;
+  }
+  .hill-dot:hover .tooltip { display: block; }
+
+  /* Cycle list */
+  .cycle-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .cycle-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.03);
+    font-size: 13px;
+  }
+  .cycle-badge {
+    padding: 2px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+  .badge-complete { background: rgba(34,197,94,0.15); color: var(--success); }
+  .badge-planned { background: rgba(14,165,233,0.15); color: var(--info); }
+  .badge-active { background: rgba(168,85,247,0.15); color: var(--purple); }
+
+  /* Decision queue */
+  .decision-item {
+    padding: 12px 16px;
+    border-left: 3px solid var(--warning);
+    background: rgba(245,158,11,0.06);
+    border-radius: 0 8px 8px 0;
+    margin-bottom: 8px;
+    font-size: 13px;
+  }
+  .all-clear {
+    padding: 20px;
+    text-align: center;
+    border: 1px solid rgba(34,197,94,0.3);
+    border-radius: 12px;
+    background: rgba(34,197,94,0.06);
+    color: var(--success);
+    font-weight: 600;
+  }
+
+  /* Maturity timeline */
+  .maturity-timeline {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin: 20px 0;
+  }
+  .maturity-step {
+    flex: 1;
+    text-align: center;
+    padding: 12px 8px;
+    font-size: 14px;
+    font-weight: 600;
+    border-radius: 8px;
+    position: relative;
+  }
+  .maturity-step.past {
+    background: rgba(255,255,255,0.04);
+    color: var(--text-muted);
+  }
+  .maturity-step.current {
+    background: linear-gradient(135deg, var(--accent), var(--accent-mid));
+    color: #fff;
+    box-shadow: 0 0 20px rgba(176,1,73,0.3);
+  }
+  .maturity-step.future {
+    background: rgba(255,255,255,0.02);
+    color: var(--text-muted);
+    opacity: 0.5;
+  }
+  .maturity-connector {
+    width: 24px;
+    height: 2px;
+    background: rgba(255,255,255,0.1);
+    flex-shrink: 0;
+  }
+  .maturity-date {
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+
+  /* Score trend */
+  .score-chart {
+    margin-top: 16px;
+  }
+
+  /* Timeline */
+  .timeline-scroll {
+    display: flex;
+    gap: 16px;
+    overflow-x: auto;
+    padding: 16px 0;
+    scroll-snap-type: x mandatory;
+  }
+  .timeline-scroll::-webkit-scrollbar {
+    height: 6px;
+  }
+  .timeline-scroll::-webkit-scrollbar-track {
+    background: rgba(255,255,255,0.03);
+    border-radius: 3px;
+  }
+  .timeline-scroll::-webkit-scrollbar-thumb {
+    background: var(--accent);
+    border-radius: 3px;
+  }
+  .timeline-card {
+    min-width: 240px;
+    max-width: 280px;
+    flex-shrink: 0;
+    scroll-snap-align: start;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    padding: 16px;
+  }
+  .timeline-card:nth-child(odd) {
+    border-top: 2px solid var(--accent);
+  }
+  .timeline-card:nth-child(even) {
+    border-top: 2px solid var(--info);
+  }
+  .timeline-date {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+  }
+  .timeline-title {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .timeline-body {
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+
+  /* Commit log */
+  .commit-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-height: 340px;
+    overflow-y: auto;
+  }
+  .commit-item {
+    display: flex;
+    gap: 10px;
+    padding: 6px 10px;
+    font-size: 12px;
+    border-radius: 4px;
+  }
+  .commit-item:hover { background: rgba(255,255,255,0.03); }
+  .commit-hash {
+    color: var(--accent-mid);
+    flex-shrink: 0;
+    width: 64px;
+  }
+  .commit-msg { color: var(--text-secondary); }
+
+  /* Tags */
+  .tag-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .tag {
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    background: rgba(176,1,73,0.12);
+    color: var(--accent-light);
+    border: 1px solid rgba(176,1,73,0.2);
+  }
+  .tag:first-child {
+    background: rgba(34,197,94,0.12);
+    color: var(--success);
+    border-color: rgba(34,197,94,0.2);
+  }
+
+  /* Print */
+  @media print {
+    body { background: #fff; color: #222; }
+    .header { position: static; background: #fff; border-bottom: 2px solid #ddd; }
+    .header-nav { display: none; }
+    .card { break-inside: avoid; border-color: #ddd; background: #fafafa; }
+    .metric-value { -webkit-text-fill-color: var(--accent); }
+    .pill-ga { background: #22c55e; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="header">
+  <span class="header-brand mono">ADD</span>
+  <span class="header-project">rsync-viewer</span>
+  <span class="pill pill-ga">GA</span>
+  <span class="header-meta">Generated 2026-03-14 | Cycle 13 | v2.3.0</span>
+  <nav class="header-nav">
+    <a href="#outcome-health">Outcome Health</a>
+    <a href="#hill-chart">Hill Chart</a>
+    <a href="#cycles">Cycles</a>
+    <a href="#decisions">Decisions</a>
+    <a href="#intelligence">Intelligence</a>
+    <a href="#timeline">Timeline</a>
+    <a href="#commits">Commits</a>
+  </nav>
+</header>
+
+<div class="container">
+
+  <!-- Panel 1: Outcome Health -->
+  <section id="outcome-health">
+    <div class="section-title">Outcome Health</div>
+    <div class="card">
+      <div class="card-title">Spec Completion Pipeline</div>
+      <div class="flow-bar">
+        <div class="flow-step" style="background:rgba(14,165,233,0.1);border-radius:12px 0 0 12px;">
+          <span class="flow-count" style="color:var(--info);">12</span>
+          PRD Sections
+        </div>
+        <div class="flow-arrow">&rarr;</div>
+        <div class="flow-step" style="background:rgba(168,85,247,0.1);">
+          <span class="flow-count" style="color:var(--purple);">36</span>
+          Specs
+        </div>
+        <div class="flow-arrow">&rarr;</div>
+        <div class="flow-step" style="background:rgba(34,197,94,0.1);">
+          <span class="flow-count" style="color:var(--success);">29</span>
+          Complete
+        </div>
+        <div class="flow-arrow">&rarr;</div>
+        <div class="flow-step" style="background:rgba(245,158,11,0.1);border-radius:0 12px 12px 0;">
+          <span class="flow-count" style="color:var(--warning);">7</span>
+          Remaining
+        </div>
+      </div>
+
+      <div class="donut-container">
+        <svg width="160" height="160" viewBox="0 0 160 160">
+          <circle cx="80" cy="80" r="60" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="18"/>
+          <!-- Complete: 29/36 = 80.6% => 302 of 377 circumference -->
+          <circle cx="80" cy="80" r="60" fill="none" stroke="url(#donutGrad)" stroke-width="18"
+            stroke-dasharray="303.6 73.4" stroke-dashoffset="94" stroke-linecap="round"
+            transform="rotate(-90 80 80)"/>
+          <defs>
+            <linearGradient id="donutGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#b00149"/>
+              <stop offset="100%" stop-color="#22c55e"/>
+            </linearGradient>
+          </defs>
+          <text x="80" y="74" text-anchor="middle" fill="#e4e4e4" font-size="28" font-weight="700">81%</text>
+          <text x="80" y="96" text-anchor="middle" fill="#a0a0a0" font-size="12">29 / 36</text>
+        </svg>
+
+        <div class="donut-legend">
+          <div class="legend-item"><span class="legend-dot" style="background:var(--success);"></span> Complete (29)</div>
+          <div class="legend-item"><span class="legend-dot" style="background:var(--purple);"></span> Implementing (3)</div>
+          <div class="legend-item"><span class="legend-dot" style="background:var(--info);"></span> Draft (3)</div>
+          <div class="legend-item"><span class="legend-dot" style="background:var(--text-muted);"></span> Superseded (1)</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Panel 2: Hill Chart -->
+  <section id="hill-chart">
+    <div class="section-title">Hill Chart</div>
+    <div class="card">
+      <div class="card-title">Feature Progress</div>
+      <div class="hill-container">
+        <svg width="100%" height="240" viewBox="0 0 800 240" preserveAspectRatio="xMidYMid meet">
+          <!-- Hill curve -->
+          <defs>
+            <linearGradient id="hillFill" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stop-color="rgba(176,1,73,0.15)"/>
+              <stop offset="100%" stop-color="rgba(176,1,73,0)"/>
+            </linearGradient>
+          </defs>
+          <path d="M 0 220 Q 200 220 400 40 Q 600 220 800 220 Z" fill="url(#hillFill)"/>
+          <path d="M 0 220 Q 200 220 400 40 Q 600 220 800 220" fill="none" stroke="var(--accent)" stroke-width="2" opacity="0.5"/>
+          <!-- Center line -->
+          <line x1="400" y1="30" x2="400" y2="225" stroke="rgba(255,255,255,0.08)" stroke-width="1" stroke-dasharray="4"/>
+
+          <!-- Complete specs (90% position = x:720) -->
+          <circle cx="720" cy="140" r="5" fill="#22c55e"><title>alembic-migrations</title></circle>
+          <circle cx="730" cy="155" r="5" fill="#22c55e"><title>analytics</title></circle>
+          <circle cx="710" cy="148" r="5" fill="#22c55e"><title>api-key-debounce</title></circle>
+          <circle cx="740" cy="165" r="5" fill="#22c55e"><title>average-transfer-rate</title></circle>
+          <circle cx="725" cy="172" r="5" fill="#22c55e"><title>changelog-viewer</title></circle>
+          <circle cx="735" cy="130" r="5" fill="#22c55e"><title>ci-pipeline</title></circle>
+          <circle cx="715" cy="160" r="5" fill="#22c55e"><title>codebase-hardening</title></circle>
+          <circle cx="745" cy="175" r="5" fill="#22c55e"><title>cve-protection</title></circle>
+          <circle cx="705" cy="135" r="5" fill="#22c55e"><title>dark-mode</title></circle>
+          <circle cx="750" cy="145" r="5" fill="#22c55e"><title>deprecation-cleanup</title></circle>
+          <circle cx="700" cy="155" r="5" fill="#22c55e"><title>dev-seed-data</title></circle>
+          <circle cx="755" cy="158" r="5" fill="#22c55e"><title>discord-integration</title></circle>
+          <circle cx="695" cy="168" r="5" fill="#22c55e"><title>error-handling</title></circle>
+          <circle cx="760" cy="138" r="5" fill="#22c55e"><title>failure-detection</title></circle>
+          <circle cx="690" cy="178" r="5" fill="#22c55e"><title>metrics-export</title></circle>
+          <circle cx="728" cy="182" r="5" fill="#22c55e"><title>monitoring-setup-wizard</title></circle>
+          <circle cx="718" cy="125" r="5" fill="#22c55e"><title>notification-history</title></circle>
+          <circle cx="738" cy="188" r="5" fill="#22c55e"><title>oidc-authentication</title></circle>
+          <circle cx="708" cy="143" r="5" fill="#22c55e"><title>performance</title></circle>
+          <circle cx="748" cy="152" r="5" fill="#22c55e"><title>reverse-proxy-support</title></circle>
+          <circle cx="698" cy="162" r="5" fill="#22c55e"><title>rsync-client-compose</title></circle>
+          <circle cx="758" cy="170" r="5" fill="#22c55e"><title>security-hardening</title></circle>
+          <circle cx="688" cy="148" r="5" fill="#22c55e"><title>smtp-email</title></circle>
+          <circle cx="722" cy="192" r="5" fill="#22c55e"><title>structured-logging</title></circle>
+          <circle cx="712" cy="185" r="5" fill="#22c55e"><title>sync-logs-ui-refresh</title></circle>
+          <circle cx="742" cy="195" r="5" fill="#22c55e"><title>synthetic-source-filter</title></circle>
+          <circle cx="732" cy="120" r="5" fill="#22c55e"><title>user-management</title></circle>
+          <circle cx="752" cy="132" r="5" fill="#22c55e"><title>webhook-service</title></circle>
+
+          <!-- Implementing specs (60% position = ~x:500) -->
+          <circle cx="490" cy="90" r="6" fill="#a855f7" stroke="#fff" stroke-width="1"><title>date-range-quick-select</title></circle>
+          <circle cx="510" cy="85" r="6" fill="#a855f7" stroke="#fff" stroke-width="1"><title>oidc-settings</title></circle>
+          <circle cx="500" cy="100" r="6" fill="#a855f7" stroke="#fff" stroke-width="1"><title>synthetic-monitoring</title></circle>
+
+          <!-- Draft specs (10% position = ~x:80) -->
+          <circle cx="70" cy="210" r="6" fill="#0ea5e9" stroke="#fff" stroke-width="1"><title>changelog-presentation</title></circle>
+          <circle cx="90" cy="205" r="6" fill="#0ea5e9" stroke="#fff" stroke-width="1"><title>developer-guide</title></circle>
+          <circle cx="80" cy="215" r="6" fill="#0ea5e9" stroke="#fff" stroke-width="1"><title>user-preferences</title></circle>
+
+          <!-- Labels -->
+          <text x="200" y="235" text-anchor="middle" fill="#6b7280" font-size="12" font-style="italic">Figuring it out</text>
+          <text x="600" y="235" text-anchor="middle" fill="#6b7280" font-size="12" font-style="italic">Executing</text>
+        </svg>
+      </div>
+      <div style="display:flex;gap:20px;justify-content:center;margin-top:8px;font-size:12px;">
+        <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#0ea5e9;vertical-align:middle;margin-right:4px;"></span>Draft</span>
+        <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#a855f7;vertical-align:middle;margin-right:4px;"></span>Implementing</span>
+        <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#22c55e;vertical-align:middle;margin-right:4px;"></span>Complete</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Panel 3: Cycles -->
+  <section id="cycles">
+    <div class="section-title">Cycle Progress</div>
+    <div class="card">
+      <div class="card-title">13 Cycles Completed</div>
+      <div class="cycle-list">
+        <div class="cycle-item">
+          <span class="cycle-badge badge-planned">PLANNED</span>
+          <span class="mono" style="color:var(--accent-light);font-size:12px;">cycle-13</span>
+          <span style="color:var(--text-secondary);">Rsync Client Docker Compose (M10)</span>
+          <span style="margin-left:auto;color:var(--text-muted);font-size:12px;">Current</span>
+        </div>
+        <div class="cycle-item">
+          <span class="cycle-badge badge-complete">DONE</span>
+          <span class="mono" style="color:var(--accent-light);font-size:12px;">cycle-12</span>
+          <span style="color:var(--text-secondary);">M9 Phase 5: Password Reset + Session Timeout</span>
+        </div>
+        <div class="cycle-item">
+          <span class="cycle-badge badge-complete">DONE</span>
+          <span class="mono" style="color:var(--accent-light);font-size:12px;">cycle-11</span>
+          <span style="color:var(--text-secondary);">M9 Phase 4: Admin User Management</span>
+        </div>
+        <div class="cycle-item">
+          <span class="cycle-badge badge-complete">DONE</span>
+          <span class="mono" style="color:var(--accent-light);font-size:12px;">cycle-10</span>
+          <span style="color:var(--text-secondary);">M9 Phase 3: Per-User API Keys</span>
+        </div>
+        <div class="cycle-item">
+          <span class="cycle-badge badge-complete">DONE</span>
+          <span class="mono" style="color:var(--accent-light);font-size:12px;">cycle-9</span>
+          <span style="color:var(--text-secondary);">M9 Phase 2: RBAC + Login UI</span>
+        </div>
+        <div class="cycle-item">
+          <span class="cycle-badge badge-complete">DONE</span>
+          <span class="mono" style="color:var(--accent-light);font-size:12px;">cycle-8</span>
+          <span style="color:var(--text-secondary);">M9 Phase 1: JWT Auth Foundation</span>
+        </div>
+        <div class="cycle-item">
+          <span class="cycle-badge badge-complete">DONE</span>
+          <span class="mono" style="color:var(--accent-light);font-size:12px;">cycle-7</span>
+          <span style="color:var(--text-secondary);">Beta promotion + Changelog Viewer + Dev Tooling</span>
+        </div>
+        <div class="cycle-item">
+          <span class="cycle-badge badge-complete">DONE</span>
+          <span class="mono" style="color:var(--accent-light);font-size:12px;">cycle-6</span>
+          <span style="color:var(--text-secondary);">M6 Observability: Docs + Grafana</span>
+        </div>
+        <div class="cycle-item">
+          <span class="cycle-badge badge-complete">DONE</span>
+          <span class="mono" style="color:var(--accent-light);font-size:12px;">cycle-5</span>
+          <span style="color:var(--text-secondary);">M6 Observability: Metrics + Retention</span>
+        </div>
+        <div class="cycle-item">
+          <span class="cycle-badge badge-complete">DONE</span>
+          <span class="mono" style="color:var(--accent-light);font-size:12px;">cycle-4</span>
+          <span style="color:var(--text-secondary);">M4 Analytics: Charts + Dashboard</span>
+        </div>
+        <div class="cycle-item">
+          <span class="cycle-badge badge-complete">DONE</span>
+          <span class="mono" style="color:var(--accent-light);font-size:12px;">cycle-3</span>
+          <span style="color:var(--text-secondary);">M4 Performance: Indexes + Pagination</span>
+        </div>
+        <div class="cycle-item">
+          <span class="cycle-badge badge-complete">DONE</span>
+          <span class="mono" style="color:var(--accent-light);font-size:12px;">cycle-2</span>
+          <span style="color:var(--text-secondary);">M3 Reliability: Logging + Security</span>
+        </div>
+        <div class="cycle-item">
+          <span class="cycle-badge badge-complete">DONE</span>
+          <span class="mono" style="color:var(--accent-light);font-size:12px;">cycle-1</span>
+          <span style="color:var(--text-secondary);">M1 Foundation: Quick Select + Transfer Rate</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Panel 4: Decision Queue -->
+  <section id="decisions">
+    <div class="section-title">Decision Queue</div>
+    <div class="card">
+      <div class="card-title">Action Items</div>
+      <div class="decision-item">
+        <strong>3 specs in Draft status:</strong> changelog-presentation, developer-guide, user-preferences — need spec review before implementation can begin.
+      </div>
+      <div class="decision-item">
+        <strong>3 specs Implementing:</strong> date-range-quick-select, oidc-settings, synthetic-monitoring — need verification and status update.
+      </div>
+      <div class="decision-item">
+        <strong>M10 Rsync Client:</strong> Only milestone not yet complete. Cycle 13 is planned but not started.
+      </div>
+      <div class="decision-item" style="border-left-color:var(--accent);">
+        <strong>77 deferred code quality items</strong> from GA verify: long files, long functions, missing docstrings. Tracked but not blocking.
+      </div>
+    </div>
+  </section>
+
+  <!-- Panel 5: Project Intelligence -->
+  <section id="intelligence">
+    <div class="section-title">Project Intelligence</div>
+
+    <div class="grid-4">
+      <div class="metric-card">
+        <div class="metric-value">27</div>
+        <div class="metric-label">Learnings</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-value">13</div>
+        <div class="metric-label">Cycles</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-value">29</div>
+        <div class="metric-label">Specs Shipped</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-value">17</div>
+        <div class="metric-label">Releases</div>
+      </div>
+    </div>
+
+    <!-- Maturity Timeline -->
+    <div class="card" style="margin-top:24px;">
+      <div class="card-title">Maturity Journey</div>
+      <div class="maturity-timeline">
+        <div class="maturity-step past">
+          POC
+          <div class="maturity-date">2026-01-26</div>
+        </div>
+        <div class="maturity-connector"></div>
+        <div class="maturity-step past">
+          Alpha
+          <div class="maturity-date">2026-02-20</div>
+        </div>
+        <div class="maturity-connector"></div>
+        <div class="maturity-step past">
+          Beta
+          <div class="maturity-date">2026-02-24</div>
+        </div>
+        <div class="maturity-connector"></div>
+        <div class="maturity-step current">
+          GA
+          <div class="maturity-date">2026-03-03</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Learnings by Category -->
+    <div class="card" style="margin-top:24px;">
+      <div class="card-title">Learnings by Category</div>
+      <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:12px;">
+        <div style="flex:1;min-width:120px;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+            <div style="width:100%;height:8px;border-radius:4px;background:rgba(255,255,255,0.05);overflow:hidden;">
+              <div style="width:41%;height:100%;background:var(--info);border-radius:4px;"></div>
+            </div>
+          </div>
+          <div style="font-size:12px;color:var(--text-secondary);">Process <span class="mono" style="color:var(--info);">11</span></div>
+        </div>
+        <div style="flex:1;min-width:120px;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+            <div style="width:100%;height:8px;border-radius:4px;background:rgba(255,255,255,0.05);overflow:hidden;">
+              <div style="width:22%;height:100%;background:var(--purple);border-radius:4px;"></div>
+            </div>
+          </div>
+          <div style="font-size:12px;color:var(--text-secondary);">Technical <span class="mono" style="color:var(--purple);">6</span></div>
+        </div>
+        <div style="flex:1;min-width:120px;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+            <div style="width:100%;height:8px;border-radius:4px;background:rgba(255,255,255,0.05);overflow:hidden;">
+              <div style="width:19%;height:100%;background:var(--warning);border-radius:4px;"></div>
+            </div>
+          </div>
+          <div style="font-size:12px;color:var(--text-secondary);">Anti-pattern <span class="mono" style="color:var(--warning);">5</span></div>
+        </div>
+        <div style="flex:1;min-width:120px;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+            <div style="width:100%;height:8px;border-radius:4px;background:rgba(255,255,255,0.05);overflow:hidden;">
+              <div style="width:4%;height:100%;background:var(--success);border-radius:4px;"></div>
+            </div>
+          </div>
+          <div style="font-size:12px;color:var(--text-secondary);">Architecture <span class="mono" style="color:var(--success);">1</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Retro Score Trend -->
+    <div class="card" style="margin-top:24px;">
+      <div class="card-title">Retro Scores (2026-03-14)</div>
+      <div class="grid-4" style="grid-template-columns:repeat(3,1fr);margin-top:12px;">
+        <div class="metric-card">
+          <div class="metric-value" style="font-size:28px;">6.0</div>
+          <div class="metric-label">Collaboration</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-value" style="font-size:28px;">6.5</div>
+          <div class="metric-label">ADD Effectiveness</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-value" style="font-size:28px;">7.0</div>
+          <div class="metric-label">Swarm Effectiveness</div>
+        </div>
+      </div>
+      <div style="text-align:center;margin-top:12px;font-size:12px;color:var(--text-muted);">
+        5 retrospectives conducted (2026-02-20 to 2026-03-14)
+      </div>
+    </div>
+  </section>
+
+  <!-- Panel 6: Project Timeline -->
+  <section id="timeline">
+    <div class="section-title">Project Timeline</div>
+    <div class="card">
+      <div class="card-title">Key Events</div>
+      <div class="timeline-scroll">
+        <div class="timeline-card">
+          <div class="timeline-date">2026-01-26</div>
+          <div class="timeline-title">v1.0.0 - Initial Release</div>
+          <div class="timeline-body">REST API, rsync parser, HTMX dashboard, API key auth, Docker Compose</div>
+        </div>
+        <div class="timeline-card">
+          <div class="timeline-date">2026-02-19</div>
+          <div class="timeline-title">v1.1.0 - Dark Mode</div>
+          <div class="timeline-body">Light/dark/system theme toggle</div>
+        </div>
+        <div class="timeline-card">
+          <div class="timeline-date">2026-02-20</div>
+          <div class="timeline-title">POC -> Alpha</div>
+          <div class="timeline-body">M1 Foundation complete. CI pipeline, 92% coverage, 6 specs shipped</div>
+        </div>
+        <div class="timeline-card">
+          <div class="timeline-date">2026-02-22</div>
+          <div class="timeline-title">v1.3.0-v1.4.0</div>
+          <div class="timeline-body">Failure detection, webhooks, Discord, notification history</div>
+        </div>
+        <div class="timeline-card">
+          <div class="timeline-date">2026-02-23</div>
+          <div class="timeline-title">v1.5.0-v1.6.0</div>
+          <div class="timeline-body">Security hardening, rate limiting, Prometheus metrics, data retention</div>
+        </div>
+        <div class="timeline-card">
+          <div class="timeline-date">2026-02-24</div>
+          <div class="timeline-title">Alpha -> Beta</div>
+          <div class="timeline-body">M6 Observability complete. 425 tests, 89% coverage. Full TDD enforced</div>
+        </div>
+        <div class="timeline-card">
+          <div class="timeline-date">2026-02-26</div>
+          <div class="timeline-title">v1.8.0 - Multi-User</div>
+          <div class="timeline-body">JWT auth, RBAC, login/register UI, per-user API keys, admin management</div>
+        </div>
+        <div class="timeline-card">
+          <div class="timeline-date">2026-02-27</div>
+          <div class="timeline-title">v1.9.0-v1.10.0</div>
+          <div class="timeline-body">SMTP email, OIDC authentication, reverse proxy support</div>
+        </div>
+        <div class="timeline-card">
+          <div class="timeline-date">2026-03-01</div>
+          <div class="timeline-title">v1.11.0</div>
+          <div class="timeline-body">Alembic migrations, codebase hardening, rsync client E2E test</div>
+        </div>
+        <div class="timeline-card">
+          <div class="timeline-date">2026-03-03</div>
+          <div class="timeline-title">Beta -> GA (v2.0.0)</div>
+          <div class="timeline-body">All milestones complete. Smoke tests, PR template, glossary, SLA targets</div>
+        </div>
+        <div class="timeline-card">
+          <div class="timeline-date">2026-03-05</div>
+          <div class="timeline-title">v2.1.0</div>
+          <div class="timeline-body">Synthetic monitoring, source filter, changelog presentation, CI improvements</div>
+        </div>
+        <div class="timeline-card">
+          <div class="timeline-date">2026-03-14</div>
+          <div class="timeline-title">v2.3.0 (Latest)</div>
+          <div class="timeline-body">CVE fixes, 62 new tests, sequence diagrams, 95% coverage, 923 tests</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Commits & Tags -->
+  <section id="commits">
+    <div class="section-title">Source Control</div>
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">Recent Commits</div>
+        <div class="commit-list mono">
+          <div class="commit-item"><span class="commit-hash">2255140</span><span class="commit-msg">Merge pull request #33 from finish06/feature/cve-protection</span></div>
+          <div class="commit-item"><span class="commit-hash">0c13b6e</span><span class="commit-msg">feat: add pip-audit security scanning to CI pipeline</span></div>
+          <div class="commit-item"><span class="commit-hash">9b0e508</span><span class="commit-msg">docs: release v2.3.0 changelog</span></div>
+          <div class="commit-item"><span class="commit-hash">54efb9b</span><span class="commit-msg">Merge pull request #32 from finish06/fix/verify-findings</span></div>
+          <div class="commit-item"><span class="commit-hash">d788cf6</span><span class="commit-msg">docs: add verify observation entries</span></div>
+          <div class="commit-item"><span class="commit-hash">edcf84f</span><span class="commit-msg">fix: resolve verify findings -- CVEs, mypy errors, coverage gaps</span></div>
+          <div class="commit-item"><span class="commit-hash">1bbcf26</span><span class="commit-msg">Merge pull request #31 from finish06/docs/update-architecture</span></div>
+          <div class="commit-item"><span class="commit-hash">b14e59c</span><span class="commit-msg">docs: update architecture docs and add sequence diagrams</span></div>
+          <div class="commit-item"><span class="commit-hash">e95e315</span><span class="commit-msg">fix: skip CI auto-tag when HEAD already has a version tag</span></div>
+          <div class="commit-item"><span class="commit-hash">5d63420</span><span class="commit-msg">Merge pull request #30 from finish06/beta</span></div>
+          <div class="commit-item"><span class="commit-hash">43f1d10</span><span class="commit-msg">docs: release v2.2.1 changelog</span></div>
+          <div class="commit-item"><span class="commit-hash">8a7bf89</span><span class="commit-msg">fix: CSRF double-submit cookie pattern for HTMX requests</span></div>
+          <div class="commit-item"><span class="commit-hash">17df9b6</span><span class="commit-msg">Merge beta: externalize app version via APP_VERSION env var</span></div>
+          <div class="commit-item"><span class="commit-hash">936caee</span><span class="commit-msg">feat: externalize app version via APP_VERSION env var</span></div>
+          <div class="commit-item"><span class="commit-hash">1463bda</span><span class="commit-msg">Merge beta into main for v2.1.0 release</span></div>
+          <div class="commit-item"><span class="commit-hash">57ebc1d</span><span class="commit-msg">docs: release v2.1.0 changelog</span></div>
+          <div class="commit-item"><span class="commit-hash">d6763e4</span><span class="commit-msg">ci: add standalone smoke test workflow with manual dispatch</span></div>
+          <div class="commit-item"><span class="commit-hash">a103f5e</span><span class="commit-msg">ci: add standalone smoke test workflow with manual dispatch</span></div>
+          <div class="commit-item"><span class="commit-hash">2f9f1f4</span><span class="commit-msg">fix: add app healthcheck and wait-for-ready in CI smoke tests</span></div>
+          <div class="commit-item"><span class="commit-hash">0535ef7</span><span class="commit-msg">fix: use docker-compose.yml for smoke tests (provides app + db)</span></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Release Tags (17 releases)</div>
+        <div class="tag-grid">
+          <span class="tag">v2.3.0</span>
+          <span class="tag">v2.2.1</span>
+          <span class="tag">v2.2.0</span>
+          <span class="tag">v2.1.0</span>
+          <span class="tag">v2.0.0</span>
+          <span class="tag">v1.11.0</span>
+          <span class="tag">v1.10.0</span>
+          <span class="tag">v1.9.0</span>
+          <span class="tag">v1.8.0</span>
+          <span class="tag">v1.7.0</span>
+          <span class="tag">v1.6.0</span>
+          <span class="tag">v1.5.0</span>
+          <span class="tag">v1.4.0</span>
+          <span class="tag">v1.3.0</span>
+          <span class="tag">v1.2.0</span>
+          <span class="tag">v1.1.0</span>
+          <span class="tag">v1.0.0</span>
+        </div>
+
+        <div style="margin-top:24px;">
+          <div class="card-title" style="font-size:15px;">Milestones (11 total)</div>
+          <div style="display:flex;flex-direction:column;gap:6px;margin-top:8px;">
+            <div style="font-size:13px;color:var(--text-secondary);display:flex;align-items:center;gap:8px;">
+              <span style="color:var(--success);">&#10003;</span> M1 Foundation
+            </div>
+            <div style="font-size:13px;color:var(--text-secondary);display:flex;align-items:center;gap:8px;">
+              <span style="color:var(--success);">&#10003;</span> M2 Notifications
+            </div>
+            <div style="font-size:13px;color:var(--text-secondary);display:flex;align-items:center;gap:8px;">
+              <span style="color:var(--success);">&#10003;</span> M3 Reliability
+            </div>
+            <div style="font-size:13px;color:var(--text-secondary);display:flex;align-items:center;gap:8px;">
+              <span style="color:var(--success);">&#10003;</span> M4 Analytics
+            </div>
+            <div style="font-size:13px;color:var(--text-secondary);display:flex;align-items:center;gap:8px;">
+              <span style="color:var(--success);">&#10003;</span> M5 API Performance
+            </div>
+            <div style="font-size:13px;color:var(--text-secondary);display:flex;align-items:center;gap:8px;">
+              <span style="color:var(--success);">&#10003;</span> M6 Observability
+            </div>
+            <div style="font-size:13px;color:var(--text-secondary);display:flex;align-items:center;gap:8px;">
+              <span style="color:var(--success);">&#10003;</span> M7 OIDC Authentication
+            </div>
+            <div style="font-size:13px;color:var(--text-secondary);display:flex;align-items:center;gap:8px;">
+              <span style="color:var(--success);">&#10003;</span> M9 Multi-User
+            </div>
+            <div style="font-size:13px;color:var(--text-secondary);display:flex;align-items:center;gap:8px;">
+              <span style="color:var(--success);">&#10003;</span> M10 Sync Management
+            </div>
+            <div style="font-size:13px;color:var(--text-secondary);display:flex;align-items:center;gap:8px;">
+              <span style="color:var(--success);">&#10003;</span> M11 Polish & Infrastructure
+            </div>
+            <div style="font-size:13px;color:var(--text-secondary);display:flex;align-items:center;gap:8px;">
+              <span style="color:var(--success);">&#10003;</span> M-GA Promotion
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer style="text-align:center;padding:24px 0;font-size:12px;color:var(--text-muted);border-top:1px solid var(--card-border);">
+    Powered by <span style="color:var(--accent);font-weight:600;">Agent Driven Development</span> &middot; rsync-viewer &middot; GA maturity &middot; 923 tests &middot; 95% coverage
+  </footer>
+
+</div>
+
+</body>
+</html>

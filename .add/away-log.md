@@ -1,31 +1,19 @@
 # Away Mode Log
 
-**Started:** 2026-03-04 (8-hour session)
-**Duration:** 8 hours
+**Started:** 2026-03-14 19:30
+**Expected Return:** 2026-03-15 07:30
+**Duration:** 12 hours
 
 ## Work Plan
-1. Commit spec updates to feature branch
-2. Update date-range-quick-select-plan.md for v0.2.0
-3. Update synthetic-monitoring-plan.md for v0.2.0
-4. Create changelog-presentation-plan.md
-5. TDD cycle: date-range quick-select for Analytics + Notifications
-6. TDD cycle: OIDC dark mode fix
-7. If time remains: start TDD for synthetic monitoring v0.2.0
+1. Commit retro + spec artifacts
+2. Extract shared role guard for HTMX routes (P3)
+3. Extract Discord options helper (P3)
+4. Extract shared JWT decode helper (P3)
+5. Extract is_last_admin() service function (P3)
+6. Replace bare "admin" strings with ROLE_ADMIN (P3)
+7. Extract PASSWORD_RESET_TOKEN_EXPIRY constant (P3)
+8. Monitor PR #34 CI
 
 ## Progress Log
 | Time | Task | Status | Notes |
 |------|------|--------|-------|
-| Session 1 | Commit spec updates | Done | 4 specs updated, smoke test fix, merged to main |
-| Session 1 | Update date-range plan | Done | Added Phase 6 (Analytics) and Phase 7 (Notifications) |
-| Session 2 | TDD: date-range v2 RED | Done | 11 tests written, 10 failing as expected |
-| Session 2 | TDD: date-range v2 GREEN | Done | Backend date filtering + frontend quick-select buttons |
-| Session 2 | TDD: OIDC dark mode RED | Done | 2 tests written, both failing |
-| Session 2 | TDD: OIDC dark mode GREEN | Done | --bg-secondary CSS var + .info-box class |
-| Session 2 | VERIFY | Done | 825 tests pass, lint clean, format clean |
-| Session 2 | Push + PR | Done | PR #29 created |
-
-## Queued for Return
-- Update synthetic-monitoring-plan.md for v0.2.0
-- Create changelog-presentation-plan.md
-- TDD cycle: synthetic monitoring v0.2.0 (DB persistence, runtime toggle, check history)
-- TDD cycle: changelog presentation improvements
