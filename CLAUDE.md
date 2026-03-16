@@ -64,7 +64,7 @@ rsync-viewer/
 │   │   │   ├── analytics.py        # Aggregated stats + export
 │   │   │   ├── auth.py             # JWT auth (register/login/refresh/reset)
 │   │   │   ├── api_keys.py         # Per-user API key management
-│   │   │   └── users.py            # Admin user management
+│   │   │   └── users.py            # Admin user management + user preferences API
 │   │   └── deps.py                 # Auth dependencies (API key, JWT, RBAC)
 │   ├── routes/                     # HTMX / UI route handlers
 │   │   ├── pages.py                # Page-level routes (/, /login, /settings, etc.)

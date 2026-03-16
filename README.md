@@ -28,6 +28,7 @@ A web application for collecting, parsing, and visualizing rsync synchronization
 - **Password Reset** — Console-based token reset flow with single-use, time-limited tokens
 - **Changelog Viewer** — In-app changelog with accordion UI parsed from CHANGELOG.md
 - **Monitoring Setup Assistant** — Guided cron/systemd script generation for rsync integration
+- **User Preferences** — Server-persisted theme preference (light/dark/system) follows users across browsers
 
 ## Architecture
 
@@ -207,7 +208,7 @@ rsync-viewer/
 │   ├── rate_limit.py          # SlowAPI rate limiter instance
 │   ├── templating.py          # Jinja2 template engine + custom filters
 │   └── main.py               # FastAPI application entry point
-├── tests/                    # Test suite (933+ tests, 95% coverage)
+├── tests/                    # Test suite (950+ tests, 95% coverage)
 ├── specs/                    # Feature specifications
 ├── docs/                     # Documentation, milestones, plans
 ├── .github/workflows/        # CI/CD pipeline
