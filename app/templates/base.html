@@ -7,7 +7,11 @@
     <script>
         (function() {
             try {
-                var theme = localStorage.getItem('theme') || 'system';
+                {% if user and user.preferences and user.preferences.get("theme") %}
+                window.__USER_THEME__ = '{{ user.preferences.get("theme") }}';
+                {% endif %}
+                var theme = window.__USER_THEME__ || localStorage.getItem('theme') || 'system';
+                if (window.__USER_THEME__) { try { localStorage.setItem('theme', window.__USER_THEME__); } catch(e) {} }
                 var dark = theme === 'dark' || (theme === 'system' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
                 if (dark) document.documentElement.setAttribute('data-theme', 'dark');
             } catch (e) {}

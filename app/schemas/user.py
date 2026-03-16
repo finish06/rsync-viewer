@@ -146,6 +146,22 @@ class PasswordResetResponse(BaseModel):
     reset_token: Optional[str] = None  # Only in debug/console mode
 
 
+class UserPreferencesUpdate(BaseModel):
+    """Schema for updating user preferences (partial merge)."""
+
+    theme: Optional[str] = Field(
+        default=None,
+        description="Theme preference: light, dark, or system",
+    )
+
+    @field_validator("theme")
+    @classmethod
+    def validate_theme(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None and v not in ("light", "dark", "system"):
+            raise ValueError("Theme must be one of: light, dark, system")
+        return v
+
+
 class ApiKeyCreate(BaseModel):
     """Schema for creating a new API key."""
 

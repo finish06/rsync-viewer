@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import Optional
 from uuid import UUID, uuid4
 
+import sqlalchemy as sa
 from sqlmodel import Field, SQLModel
 
 from app.utils import utc_now
@@ -20,6 +21,7 @@ class User(SQLModel, table=True):
     oidc_subject: Optional[str] = Field(default=None, max_length=255, unique=True)
     oidc_issuer: Optional[str] = Field(default=None, max_length=512)
     last_login_at: Optional[datetime] = None
+    preferences: dict = Field(default_factory=dict, sa_type=sa.JSON)
     created_at: datetime = Field(default_factory=utc_now)
     updated_at: datetime = Field(default_factory=utc_now)
 

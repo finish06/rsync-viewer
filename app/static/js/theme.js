@@ -42,10 +42,26 @@
         }
     }
 
+    function saveToServer(preference) {
+        if (typeof window.__USER_THEME__ === 'undefined') return;
+        try {
+            var csrf = document.cookie.match('(^|;)\\s*csrf_token=([^;]+)');
+            var headers = {'Content-Type': 'application/json'};
+            if (csrf) headers['X-CSRF-Token'] = csrf[2];
+            fetch('/api/v1/users/me/preferences', {
+                method: 'PATCH',
+                headers: headers,
+                body: JSON.stringify({theme: preference}),
+                keepalive: true
+            }).catch(function() {});
+        } catch (e) {}
+    }
+
     function setTheme(preference) {
         savePreference(preference);
         applyTheme(preference);
         updateActiveButton(preference);
+        saveToServer(preference);
     }
 
     function updateActiveButton(preference) {
