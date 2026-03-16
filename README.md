@@ -207,7 +207,7 @@ rsync-viewer/
 │   ├── rate_limit.py          # SlowAPI rate limiter instance
 │   ├── templating.py          # Jinja2 template engine + custom filters
 │   └── main.py               # FastAPI application entry point
-├── tests/                    # Test suite (929+ tests, 95% coverage)
+├── tests/                    # Test suite (933+ tests, 95% coverage)
 ├── specs/                    # Feature specifications
 ├── docs/                     # Documentation, milestones, plans
 ├── .github/workflows/        # CI/CD pipeline
