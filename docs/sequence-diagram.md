@@ -554,6 +554,38 @@ sequenceDiagram
     API-->>C: 200 {access_token}
 ```
 
+## User Preferences (GET/PATCH /api/v1/users/me/preferences)
+
+Server-persisted theme preferences with fire-and-forget client sync.
+
+```mermaid
+sequenceDiagram
+    participant BR as Browser
+    participant JS as theme.js
+    participant MW as Middleware Stack
+    participant API as users endpoint
+    participant DB as PostgreSQL
+
+    Note over BR,DB: Page Load (logged-in user)
+    BR->>MW: GET / (JWT cookie)
+    MW->>DB: Load User (incl. preferences)
+    MW-->>BR: 200 HTML<br/>(window.__USER_THEME__ = "dark" in <head>)
+    BR->>JS: Apply theme from __USER_THEME__<br/>(overrides localStorage)
+
+    Note over BR,DB: Theme Toggle
+    BR->>JS: Click "light" theme button
+    JS->>JS: localStorage.setItem("theme", "light")<br/>Apply theme instantly
+    JS->>MW: PATCH /api/v1/users/me/preferences<br/>{"theme": "light"} (fire-and-forget)
+    MW->>API: update_preferences()
+    API->>DB: Merge into user.preferences
+    API-->>JS: 200 {"theme": "light"}
+
+    Note over BR,DB: Read Preferences (API)
+    BR->>MW: GET /api/v1/users/me/preferences
+    MW->>API: get_preferences()
+    API-->>BR: 200 {"theme": "light"}
+```
+
 ## Stale Source Detection
 
 Triggered during sync log ingestion when a source has a monitor configured.
@@ -583,4 +615,4 @@ sequenceDiagram
 
 ---
 
-*Last updated: 2026-03-15. Generated from codebase analysis. 19 flows documented.*
+*Last updated: 2026-03-16. Generated from codebase analysis. 20 flows documented.*
