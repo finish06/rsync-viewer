@@ -27,7 +27,7 @@ Persist user preferences (starting with theme) in a JSON column on the `users` t
 
 ## Architecture Notes
 
-**Database**: No Alembic — project uses `SQLModel.metadata.create_all()` at startup. Adding a new nullable column with a default is safe; existing rows get `None` which the code treats as `{}`.
+**Database**: Project uses Alembic for migrations (2 existing in `alembic/versions/`). New migration adds `preferences JSONB DEFAULT '{}' NOT NULL` to `users` table. Existing rows get `{}` automatically.
 
 **Template injection**: The inline `<script>` in `<head>` runs before CSS. Currently reads `localStorage.getItem('theme')`. For logged-in users, Jinja will render `window.__USER_THEME__ = "dark"` (or whatever) so JS picks it up before falling back to localStorage.
 
@@ -162,7 +162,7 @@ var serverTheme = {% if user and user.preferences %}'{{ user.preferences.get("th
 
 ## Migration Note
 
-No Alembic migration needed. The project uses `SQLModel.metadata.create_all()` at startup. Adding a nullable column with default `None` is auto-handled by SQLModel. For production Postgres (which already has the `users` table), a one-time `ALTER TABLE users ADD COLUMN preferences JSONB DEFAULT NULL` will be needed. Document this in the PR description.
+Alembic migration required (AC-012). The project uses Alembic (`alembic/versions/` has 2 existing migrations, `entrypoint.sh` runs `alembic upgrade head` on startup). Generate via `alembic revision --autogenerate -m "add preferences to users"`. Column: `JSONB`, server_default=`'{}'`, nullable=False. Production DB gets the column automatically on next deploy.
 
 ## Next Steps
 

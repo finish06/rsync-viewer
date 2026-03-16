@@ -1,7 +1,7 @@
 {
   "$schema": "https://github.com/MountainUnicorn/add/docs-manifest.schema.json",
   "version": "1.0.0",
-  "generated": "2026-03-15T11:00:00Z",
+  "generated": "2026-03-16T14:00:00Z",
   "stack": {
     "language": "python",
     "framework": "fastapi",
@@ -50,6 +50,8 @@
     {"method": "PUT", "path": "/api/v1/users/{user_id}/role", "handler_file": "app/api/endpoints/users.py", "handler_function": "change_user_role", "middleware": [], "tags": ["users"], "response_model": null},
     {"method": "PUT", "path": "/api/v1/users/{user_id}/status", "handler_file": "app/api/endpoints/users.py", "handler_function": "change_user_status", "middleware": [], "tags": ["users"], "response_model": null},
     {"method": "DELETE", "path": "/api/v1/users/{user_id}", "handler_file": "app/api/endpoints/users.py", "handler_function": "delete_user", "middleware": [], "tags": ["users"], "response_model": null},
+    {"method": "GET", "path": "/api/v1/users/me/preferences", "handler_file": "app/api/endpoints/users.py", "handler_function": "get_preferences", "middleware": [], "tags": ["users"], "response_model": null},
+    {"method": "PATCH", "path": "/api/v1/users/me/preferences", "handler_file": "app/api/endpoints/users.py", "handler_function": "update_preferences", "middleware": [], "tags": ["users"], "response_model": null},
     {"method": "POST", "path": "/api/v1/users/{user_id}/reset-password", "handler_file": "app/api/endpoints/users.py", "handler_function": "admin_reset_password", "middleware": [], "tags": ["users"], "response_model": null},
     {"method": "GET", "path": "/", "handler_file": "app/routes/pages.py", "handler_function": "index", "middleware": [], "tags": ["pages"], "response_model": null},
     {"method": "GET", "path": "/analytics", "handler_file": "app/routes/pages.py", "handler_function": "analytics_page", "middleware": [], "tags": ["pages"], "response_model": null},
@@ -114,7 +116,7 @@
   "models": [
     {"name": "SyncLog", "file": "app/models/sync_log.py", "field_count": 15, "relationships": []},
     {"name": "ApiKey", "file": "app/models/sync_log.py", "field_count": 10, "relationships": ["User"]},
-    {"name": "User", "file": "app/models/user.py", "field_count": 12, "relationships": []},
+    {"name": "User", "file": "app/models/user.py", "field_count": 13, "relationships": []},
     {"name": "RefreshToken", "file": "app/models/user.py", "field_count": 6, "relationships": ["User"]},
     {"name": "PasswordResetToken", "file": "app/models/user.py", "field_count": 6, "relationships": ["User"]},
     {"name": "SyncSourceMonitor", "file": "app/models/monitor.py", "field_count": 7, "relationships": []},
@@ -165,6 +167,8 @@
       "GET /htmx/api-keys",
       "POST /htmx/api-keys",
       "DELETE /htmx/api-keys/{key_id}",
+      "GET /api/v1/users/me/preferences",
+      "PATCH /api/v1/users/me/preferences",
       "GET /health",
       "GET /version",
       "GET /metrics"
@@ -194,7 +198,7 @@
     "app/api/endpoints/analytics.py": "596f0d08f248d0adb66eeca6cb950bdd91c2ed39d0afeb6a344105a8cf7c7a9e",
     "app/api/endpoints/auth.py": "910299f83bd4d355f25ec59f3127ed0b1f2dca5a82a6255c8ab64fb964c77c79",
     "app/api/endpoints/api_keys.py": "569f7b2b76d5d8f79ecee13f9e9b9475e929dd7b29b6dd4e875beaf7b11cf321",
-    "app/api/endpoints/users.py": "e5d45544239da5aecc9a8eb20ab717c8663ef869562a734cf142fee635b3ca01",
+    "app/api/endpoints/users.py": "6d53e9693ec63cf386b3800513e82c0cd5f9fae62996ad99a8c120d9aa825da1",
     "app/routes/pages.py": "dcf7d09a9da15eba8e2772c420abe5ae215a0485e816e4bc4c2971ef5b5013a3",
     "app/routes/auth.py": "7356fefe63b93aec2176514449f89ea639eeeedfaae5d9b86891f537165d19fc",
     "app/routes/dashboard.py": "83ee25f532357d2257a97a18ecdf57df81593371e1b89bbd94394be7b0e53aa2",
@@ -203,7 +207,7 @@
     "app/routes/webhooks.py": "05af2293e573ad39a20e85973d580d620740a35be22afa0e437c976b06ed71dc",
     "app/routes/admin.py": "26ca8f614e4e6f6be8d9dd6b558288388b8e5b8b71c11000baf5723f5e249792",
     "app/models/sync_log.py": "d0b145f107977440dd40d18375318285c73019a57b935f3306988b7a4dc295e3",
-    "app/models/user.py": "16d269c63a1b54ab9c47bd87152f2584f851a1f5335852490944c64430b64bde",
+    "app/models/user.py": "4235352460fa100f65c0ffff687c60a386197fe03adc92753bdd692d0196214e",
     "app/models/monitor.py": "f2ff952f1d942fb4a87a50daf2448c32ce295e4827dce663c09f2a494fceef82",
     "app/models/failure_event.py": "d5e9fb99a992f76cc7f89ba3a95c19f4e3162f5d3b274b9a2e91cdbd4eb077f8",
     "app/models/webhook.py": "2d7ef8dfb405805d205e838c31fe70d0a59799daf56ffba1dc879b3a1def6f27",

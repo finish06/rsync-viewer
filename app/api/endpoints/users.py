@@ -1,4 +1,4 @@
-"""Admin user management endpoints (AC-006)."""
+"""Admin user management + user preferences endpoints."""
 
 import logging
 from uuid import UUID
@@ -6,9 +6,14 @@ from uuid import UUID
 from fastapi import APIRouter, HTTPException, status
 from sqlmodel import select
 
-from app.api.deps import AdminDep, SessionDep
+from app.api.deps import AdminDep, CurrentUserDep, SessionDep
 from app.models.user import User
-from app.schemas.user import RoleUpdate, StatusUpdate, UserResponse
+from app.schemas.user import (
+    RoleUpdate,
+    StatusUpdate,
+    UserPreferencesUpdate,
+    UserResponse,
+)
 from app.services.auth import (
     PASSWORD_RESET_TOKEN_EXPIRY,
     ROLE_ADMIN,
@@ -19,6 +24,36 @@ from app.services.auth import (
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/users", tags=["users"])
+
+
+# ---------------------------------------------------------------------------
+# User preferences (any authenticated user)
+# ---------------------------------------------------------------------------
+
+
+@router.get("/me/preferences")
+async def get_preferences(
+    user: CurrentUserDep,
+) -> dict:
+    """Get the current user's preferences."""
+    return user.preferences or {}
+
+
+@router.patch("/me/preferences")
+async def update_preferences(
+    body: UserPreferencesUpdate,
+    user: CurrentUserDep,
+    session: SessionDep,
+) -> dict:
+    """Merge partial preferences into the current user's preferences."""
+    current = dict(user.preferences or {})
+    update_data = body.model_dump(exclude_none=True)
+    current.update(update_data)
+    user.preferences = current
+    session.add(user)
+    session.commit()
+    session.refresh(user)
+    return user.preferences or {}
 
 
 @router.get("", response_model=list[UserResponse])
