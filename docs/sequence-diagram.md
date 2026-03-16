@@ -385,6 +385,202 @@ sequenceDiagram
     Admin-->>BR: HTML partial (updated user row)
 ```
 
+## Analytics API (GET /api/v1/analytics/*)
+
+Aggregated statistics, per-source breakdown, and data export.
+
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant MW as Middleware Stack
+    participant API as analytics endpoint
+    participant DB as PostgreSQL
+
+    C->>MW: GET /api/v1/analytics/summary<br/>?period=daily&start=...&end=...
+    MW->>API: get_summary()
+    API->>DB: SELECT date_trunc, COUNT, SUM, AVG<br/>GROUP BY period (day/week/month)
+    DB-->>API: Aggregated rows
+    API-->>C: 200 SummaryResponse (data points array)
+
+    C->>MW: GET /api/v1/analytics/sources
+    MW->>API: get_source_stats()
+    API->>DB: SELECT source_name, COUNT, AVG<br/>GROUP BY source_name
+    DB-->>API: Per-source stats
+    API-->>C: 200 SourceStats[]
+
+    C->>MW: GET /api/v1/analytics/export?format=csv
+    MW->>API: export_data()
+    API->>DB: SELECT sync log fields<br/>with filters + pagination (max 10000)
+    DB-->>API: SyncLog rows
+    alt format == csv
+        API-->>C: 200 StreamingResponse (CSV attachment)
+    else format == json
+        API-->>C: 200 JSON array
+    end
+```
+
+## Webhook Management (HTMX)
+
+CRUD operations for webhook endpoints via the settings UI.
+
+```mermaid
+sequenceDiagram
+    participant BR as Browser
+    participant MW as Middleware Stack
+    participant UI as htmx_webhooks router
+    participant WS as webhook_test service
+    participant DB as PostgreSQL
+    participant WH as Webhook URL
+
+    BR->>MW: GET /htmx/webhooks
+    MW->>UI: htmx_webhooks_list()
+    UI->>DB: SELECT webhook_endpoints ORDER BY name
+    UI-->>BR: HTML partial (webhooks table)
+
+    BR->>MW: POST /htmx/webhooks<br/>(name, url, type, source_filters)
+    MW->>UI: htmx_webhook_create()
+    UI->>DB: INSERT WebhookEndpoint
+    alt webhook_type == "discord"
+        UI->>DB: INSERT WebhookOptions (color, username, avatar)
+    end
+    UI-->>BR: HTML partial (updated webhooks list)
+
+    BR->>MW: POST /htmx/webhooks/{id}/test
+    MW->>UI: htmx_webhook_test()
+    UI->>WS: build_test_webhook_payload()
+    UI->>WS: send_test_webhook()
+    WS->>WH: POST test payload
+    alt Success (2xx)
+        UI-->>BR: HTML partial (success message)
+    else Failure
+        UI-->>BR: HTML partial (error details)
+    end
+
+    BR->>MW: POST /htmx/webhooks/{id}/toggle
+    MW->>UI: htmx_webhook_toggle()
+    UI->>DB: UPDATE webhook SET enabled = !enabled
+    UI-->>BR: HTML partial (updated webhook row)
+```
+
+## Settings Management (HTMX)
+
+Admin settings for SMTP, OIDC, and synthetic monitoring.
+
+```mermaid
+sequenceDiagram
+    participant BR as Browser
+    participant MW as Middleware Stack
+    participant UI as settings router
+    participant Svc as Service Layer
+    participant DB as PostgreSQL
+
+    Note over BR,DB: SMTP Configuration
+    BR->>MW: GET /htmx/smtp-settings
+    MW->>UI: htmx_smtp_settings()
+    UI->>UI: Verify role >= admin
+    UI->>DB: SELECT smtp_config (singleton)
+    UI-->>BR: HTML partial (SMTP form)
+
+    BR->>MW: POST /htmx/smtp-settings
+    MW->>UI: htmx_smtp_settings_save()
+    UI->>Svc: encrypt_password() (Fernet)
+    UI->>DB: UPSERT SmtpConfig
+    UI-->>BR: HTML partial (success message)
+
+    BR->>MW: POST /htmx/smtp-settings/test
+    MW->>UI: htmx_smtp_test_email()
+    UI->>Svc: send_test_email_async()
+    Svc->>Svc: SMTP connection (SSL/STARTTLS)
+    UI-->>BR: HTML partial (result message)
+
+    Note over BR,DB: OIDC Configuration
+    BR->>MW: POST /htmx/settings/auth
+    MW->>UI: htmx_oidc_settings_save()
+    UI->>Svc: encrypt_client_secret() (Fernet)
+    UI->>DB: UPSERT OidcConfig
+    UI-->>BR: HTML partial (success message)
+
+    BR->>MW: POST /htmx/settings/auth/test-discovery
+    MW->>UI: htmx_oidc_test_discovery()
+    UI->>Svc: fetch_discovery(issuer_url)
+    Svc-->>UI: OIDC discovery document
+    UI-->>BR: HTML partial (discovery result)
+
+    Note over BR,DB: Synthetic Monitoring
+    BR->>MW: POST /htmx/synthetic-settings
+    MW->>UI: htmx_synthetic_settings_save()
+    UI->>Svc: save_db_config(enabled, interval)
+    UI->>Svc: start/stop synthetic_monitoring
+    UI-->>BR: HTML partial (updated settings)
+```
+
+## API Authentication (REST)
+
+Token-based authentication for API consumers.
+
+```mermaid
+sequenceDiagram
+    participant C as API Client
+    participant MW as Middleware Stack
+    participant API as auth endpoint
+    participant Svc as auth service
+    participant DB as PostgreSQL
+
+    C->>MW: POST /api/v1/auth/register<br/>(username, email, password)
+    MW->>API: register()
+    API->>Svc: register_user()
+    Svc->>Svc: hash_password (bcrypt)
+    Svc->>DB: INSERT User (first user = admin)
+    API-->>C: 201 {user_id, username, role}
+
+    C->>MW: POST /api/v1/auth/login<br/>(username, password)
+    MW->>API: login()
+    API->>DB: SELECT user by username
+    API->>Svc: verify_password()
+    alt Valid credentials
+        API->>Svc: create_access_token() (JWT)
+        API->>Svc: create_refresh_token()
+        API->>DB: INSERT RefreshToken
+        API-->>C: 200 {access_token, refresh_token, token_type}
+    else Invalid
+        API-->>C: 401 Unauthorized
+    end
+
+    C->>MW: POST /api/v1/auth/refresh<br/>(refresh_token)
+    MW->>API: refresh()
+    API->>Svc: decode_token()
+    API->>DB: Verify RefreshToken not revoked
+    API->>Svc: create_access_token() (new JWT)
+    API-->>C: 200 {access_token}
+```
+
+## Stale Source Detection
+
+Triggered during sync log ingestion when a source has a monitor configured.
+
+```mermaid
+sequenceDiagram
+    participant API as sync_logs endpoint
+    participant SC as Stale Checker
+    participant DB as PostgreSQL
+    participant WH as Webhook Dispatcher
+
+    API->>SC: check_stale_sources(session)
+    SC->>DB: SELECT monitors WHERE enabled = true
+    loop Each monitor
+        SC->>DB: SELECT MAX(start_time)<br/>FROM sync_logs WHERE source_name = monitor.source
+        SC->>SC: Compare: now - last_sync ><br/>expected_interval * grace_multiplier
+        alt Source is stale
+            SC->>DB: Check for existing unnotified FailureEvent
+            alt No duplicate event
+                SC->>DB: INSERT FailureEvent (type=stale)
+                SC->>WH: dispatch_webhooks(event)
+            end
+        end
+    end
+    SC-->>API: List of new FailureEvents
+```
+
 ---
 
-*Last updated: 2026-03-15. Generated from codebase analysis. 13 flows documented.*
+*Last updated: 2026-03-15. Generated from codebase analysis. 19 flows documented.*

@@ -22,6 +22,12 @@ A web application for collecting, parsing, and visualizing rsync synchronization
 - **Security Hardening** — Rate limiting, bcrypt API key hashing, CSRF protection, security headers
 - **Structured Logging** — JSON log output with request tracing and sensitive data masking
 - **Prometheus Metrics** — `/metrics` endpoint for monitoring with Grafana dashboard templates
+- **Synthetic Monitoring** — Self-test POST/DELETE loop with configurable interval, check history, and uptime tracking
+- **Data Retention** — Configurable automatic cleanup of old sync logs with cascading FK deletion
+- **Analytics & Export** — Aggregated statistics (daily/weekly/monthly), per-source breakdown, CSV/JSON export
+- **Password Reset** — Console-based token reset flow with single-use, time-limited tokens
+- **Changelog Viewer** — In-app changelog with accordion UI parsed from CHANGELOG.md
+- **Monitoring Setup Assistant** — Guided cron/systemd script generation for rsync integration
 
 ## Architecture
 
@@ -177,7 +183,7 @@ The GitHub Actions pipeline runs on every push and PR to `main`:
 1. **Lint** — `ruff check` and `ruff format --check`
 2. **Type Check** — `mypy app/`
 3. **Tests** — `pytest` with 80% coverage threshold
-4. **Build & Push** — Docker image pushed to registry with `beta` tag (on merge to main only)
+4. **Build & Push** — Docker image pushed to registry (on merge to main only)
 
 ## Project Structure
 
@@ -187,7 +193,8 @@ rsync-viewer/
 │   ├── api/endpoints/        # REST API route handlers
 │   ├── models/               # SQLModel database models
 │   ├── schemas/              # Pydantic request/response schemas
-│   ├── services/             # Business logic (parser, webhooks, stale checker)
+│   ├── routes/               # HTMX / UI route handlers
+│   ├── services/             # Business logic (parser, webhooks, auth, OIDC, monitoring)
 │   ├── static/               # CSS assets
 │   ├── templates/            # Jinja2 HTML templates
 │   ├── config.py             # Application settings
@@ -195,9 +202,12 @@ rsync-viewer/
 │   ├── database.py           # Database connection
 │   ├── errors.py             # Error codes and response helpers
 │   ├── logging_config.py     # Structured JSON logging
-│   ├── middleware.py          # Security headers, body size, CSRF middleware
+│   ├── middleware.py          # Security headers, body size, auth redirect, CSRF, logging middleware
+│   ├── metrics.py             # Prometheus metrics collector
+│   ├── rate_limit.py          # SlowAPI rate limiter instance
+│   ├── templating.py          # Jinja2 template engine + custom filters
 │   └── main.py               # FastAPI application entry point
-├── tests/                    # Test suite (596+ tests, 83% coverage)
+├── tests/                    # Test suite (929+ tests, 95% coverage)
 ├── specs/                    # Feature specifications
 ├── docs/                     # Documentation, milestones, plans
 ├── .github/workflows/        # CI/CD pipeline

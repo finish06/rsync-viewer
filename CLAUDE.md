@@ -104,7 +104,8 @@ rsync-viewer/
 │   ├── templates/                  # Jinja2 HTML templates
 │   ├── config.py                   # Application settings (env vars)
 │   ├── database.py                 # Database connection + pooling
-│   ├── middleware.py               # Auth redirect, CSRF, security headers, logging
+│   ├── middleware.py               # Auth redirect, CSRF, security headers, body size limit, logging
+│   ├── logging_config.py           # Structured logging setup (JSON/text format)
 │   ├── rate_limit.py              # Shared SlowAPI rate limiter instance
 │   ├── metrics.py                  # Prometheus metrics collector
 │   ├── csrf.py                     # CSRF token generation/validation
