@@ -7,6 +7,32 @@ and this project adheres to [Conventional Commits](https://www.conventionalcommi
 
 ## [Unreleased]
 
+### Added
+
+- Persist user theme preferences in database (server-side injection, fire-and-forget PATCH)
+- Add `/version` endpoint with build and runtime metadata
+- Add pip-audit security scanning to CI pipeline
+- Externalize app version via `APP_VERSION` env var
+
+### Changed
+
+- Extract shared helpers and eliminate code duplication (P3 refactoring)
+
+### Fixed
+
+- Prevent grep exit code 1 from failing CI auto-tag step
+- Security and performance review findings (P0+P1)
+- Resolve verify findings — CVEs, mypy errors, coverage gaps, stale branches
+- Skip CI auto-tag when HEAD already has a version tag
+- CSRF double-submit cookie pattern for HTMX requests
+
+### Documentation
+
+- Add docs manifest with full codebase discovery (80 routes, 14 models, 12 services)
+- Add 7 new sequence diagrams (analytics, webhooks, settings, auth, stale detection, preferences, monitoring)
+- Sync README features list and test stats (950 tests, 95% coverage)
+- Update architecture docs and CLAUDE.md
+
 ## [2.3.1] - 2026-03-15
 
 ### Security

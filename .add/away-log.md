@@ -1,14 +1,15 @@
 # Away Mode Log
 
-**Started:** 2026-03-15 11:30
-**Expected Return:** 2026-03-15 23:30
+**Started:** 2026-03-16 15:30
+**Expected Return:** 2026-03-17 03:30
 **Duration:** 12 hours
 
 ## Work Plan
-1. Housekeeping: Update stale spec statuses (oidc-settings, synthetic-monitoring, date-range-quick-select, version-endpoint)
-2. Clean up stale remote branches (4 merged branches)
-3. Changelog Presentation — create plan + TDD cycle (specs/changelog-presentation.md)
-4. Quality pass: full verify after all changes
+1. Commit pending changes (CHANGELOG, config, observations, handoff)
+2. Mark user-preferences spec Complete
+3. M10 Rsync Client — review spec, create plan
+4. M10 TDD cycle (as far as time allows)
+5. Quality pass
 
 ## Progress Log
 | Time | Task | Status | Notes |
