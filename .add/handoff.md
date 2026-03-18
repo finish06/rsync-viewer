@@ -1,28 +1,42 @@
 # Session Handoff
-**Written:** 2026-03-16
+**Written:** 2026-03-17
 
 ## In Progress
-- M10 Rsync Client TDD cycle (away mode, feature/rsync-client branch)
+- Cycle 14: E2E Playwright Happy Path Suite — implementation complete, awaiting live validation
+- Branch: `feature/e2e-playwright-happy-paths`
 
 ## Completed This Session
-- User preferences feature: full TDD cycle (17 tests), PR #37 merged, v2.5.0 tagged
-- `/add:docs` runs: manifest created, 20 sequence diagrams, README/CLAUDE.md synced
-- `/add:verify`: Gate 1-3 PASS (950 tests, 95% coverage, ruff + mypy clean)
-- Spec housekeeping: 8 specs updated to Complete (including user-preferences)
-- CHANGELOG.md updated with 14 new entries in [Unreleased]
-- Stale branches cleaned (4 deleted)
-- Away mode session 1: all planned work completed in 20 min
+- `/add:docs`: Added Monitor CRUD sequence diagram (21 flows total), all manifest flows documented
+- `/add:changelog`: Up to date (1 self-referential commit skipped)
+- Cycle 14 spec: `specs/e2e-playwright-happy-path.md` (22 ACs, 8 TCs)
+- Cycle 14 plan: `.add/cycles/cycle-14.md`
+- **40 new Playwright E2E tests** across 9 test files:
+  - `tests/e2e/conftest.py` — shared fixtures (admin/viewer contexts, API helpers)
+  - `test_login.py` (4 tests) — login flow, auth cookie, logout
+  - `test_registration.py` (3 tests) — register, success message, register-then-login
+  - `test_dashboard.py` (7 tests) — sync table, analytics tab, notifications tab, detail, filter
+  - `test_analytics.py` (2 tests) — redirect, analytics content
+  - `test_settings.py` (7 tests) — tabs, API keys, webhooks, SMTP, OIDC, monitoring, changelog
+  - `test_api_keys_e2e.py` (4 tests) — create, list, revoke, HTMX DOM updates
+  - `test_webhooks_e2e.py` (5 tests) — create, list, toggle, delete, HTMX DOM updates
+  - `test_admin_users_e2e.py` (4 tests) — page load, user list, role change, status toggle
+  - `test_password_reset_e2e.py` (4 tests) — forgot page, submit reset, reset page, link from login
+- Updated `.add/docs-manifest.json` flow coverage (0 undocumented)
 
 ## Decisions Made
-- User preferences: start fresh from {} (no localStorage migration on login)
-- Only base.html gets __USER_THEME__ injection — auth pages use localStorage only
-- No e2e expansion for preferences (integration tests sufficient)
-- M10 is a go (user approved)
+- E2E approach: Playwright browser tests against running local instance
+- Test data: Self-contained via API calls (no shared seed data)
+- Happy paths only this cycle; error scenarios deferred to cycle 15
+- Local-only (no CI integration yet)
+- Pattern matches existing `test_changelog_playwright.py`
 
 ## Blockers
-- PR #35 (OIDC JWKS signature verification) — awaiting manual smoke test
+- PR #35 (OIDC JWKS signature verification) — still awaiting manual smoke test
+- E2E tests require `docker-compose up -d` + `playwright install` to run
 
 ## Next Steps
-1. Complete M10 rsync client TDD cycle
-2. Smoke test and merge PR #35
-3. Release v2.6.0 with changelog
+1. Run E2E suite against live instance: `python3 -m pytest tests/e2e/ -v --timeout=120`
+2. Fix any selector mismatches found during live testing
+3. Commit and create PR for cycle 14
+4. Plan cycle 15: E2E error scenarios (invalid login, CSRF, auth redirects, RBAC)
+5. Merge PR #35 after smoke test

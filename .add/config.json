@@ -151,12 +151,12 @@
     "note": "Homelab best-effort targets \u2014 not contractual SLAs"
   },
   "changelog": {
-    "lastProcessedCommit": "a34013b",
+    "lastProcessedCommit": "9414471",
     "lastVersionTag": null
   },
   "planning": {
     "current_milestone": "M-GA",
-    "current_cycle": "cycle-13",
+    "current_cycle": "cycle-14",
     "wip_limit": 1,
     "parallel_agents": 1,
     "cycle_history": [
@@ -171,7 +171,8 @@
       "cycle-9",
       "cycle-10",
       "cycle-11",
-      "cycle-12"
+      "cycle-12",
+      "cycle-13"
     ]
   }
 }
