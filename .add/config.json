@@ -156,7 +156,7 @@
   },
   "planning": {
     "current_milestone": "M-GA",
-    "current_cycle": "cycle-14",
+    "current_cycle": "cycle-15",
     "wip_limit": 1,
     "parallel_agents": 1,
     "cycle_history": [
@@ -172,7 +172,8 @@
       "cycle-10",
       "cycle-11",
       "cycle-12",
-      "cycle-13"
+      "cycle-13",
+      "cycle-14"
     ]
   }
 }

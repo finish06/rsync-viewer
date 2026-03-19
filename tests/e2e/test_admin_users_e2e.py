@@ -1,7 +1,7 @@
-"""E2E tests for admin user management — happy paths.
+"""E2E tests for admin user management — happy paths and error scenarios.
 
-Spec: specs/e2e-playwright-happy-path.md
-AC-017, TC-006
+Spec: specs/e2e-playwright-happy-path.md (AC-017, TC-006)
+Spec: specs/e2e-playwright-error-scenarios.md (AC-131, AC-132)
 """
 
 import uuid
@@ -121,3 +121,29 @@ class TestAdminUserManagement:
                 admin_page.wait_for_timeout(2000)
                 # Page should update via HTMX
                 assert "/admin/users" in admin_page.url
+
+
+class TestAdminRBAC:
+    """RBAC enforcement on admin pages — AC-131, AC-132, TC-104."""
+
+    def test_ac131_viewer_cannot_access_admin_users(self, viewer_page: Page):
+        """Viewer user gets 403 or redirect when accessing /admin/users."""
+        viewer_page.goto(f"{BASE_URL}/admin/users")
+        viewer_page.wait_for_load_state("networkidle")
+
+        # Should NOT see the admin user list table
+        # Either 403 page, redirect to login, or forbidden message
+        content = viewer_page.content()
+        has_user_table = viewer_page.locator("#admin-user-list table").count() > 0
+        assert not has_user_table or "403" in content or "forbidden" in content.lower()
+
+    def test_ac132_viewer_cannot_change_roles_via_htmx(self, viewer_page: Page):
+        """Viewer user cannot use admin HTMX endpoints."""
+        # Try to access the admin user list HTMX endpoint directly
+        viewer_page.goto(f"{BASE_URL}/htmx/admin/users")
+        viewer_page.wait_for_load_state("networkidle")
+
+        content = viewer_page.content()
+        # Should NOT see a populated user table with role selects
+        has_role_selects = viewer_page.locator('select[name="role"]').count() > 0
+        assert not has_role_selects or "403" in content
