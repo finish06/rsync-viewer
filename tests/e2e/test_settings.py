@@ -1,7 +1,7 @@
-"""E2E tests for settings page — happy paths.
+"""E2E tests for settings page — happy paths and error scenarios.
 
-Spec: specs/e2e-playwright-happy-path.md
-AC-014, AC-021, TC-007
+Spec: specs/e2e-playwright-happy-path.md (AC-014, AC-021, TC-007)
+Spec: specs/e2e-playwright-error-scenarios.md (AC-130)
 """
 
 from playwright.sync_api import Page, expect
@@ -116,3 +116,21 @@ class TestSettingsPage:
             changelog = admin_page.locator(".changelog-version-header")
             if changelog.count() > 0:
                 expect(changelog.first).to_be_visible()
+
+
+class TestSettingsRBAC:
+    """RBAC enforcement on settings page — AC-130, TC-104."""
+
+    def test_ac130_viewer_cannot_access_settings(self, viewer_page: Page):
+        """Viewer user gets 403 when accessing /settings."""
+        viewer_page.goto(f"{BASE_URL}/settings")
+        viewer_page.wait_for_load_state("networkidle")
+
+        # Should see 403 or "Requires operator" message
+        content = viewer_page.content()
+        assert (
+            "403" in content
+            or "operator" in content.lower()
+            or "forbidden" in content.lower()
+            or "denied" in content.lower()
+        )
