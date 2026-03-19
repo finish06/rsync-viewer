@@ -613,6 +613,64 @@ sequenceDiagram
     SC-->>API: List of new FailureEvents
 ```
 
+## Monitor CRUD (GET/POST/PUT/DELETE /api/v1/monitors)
+
+API-key-authenticated CRUD for sync source staleness monitors.
+
+```mermaid
+sequenceDiagram
+    participant C as API Client
+    participant MW as Middleware Stack
+    participant API as monitors endpoint
+    participant Auth as verify_api_key
+    participant DB as PostgreSQL
+
+    Note over C,DB: POST /api/v1/monitors (Create)
+    C->>MW: POST /api/v1/monitors<br/>(X-API-Key header, JSON body)
+    MW->>API: Forward request
+    API->>Auth: verify_api_key()
+    Auth->>DB: Lookup + bcrypt verify
+    Auth-->>API: api_key
+    API->>DB: SELECT monitor WHERE source_name = ?
+    alt Duplicate source_name
+        API-->>C: 409 Conflict
+    else No duplicate
+        API->>DB: INSERT SyncSourceMonitor
+        API-->>C: 201 MonitorRead
+    end
+
+    Note over C,DB: GET /api/v1/monitors (List)
+    C->>MW: GET /api/v1/monitors
+    MW->>API: Forward request
+    API->>Auth: verify_api_key()
+    API->>DB: SELECT * FROM monitors ORDER BY source_name
+    API-->>C: 200 [MonitorRead, ...]
+
+    Note over C,DB: PUT /api/v1/monitors/{id} (Update)
+    C->>MW: PUT /api/v1/monitors/{id}
+    MW->>API: Forward request
+    API->>Auth: verify_api_key()
+    API->>DB: SELECT monitor by ID
+    alt Not found
+        API-->>C: 404 Not Found
+    else Found
+        API->>DB: UPDATE monitor fields + updated_at
+        API-->>C: 200 MonitorRead
+    end
+
+    Note over C,DB: DELETE /api/v1/monitors/{id}
+    C->>MW: DELETE /api/v1/monitors/{id}
+    MW->>API: Forward request
+    API->>Auth: verify_api_key()
+    API->>DB: SELECT monitor by ID
+    alt Not found
+        API-->>C: 404 Not Found
+    else Found
+        API->>DB: DELETE monitor
+        API-->>C: 204 No Content
+    end
+```
+
 ---
 
-*Last updated: 2026-03-16. Generated from codebase analysis. 20 flows documented.*
+*Last updated: 2026-03-17. Generated from codebase analysis. 21 flows documented.*
