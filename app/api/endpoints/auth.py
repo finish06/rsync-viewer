@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import secrets
 from datetime import timedelta
@@ -85,7 +86,15 @@ async def login(
         select(User).where(User.username == credentials.username)
     ).first()
 
-    if not user or not verify_password(credentials.password, user.password_hash):
+    # Offload bcrypt to thread pool to avoid blocking the event loop
+    password_valid = False
+    if user:
+        loop = asyncio.get_event_loop()
+        password_valid = await loop.run_in_executor(
+            None, verify_password, credentials.password, user.password_hash
+        )
+
+    if not user or not password_valid:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid username or password",
