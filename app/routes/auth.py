@@ -173,8 +173,8 @@ async def oidc_callback(
         if not id_token:
             raise ValueError("No id_token in token response")
 
-        # Decode and validate ID token
-        claims = decode_id_token(id_token, state_data["nonce"], config)
+        # Decode and validate ID token (JWKS signature verification)
+        claims = await decode_id_token(id_token, state_data["nonce"], config)
 
         # Get or create local user
         user = get_or_create_oidc_user(session, claims, config)
