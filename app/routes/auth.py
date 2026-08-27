@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from typing import Optional
 
@@ -50,7 +51,15 @@ async def login_submit(
     # Validate credentials
     user = session.exec(select(User).where(User.username == username)).first()
 
-    if not user or not verify_password(password, user.password_hash):
+    # Offload bcrypt to thread pool to avoid blocking the event loop
+    password_valid = False
+    if user:
+        loop = asyncio.get_event_loop()
+        password_valid = await loop.run_in_executor(
+            None, verify_password, password, user.password_hash
+        )
+
+    if not user or not password_valid:
         csrf_token = generate_csrf_token()
         response = templates.TemplateResponse(
             request,

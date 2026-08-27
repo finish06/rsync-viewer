@@ -38,6 +38,7 @@ class SyncLog(SyncLogBase, table=True):
 
 class ApiKey(SQLModel, table=True):
     __tablename__ = "api_keys"
+    __table_args__ = (Index("ix_api_keys_active_prefix", "is_active", "key_prefix"),)
 
     id: UUID = Field(default_factory=uuid4, primary_key=True)
     key_hash: str = Field(max_length=128, unique=True)

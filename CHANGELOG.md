@@ -20,6 +20,7 @@ and this project adheres to [Conventional Commits](https://www.conventionalcommi
 
 ### Fixed
 
+- Add missing Alembic migration for `ix_api_keys_active_prefix` index and a migration-drift test (`alembic check` against a fresh database)
 - Prevent grep exit code 1 from failing CI auto-tag step
 - Security and performance review findings (P0+P1)
 - Resolve verify findings — CVEs, mypy errors, coverage gaps, stale branches

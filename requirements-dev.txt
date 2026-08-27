@@ -1,8 +1,8 @@
 # Dev dependencies — extends requirements.txt
 -r requirements.txt
 
-# Linting
-ruff>=0.3.0
+# Linting — pinned; newer ruff releases change default rules (see ci.yml)
+ruff==0.15.2
 
 # Type checking
 mypy>=1.8.0

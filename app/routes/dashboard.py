@@ -4,6 +4,7 @@ from typing import Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query, Request
+from sqlalchemy.orm import defer
 from sqlmodel import Session, select, func
 
 from app.database import get_session
@@ -39,8 +40,12 @@ async def htmx_sync_table(
     """HTMX partial: sync logs table"""
 
     # Build query with shared filter helper (AC-007)
+    # Defer raw_content and file_list to reduce memory on list views
     statement = apply_sync_filters(
-        select(SyncLog),
+        select(SyncLog).options(
+            defer(SyncLog.raw_content),  # type: ignore[arg-type]
+            defer(SyncLog.file_list),  # type: ignore[arg-type]
+        ),
         source_name=source_name,
         start_date=start_date,
         end_date=end_date,

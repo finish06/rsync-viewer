@@ -6,6 +6,7 @@ from typing import Annotated, Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy.orm import defer
 from sqlmodel import select, func
 
 from app.api.deps import SessionDep, AdminDep, require_role_or_api_key
@@ -209,8 +210,10 @@ async def list_sync_logs(
     # Determine pagination mode: cursor takes precedence, offset is fallback
     use_offset = cursor is None and offset is not None
 
-    # Build base query with filters
-    statement = select(SyncLog)
+    # Build base query with filters — defer heavy columns for list view
+    statement = select(SyncLog).options(
+        defer(SyncLog.raw_content), defer(SyncLog.file_list)
+    )
 
     # Synthetic filter (AC-008)
     if synthetic == "hide":
