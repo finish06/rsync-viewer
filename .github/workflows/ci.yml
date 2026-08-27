@@ -29,7 +29,9 @@ jobs:
           python-version: "3.11"
 
       - name: Install ruff
-        run: pip install ruff>=0.3.0
+        # Pinned: the codebase is linted against this exact version. Unquoted
+        # `ruff>=x` was a shell redirect and silently installed latest.
+        run: pip install "ruff==0.15.2"
 
       - name: Ruff check
         run: ruff check .
@@ -80,7 +82,10 @@ jobs:
           python-version: "3.11"
 
       - name: Install dependencies and pip-audit
-        run: pip install -r requirements.txt pip-audit
+        # setuptools is audited too; the runner's bundled copy lags behind fixes
+        run: |
+          pip install --upgrade pip setuptools
+          pip install -r requirements.txt pip-audit
 
       - name: Run pip-audit
         run: pip-audit

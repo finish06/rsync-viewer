@@ -6,7 +6,6 @@ Targets:
   - _send_via_smtp SSL/TLS and STARTTLS paths (lines 147-164)
 """
 
-import asyncio
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -242,18 +241,16 @@ class TestSendEmailAsync:
     """Cover the async wrappers."""
 
     @patch("app.services.email.send_email")
-    def test_send_email_async_delegates(self, mock_send):
+    async def test_send_email_async_delegates(self, mock_send):
         """send_email_async runs send_email in a thread pool."""
         session = MagicMock()
 
-        asyncio.get_event_loop().run_until_complete(
-            send_email_async(
-                session,
-                to_address="user@example.com",
-                subject="Test",
-                body_html="<p>Hello</p>",
-                body_text="Hello",
-            )
+        await send_email_async(
+            session,
+            to_address="user@example.com",
+            subject="Test",
+            body_html="<p>Hello</p>",
+            body_text="Hello",
         )
 
         mock_send.assert_called_once_with(
