@@ -41,6 +41,7 @@ class Settings(BaseSettings):
     )
     app_version: str = "dev"
     base_url: str = "http://127.0.0.1:8000"  # Used by synthetic monitoring
+    oidc_jwks_cache_ttl_seconds: int = 3600  # TTL for cached JWKS responses
 
     @property
     def effective_encryption_key(self) -> str:

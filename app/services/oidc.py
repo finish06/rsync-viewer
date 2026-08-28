@@ -1,5 +1,7 @@
 """OIDC authentication service — discovery, state management, token exchange."""
 
+import base64
+import json
 import logging
 import secrets
 import time
@@ -7,7 +9,8 @@ import urllib.parse
 from typing import Any, Optional
 
 import httpx
-import jwt as pyjwt
+from authlib.jose import JsonWebKey, jwt as authlib_jwt
+from authlib.jose.errors import DecodeError, ExpiredTokenError
 from cryptography.fernet import Fernet
 from sqlmodel import Session, select
 
@@ -86,6 +89,46 @@ async def fetch_discovery(issuer_url: str) -> dict[str, Any]:
 def clear_discovery_cache() -> None:
     """Clear the discovery cache (useful for testing)."""
     _discovery_cache.clear()
+
+
+# --- JWKS Fetching + Caching ---
+
+# Cache JWKS key sets in memory (jwks_uri → (key_set, timestamp))
+_jwks_cache: dict[str, tuple[Any, float]] = {}
+_JWKS_FETCH_TIMEOUT = 10.0
+
+# Algorithms accepted for ID token signatures
+_ALLOWED_ALGORITHMS = ["RS256", "RS384", "RS512", "ES256", "ES384", "ES512"]
+
+
+async def fetch_jwks(jwks_uri: str) -> Any:
+    """Fetch and cache JWKS from provider.
+
+    TTL is controlled by settings.oidc_jwks_cache_ttl_seconds (default 3600).
+    Returns an authlib JsonWebKey set for signature verification.
+    """
+    settings = get_settings()
+    ttl = settings.oidc_jwks_cache_ttl_seconds
+    now = time.monotonic()
+
+    # Check cache
+    cached = _jwks_cache.get(jwks_uri)
+    if cached and ttl > 0 and (now - cached[1]) < ttl:
+        return cached[0]
+
+    async with httpx.AsyncClient(timeout=_JWKS_FETCH_TIMEOUT) as client:
+        response = await client.get(jwks_uri)
+        response.raise_for_status()
+        jwks_data = response.json()
+
+    key_set = JsonWebKey.import_key_set(jwks_data)
+    _jwks_cache[jwks_uri] = (key_set, now)
+    return key_set
+
+
+def clear_jwks_cache() -> None:
+    """Clear the JWKS cache (useful for testing)."""
+    _jwks_cache.clear()
 
 
 # --- State / Nonce management (in-memory, 10-minute TTL) ---
@@ -191,26 +234,64 @@ async def exchange_code_for_tokens(
         return result
 
 
-def decode_id_token(
+async def decode_id_token(
     id_token: str,
     expected_nonce: str,
     config: OidcConfig,
+    discovery: Optional[dict[str, Any]] = None,
 ) -> dict[str, Any]:
-    """Decode and validate an OIDC ID token.
+    """Decode and validate an OIDC ID token with JWKS signature verification.
 
-    Validates: nonce, issuer, audience. Does NOT verify signature
-    (we trust the token endpoint response over TLS).
+    Validates: signature (via provider JWKS), nonce, issuer, audience, expiry.
+
+    Args:
+        id_token: Raw JWT string from token endpoint.
+        expected_nonce: The nonce sent in the authorization request.
+        config: OIDC configuration with issuer_url and client_id.
+        discovery: Pre-fetched discovery document (avoids redundant fetch).
     """
-    # Decode without verification first to get claims
-    # We trust the token since it came directly from the token endpoint over HTTPS
-    claims = pyjwt.decode(
-        id_token,
-        options={
-            "verify_signature": False,
-            "verify_exp": True,
-            "verify_iat": True,
-        },
-    )
+    # Fetch discovery if not provided
+    if discovery is None:
+        discovery = await fetch_discovery(config.issuer_url)
+
+    jwks_uri = discovery.get("jwks_uri")
+    if not jwks_uri:
+        raise ValueError("OIDC discovery document missing 'jwks_uri'")
+
+    # Fetch JWKS (cached)
+    try:
+        key_set = await fetch_jwks(jwks_uri)
+    except (httpx.TimeoutException, httpx.RequestError, httpx.HTTPStatusError) as exc:
+        logger.error(
+            "Failed to fetch JWKS", extra={"jwks_uri": jwks_uri, "error": str(exc)}
+        )
+        raise ValueError(
+            "Failed to fetch provider keys for token verification"
+        ) from exc
+
+    # Decode and verify signature + expiry using authlib
+    try:
+        claims = authlib_jwt.decode(
+            id_token,
+            key_set,
+        )
+        # Validate standard claims (exp, iat, nbf)
+        claims.validate()
+    except ExpiredTokenError:
+        raise ValueError("ID token has expired")
+    except DecodeError as exc:
+        raise ValueError(f"ID token signature verification failed: {exc}") from exc
+    except Exception as exc:
+        raise ValueError(f"ID token validation failed: {exc}") from exc
+
+    # Check algorithm is allowed (reject "none" and weak algorithms)
+    header_segment = id_token.split(".")[0]
+    # Add base64 padding
+    header_segment += "=" * (-len(header_segment) % 4)
+    header = json.loads(base64.urlsafe_b64decode(header_segment))
+    alg = header.get("alg", "")
+    if alg not in _ALLOWED_ALGORITHMS:
+        raise ValueError(f"ID token uses disallowed algorithm: {alg}")
 
     # Validate nonce
     if claims.get("nonce") != expected_nonce:
@@ -218,7 +299,7 @@ def decode_id_token(
 
     # Validate issuer
     expected_issuer = config.issuer_url.rstrip("/")
-    token_issuer = claims.get("iss", "").rstrip("/")
+    token_issuer = str(claims.get("iss", "")).rstrip("/")
     if token_issuer != expected_issuer:
         raise ValueError(
             f"ID token issuer mismatch: expected {expected_issuer}, got {token_issuer}"
@@ -234,7 +315,7 @@ def decode_id_token(
             f"ID token audience mismatch: expected {config.client_id}, got {aud}"
         )
 
-    return claims
+    return dict(claims)
 
 
 # --- User integration ---
