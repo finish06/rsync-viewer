@@ -120,13 +120,13 @@ Production deployment is to a self-hosted homelab server. No staging environment
 
 | Milestone | Theme | Duration | Status |
 |-----------|-------|----------|--------|
-| M16: Insight UI | Rebuild the dashboard as an interactive React SPA: condensed overview with drill-down, transfers over time, new shows/movies, prominent uptime | 4 weeks | NOW |
-| M12: See Everything | Remaining items not absorbed by M16 (monitor management UI, onboarding wizard) | 2 weeks | NEXT |
+| M16: Insight UI | Rebuild the dashboard as an interactive React SPA: condensed overview with drill-down, transfers over time, new shows/movies, prominent uptime | 4 weeks | DONE (v2.7.0–v2.12.0, 2026-08-29) |
+| M12: See Everything | Remaining items not absorbed by M16 (monitor management UI, onboarding wizard) | 2 weeks | NOW |
 | M13: Stay & Trust | Live dashboard, smart notifications, backup/restore | 3 weeks | NEXT |
 | M14: Build to Last | Event bus, `rsv` CLI, async DB, API versioning | 4 weeks | LATER |
 | M15: Grow the Ecosystem | Home Assistant, Grafana templates, PWA, client container | 3 weeks | LATER |
 
-#### M16: "Insight UI" (NOW — added 2026-08-29)
+#### M16: "Insight UI" (DONE — added and shipped 2026-08-29; UX artifact awaiting formal sign-off)
 **Goal:** Replace the click-to-see-information dashboard with a UI that shows what happened at a glance and lets the user dive into detail: what was transferred (condensed, expandable), how transfers trend over time, which new shows and movies arrived, and — most prominently — whether the system is up and syncing (synthetic monitoring, source liveness). Settings become a secondary destination.
 **Appetite:** 4 weeks
 **Target maturity:** ga (no regression in gates; SPA gets its own unit tests + existing Playwright E2E)
@@ -148,7 +148,7 @@ Production deployment is to a self-hosted homelab server. No staging environment
 - [x] Any transfer's files and failure details reachable in ≤ 2 clicks from the overview (TC-002)
 - [x] New shows/movies from the last 7 days listed by title, not by file path (TC-005)
 - [x] Synthetic uptime (%) and last-check age visible on every page header (AC-001, liveness pill)
-- [ ] Existing Playwright E2E suite green against the SPA; SPA unit coverage ≥ 80% (unit coverage 88 %; E2E rewrite in C6 — verify on merge)
+- [x] Existing Playwright E2E suite green against the SPA; SPA unit coverage ≥ 80% (unit coverage 88 %; dashboard/analytics/login E2E rewritten in C6 and green locally)
 
 #### M12: "See Everything" (Weeks 1–3)
 Unlock existing backend capabilities + nail the first impression.
