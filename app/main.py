@@ -27,6 +27,7 @@ from app.api.endpoints import (
     users,
     synthetic,
     sources,
+    media,
 )
 from app.errors import make_error_response, INTERNAL_ERROR, VALIDATION_ERROR
 from app.logging_config import setup_logging
@@ -60,6 +61,7 @@ from app.models.webhook_options import WebhookOptions  # noqa: F401
 from app.models.oidc_config import OidcConfig  # noqa: F401
 from app.models.synthetic_check_config import SyntheticCheckConfig  # noqa: F401
 from app.models.synthetic_check_result import SyntheticCheckResultRecord  # noqa: F401
+from app.models.media_item import MediaItem  # noqa: F401
 
 # HTMX route modules
 from app.routes import (
@@ -295,6 +297,7 @@ app.include_router(sources.router, prefix="/api/v1")
 
 # React SPA shell (specs/insight-ui.md AC-022)
 app.include_router(spa.router)
+app.include_router(media.router, prefix="/api/v1")
 
 # HTMX / UI route modules (AC-001, AC-002)
 app.include_router(pages.router)
