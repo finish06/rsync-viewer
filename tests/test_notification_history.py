@@ -99,8 +99,8 @@ class TestNotificationHistorySection:
     """AC-001: Dashboard has a Notifications section."""
 
     async def test_ac001_dashboard_has_notifications_tab(self, client):
-        """Dashboard page contains a notifications tab/link."""
-        response = await client.get("/")
+        """The notifications page exists (reached from the SPA menu)."""
+        response = await client.get("/notifications")
         assert response.status_code == 200
         html = response.text
         assert "Notifications" in html or "notifications" in html

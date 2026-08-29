@@ -1,4 +1,4 @@
-import { screen, within } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import { Route, Routes } from "react-router";
@@ -63,5 +63,51 @@ describe("Shell (AC-001, AC-023)", () => {
     expect(
       within(menu).getByRole("menuitem", { name: "Log out" }),
     ).toBeInTheDocument();
+  });
+  it("applies the stored theme preference on load (AC-023)", async () => {
+    document.documentElement.removeAttribute("data-theme");
+    renderShell();
+    await screen.findByText("UP");
+    await waitFor(() =>
+      expect(document.documentElement).toHaveAttribute("data-theme", "dark"),
+    );
+    document.documentElement.removeAttribute("data-theme");
+  });
+  it("hides operator/admin destinations from viewers and shows the user", async () => {
+    const user = userEvent.setup();
+    window.__USER__ = { username: "vic", role: "viewer" };
+    try {
+      renderShell();
+      await user.click(screen.getByRole("button", { name: "Settings menu" }));
+      const menu = screen.getByRole("menu");
+      expect(menu).toHaveTextContent("vic · viewer");
+      expect(
+        within(menu).queryByRole("menuitem", { name: "Settings" }),
+      ).not.toBeInTheDocument();
+      expect(
+        within(menu).queryByRole("menuitem", { name: "Users" }),
+      ).not.toBeInTheDocument();
+      expect(
+        within(menu).getByRole("menuitem", { name: "Notifications" }),
+      ).toHaveAttribute("href", "/notifications");
+    } finally {
+      delete window.__USER__;
+    }
+  });
+
+  it("shows Users only to admins", async () => {
+    const user = userEvent.setup();
+    window.__USER__ = { username: "adm", role: "admin" };
+    try {
+      renderShell();
+      await user.click(screen.getByRole("button", { name: "Settings menu" }));
+      expect(
+        within(screen.getByRole("menu")).getByRole("menuitem", {
+          name: "Users",
+        }),
+      ).toBeInTheDocument();
+    } finally {
+      delete window.__USER__;
+    }
   });
 });

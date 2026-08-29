@@ -4,16 +4,14 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import RedirectResponse
-from sqlmodel import Session, select
+from sqlmodel import Session
 
 from app.config import get_settings
 from app.csrf import generate_csrf_token
 from app.database import get_session
 from app.api.deps import OptionalUserDep
 from app.templating import templates
-from app.models.sync_log import SyncLog
 from app.services.auth import role_at_least, ROLE_OPERATOR
-from app.services.synthetic_check import SYNTHETIC_SOURCE_NAME, get_db_config
 from app.services.changelog_parser import parse_changelog
 from app.services.oidc import get_oidc_config
 
@@ -22,40 +20,21 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-@router.get("/")
-async def index(
-    request: Request,
-    session: Session = Depends(get_session),
-    user: OptionalUserDep = None,
-):
-    """Main dashboard page"""
-
-    # Get unique sources for filter dropdown (AC-011: exclude synthetic)
-    sources = session.exec(
-        select(SyncLog.source_name)
-        .where(SyncLog.source_name != SYNTHETIC_SOURCE_NAME)
-        .distinct()
-        .order_by(SyncLog.source_name)
-    ).all()
-
-    # Check if synthetic monitoring is enabled (AC-004/AC-005)
-    synthetic_monitoring_enabled = get_db_config(session).enabled
-
-    return templates.TemplateResponse(
-        request,
-        "index.html",
-        context={
-            "sources": sources,
-            "user": user,
-            "synthetic_monitoring_enabled": synthetic_monitoring_enabled,
-        },
-    )
+# "/" is served by app.routes.spa (specs/insight-ui.md AC-024).
 
 
 @router.get("/analytics")
 async def analytics_page():
-    """Redirect to dashboard analytics tab."""
-    return RedirectResponse(url="/?tab=analytics", status_code=302)
+    """Legacy link: the analytics tab became the SPA Trends page."""
+    return RedirectResponse(url="/app/trends", status_code=302)
+
+
+@router.get("/notifications")
+async def notifications_page(request: Request, user: OptionalUserDep = None):
+    """Webhook delivery history — server-rendered, reached from the SPA menu."""
+    return templates.TemplateResponse(
+        request, "notifications.html", context={"user": user}
+    )
 
 
 @router.get("/login")

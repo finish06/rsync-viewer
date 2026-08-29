@@ -7,6 +7,17 @@ and this project adheres to [Conventional Commits](https://www.conventionalcommi
 
 ## [Unreleased]
 
+## [2.12.0] - 2026-08-29
+
+### Changed
+
+- **The Insight UI is now the dashboard** (M16 cycle C6, AC-023, AC-024): `/` serves the React app; the legacy tab dashboard (`index.html`, `/htmx/sync-table`, `/htmx/analytics`, `/htmx/charts`, `/htmx/sync-detail`) is removed. `/analytics` and `/?tab=analytics` redirect to `/app/trends`; `/?tab=notifications` redirects to the new server-rendered `/notifications` page (webhook delivery history, reachable from the SPA menu)
+- The shell injects the signed-in user's name, role, and theme into the page before first paint, so the theme applies without a flash and the secondary menu only shows Settings (operator+) and Users (admin) to users who can open them; the stored theme preference is also applied on load in new browsers
+
+### Removed
+
+- Legacy dashboard templates and their HTMX-only tests (date-range quick select, sync table, charts, detail modal); Playwright dashboard/analytics tests rewritten against the SPA
+
 ## [2.11.0] - 2026-08-29
 
 ### Added

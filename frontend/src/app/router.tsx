@@ -10,6 +10,8 @@ import { Shell } from "./Shell";
 // The FastAPI app serves index.html for every /app/* path (AC-022), so the
 // browser router owns everything below /app.
 export const routes = [
+  // "/" is served by the same shell (AC-024); hand it to the /app tree.
+  { path: "/", element: <Navigate to="/app" replace /> },
   {
     path: "/app",
     element: <Shell />,
