@@ -58,8 +58,19 @@ export function Shell() {
     <div className="min-h-screen bg-bg text-text">
       <header className="sticky top-0 z-20 border-b border-border bg-card/95 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center gap-4 px-4 py-2">
-          <NavLink to="/app" end className="text-base font-bold tracking-tight">
-            ◉ Rsync Viewer
+          <NavLink
+            to="/app"
+            end
+            className="flex items-center gap-2 text-base font-bold tracking-tight"
+          >
+            <img
+              src="/static/app/favicon.svg"
+              alt=""
+              width={24}
+              height={24}
+              className="h-6 w-6 rounded-md"
+            />
+            Rsync Viewer
           </NavLink>
           <nav
             aria-label="Primary"

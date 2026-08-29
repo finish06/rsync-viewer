@@ -7,6 +7,14 @@ and this project adheres to [Conventional Commits](https://www.conventionalcommi
 
 ## [Unreleased]
 
+## [2.16.0] - 2026-08-29
+
+### Added
+- **Brand**: a Rsync Viewer mark (sync-loop arrows around a green status dot),
+  shipped as an SVG + multi-size `favicon.ico`, Apple touch icon, PWA
+  manifest icons, and a README hero. The SPA header and the remaining Jinja
+  pages use the new icon; brand notes live in `docs/brand/README.md`.
+
 ## [2.15.1] - 2026-08-29
 
 ### Fixed

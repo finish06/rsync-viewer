@@ -5,13 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="light dark" />
     <title>Rsync Viewer</title>
+    <link rel="icon" href="/static/app/favicon.ico" sizes="16x16 32x32 48x48" />
+    <link rel="icon" type="image/svg+xml" href="/static/app/favicon.svg" />
+    <link rel="apple-touch-icon" href="/static/app/apple-touch-icon.png" />
+    <link rel="manifest" href="/static/app/manifest.webmanifest" />
+    <meta name="theme-color" content="#0f172a" />
     <script>
       // Same theme bootstrap as app/templates/base.html: stored preference,
       // then localStorage, then system — applied before first paint.
       (function () {
         try {
           // window.__USER_THEME__ is injected by the server for signed-in users
-          var theme = window.__USER_THEME__ || localStorage.getItem("theme") || "system";
+          var theme =
+            window.__USER_THEME__ || localStorage.getItem("theme") || "system";
           if (window.__USER_THEME__) {
             try {
               localStorage.setItem("theme", window.__USER_THEME__);
