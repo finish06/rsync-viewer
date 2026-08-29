@@ -396,6 +396,8 @@ def require_role_or_api_key(minimum_role: str) -> Callable:
 
 
 SessionDep = Annotated[Session, Depends(get_session)]
+# Deprecated: API-key-only, no role check, no JWT. Use require_role_or_api_key().
+# Kept because tests override verify_api_key; remove with the Phase 3 deps cleanup.
 ApiKeyDep = Annotated[Optional[ApiKey], Depends(verify_api_key)]
 CurrentUserDep = Annotated[User, Depends(get_current_user)]
 OptionalUserDep = Annotated[Optional[User], Depends(get_optional_user)]

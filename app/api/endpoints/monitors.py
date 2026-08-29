@@ -1,10 +1,12 @@
 import logging
+from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import select
 
-from app.api.deps import SessionDep, ApiKeyDep
+from app.api.deps import SessionDep, require_role_or_api_key
+from app.services.auth import ROLE_OPERATOR, ROLE_VIEWER
 from app.utils import utc_now
 from app.models.monitor import SyncSourceMonitor
 from app.schemas.monitor import MonitorCreate, MonitorUpdate, MonitorRead
@@ -13,13 +15,16 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/monitors", tags=["monitors"])
 
+ViewerAuth = Annotated[tuple, Depends(require_role_or_api_key(ROLE_VIEWER))]
+OperatorAuth = Annotated[tuple, Depends(require_role_or_api_key(ROLE_OPERATOR))]
+
 
 @router.get(
     "",
     response_model=list[MonitorRead],
     summary="List sync source monitors",
 )
-async def list_monitors(session: SessionDep, api_key: ApiKeyDep):
+async def list_monitors(session: SessionDep, auth: ViewerAuth):
     """List all configured sync source monitors."""
     statement = select(SyncSourceMonitor).order_by(SyncSourceMonitor.source_name)
     monitors = session.exec(statement).all()
@@ -32,7 +37,7 @@ async def list_monitors(session: SessionDep, api_key: ApiKeyDep):
     status_code=status.HTTP_201_CREATED,
     summary="Create a sync source monitor",
 )
-async def create_monitor(data: MonitorCreate, session: SessionDep, api_key: ApiKeyDep):
+async def create_monitor(data: MonitorCreate, session: SessionDep, auth: OperatorAuth):
     """Create a new sync source monitor for staleness detection."""
     # Check for duplicate source_name
     existing = session.exec(
@@ -75,7 +80,7 @@ async def update_monitor(
     monitor_id: UUID,
     data: MonitorUpdate,
     session: SessionDep,
-    api_key: ApiKeyDep,
+    auth: OperatorAuth,
 ):
     """Update an existing sync source monitor."""
     monitor = session.get(SyncSourceMonitor, monitor_id)
@@ -103,7 +108,7 @@ async def update_monitor(
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete a sync source monitor",
 )
-async def delete_monitor(monitor_id: UUID, session: SessionDep, api_key: ApiKeyDep):
+async def delete_monitor(monitor_id: UUID, session: SessionDep, auth: OperatorAuth):
     """Delete a sync source monitor."""
     monitor = session.get(SyncSourceMonitor, monitor_id)
     if not monitor:

@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import select
 
 from app.api.deps import SessionDep, require_role_or_api_key
-from app.services.auth import ROLE_OPERATOR, ROLE_VIEWER
+from app.services.auth import ROLE_OPERATOR
 from app.services.webhook_test import (
     build_test_headers,
     build_test_webhook_payload,
@@ -57,9 +57,12 @@ def _get_options_dict(session, webhook_id: UUID) -> dict | None:
 )
 async def list_webhooks(
     session: SessionDep,
-    auth: Annotated[tuple, Depends(require_role_or_api_key(ROLE_VIEWER))],
+    auth: Annotated[tuple, Depends(require_role_or_api_key(ROLE_OPERATOR))],
 ):
-    """List all configured webhook endpoints."""
+    """List all configured webhook endpoints.
+
+    Operator-only: responses include URLs and headers, which are secrets.
+    """
     statement = select(WebhookEndpoint).order_by(WebhookEndpoint.name)
     webhooks = session.exec(statement).all()
 

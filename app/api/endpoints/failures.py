@@ -1,11 +1,12 @@
 import logging
 from datetime import datetime
-from typing import Optional
+from typing import Annotated, Optional
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Depends, Query
 from sqlmodel import select
 
-from app.api.deps import SessionDep, ApiKeyDep
+from app.api.deps import SessionDep, require_role_or_api_key
+from app.services.auth import ROLE_VIEWER
 from app.models.failure_event import FailureEvent
 from app.schemas.failure_event import FailureEventRead
 
@@ -21,7 +22,7 @@ router = APIRouter(prefix="/failures", tags=["failures"])
 )
 async def list_failures(
     session: SessionDep,
-    api_key: ApiKeyDep,
+    auth: Annotated[tuple, Depends(require_role_or_api_key(ROLE_VIEWER))],
     source_name: Optional[str] = Query(None, description="Filter by source name"),
     failure_type: Optional[str] = Query(
         None, description="Filter by failure type (exit_code or stale)"
