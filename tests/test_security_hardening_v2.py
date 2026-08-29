@@ -18,7 +18,6 @@ from app.models.webhook import WebhookEndpoint
 from app.services.auth import ROLE_VIEWER, hash_password
 from tests.test_rbac import (
     _make_bearer_client,
-    _make_cookie_client,
     _make_unauth_client,
     _setup_overrides,
 )
@@ -155,20 +154,3 @@ class TestAC010WebhookReadsRequireOperator:
         resp = await client.get("/api/v1/webhooks")
         assert resp.status_code == 403
         assert "SECRET-TOKEN" not in resp.text
-
-    async def test_ac010_viewer_cannot_open_htmx_webhook_list(
-        self, db_session, viewer_user, webhook
-    ):
-        client = _make_cookie_client(db_session, viewer_user)
-        resp = await client.get("/htmx/webhooks")
-        assert resp.status_code == 403
-        assert "SECRET-TOKEN" not in resp.text
-
-    async def test_ac010_viewer_cannot_open_htmx_webhook_edit(
-        self, db_session, viewer_user, webhook
-    ):
-        client = _make_cookie_client(db_session, viewer_user)
-        resp = await client.get(f"/htmx/webhooks/{webhook.id}/edit")
-        assert resp.status_code == 403
-        assert "SECRET-TOKEN" not in resp.text
-        assert "hook-secret" not in resp.text

@@ -68,7 +68,7 @@ def _make_expired_jwt(user: User) -> str:
 
 @pytest.mark.asyncio
 async def test_ac016_expired_jwt_returns_401(db_session: Session) -> None:
-    """HTMX request with expired JWT gets 401."""
+    """Cookie request with expired JWT gets 401."""
     _setup_overrides(db_session)
     user = _create_user(db_session)
     expired_token = _make_expired_jwt(user)
@@ -81,9 +81,8 @@ async def test_ac016_expired_jwt_returns_401(db_session: Session) -> None:
         headers={"X-CSRF-Token": csrf_token, "HX-Request": "true"},
     )
 
-    # Try an authenticated HTMX route
-    resp = await client.get("/htmx/api-keys")
-    # Should get 401 or redirect — the middleware may redirect to login
+    # Try a cookie-authenticated API route
+    resp = await client.get("/api/v1/api-keys")
     assert resp.status_code in (401, 403)
 
     await client.aclose()

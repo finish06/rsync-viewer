@@ -337,96 +337,17 @@ async def test_ac006_cannot_delete_last_admin(db_session: Session) -> None:
     app.dependency_overrides.clear()
 
 
-# --- Admin UI Page ---
+# --- Admin UI Page (now a redirect into the SPA, settings-ui AC-020) ---
 
 
 @pytest.mark.asyncio
-async def test_ac006_admin_can_access_admin_page(db_session: Session) -> None:
-    """Admin can access /admin/users page."""
+async def test_ac006_admin_page_redirects_to_spa(db_session: Session) -> None:
     admin = _create_user(db_session, "admin1", ROLE_ADMIN)
     client = _make_client(db_session, admin)
 
-    resp = await client.get("/admin/users")
-    assert resp.status_code == 200
-    assert "admin1" in resp.text
-
-    await client.aclose()
-    app.dependency_overrides.clear()
-
-
-@pytest.mark.asyncio
-async def test_ac006_non_admin_cannot_access_admin_page(db_session: Session) -> None:
-    """Non-admin gets 403 on /admin/users page."""
-    _create_user(db_session, "admin1", ROLE_ADMIN)
-    operator = _create_user(db_session, "op1", ROLE_OPERATOR)
-    client = _make_client(db_session, operator)
-
-    resp = await client.get("/admin/users")
-    assert resp.status_code == 403
-
-    await client.aclose()
-    app.dependency_overrides.clear()
-
-
-# --- HTMX Admin Routes ---
-
-
-@pytest.mark.asyncio
-async def test_ac006_htmx_user_list(db_session: Session) -> None:
-    """HTMX route returns user list partial."""
-    admin = _create_user(db_session, "admin1", ROLE_ADMIN)
-    _create_user(db_session, "user1", ROLE_VIEWER)
-    client = _make_client(db_session, admin)
-
-    resp = await client.get("/htmx/admin/users")
-    assert resp.status_code == 200
-    assert "user1" in resp.text
-
-    await client.aclose()
-    app.dependency_overrides.clear()
-
-
-@pytest.mark.asyncio
-async def test_ac006_htmx_change_role(db_session: Session) -> None:
-    """HTMX route changes user role and returns updated list."""
-    admin = _create_user(db_session, "admin1", ROLE_ADMIN)
-    target = _create_user(db_session, "target1", ROLE_VIEWER)
-    client = _make_client(db_session, admin)
-
-    resp = await client.put(
-        f"/htmx/admin/users/{target.id}/role",
-        data={"role": ROLE_OPERATOR},
-    )
-    assert resp.status_code == 200
-
-    await client.aclose()
-    app.dependency_overrides.clear()
-
-
-@pytest.mark.asyncio
-async def test_ac006_htmx_toggle_status(db_session: Session) -> None:
-    """HTMX route toggles user active status."""
-    admin = _create_user(db_session, "admin1", ROLE_ADMIN)
-    target = _create_user(db_session, "target1", ROLE_VIEWER)
-    client = _make_client(db_session, admin)
-
-    resp = await client.put(f"/htmx/admin/users/{target.id}/toggle-status")
-    assert resp.status_code == 200
-
-    await client.aclose()
-    app.dependency_overrides.clear()
-
-
-@pytest.mark.asyncio
-async def test_ac006_htmx_delete_user(db_session: Session) -> None:
-    """HTMX route deletes user and returns updated list."""
-    admin = _create_user(db_session, "admin1", ROLE_ADMIN)
-    target = _create_user(db_session, "target1", ROLE_VIEWER)
-    client = _make_client(db_session, admin)
-
-    resp = await client.delete(f"/htmx/admin/users/{target.id}")
-    assert resp.status_code == 200
-    assert "target1" not in resp.text
+    resp = await client.get("/admin/users", follow_redirects=False)
+    assert resp.status_code == 302
+    assert resp.headers["location"] == "/app/settings/users"
 
     await client.aclose()
     app.dependency_overrides.clear()

@@ -7,6 +7,25 @@ and this project adheres to [Conventional Commits](https://www.conventionalcommi
 
 ## [Unreleased]
 
+## [2.15.0] - 2026-08-29
+
+### Changed
+- `/settings` and `/admin/users` now redirect into the SPA (`/app/settings`,
+  `/app/settings/users`); `/settings#changelog` lands on the changelog section.
+  The Jinja header link points at `/app/settings`
+  (spec: `specs/settings-ui.md`, AC-020–AC-022).
+- Playwright E2E for settings, API keys, webhooks, users and changelog now run
+  against the SPA; screenshots live under `tests/screenshots/settings-ui/`.
+
+### Removed
+- The server-rendered settings and admin pages and every HTMX settings route
+  (`/htmx/api-keys`, `/htmx/webhooks`, `/htmx/smtp-settings`,
+  `/htmx/settings/auth`, `/htmx/synthetic-settings`, `/htmx/synthetic-history`,
+  `/htmx/monitoring-setup`, `/htmx/admin/users`, `/htmx/changelog`) with their
+  templates. All of that functionality is served by `/api/v1` and the SPA.
+- The HTMX-only CSRF prefix list — CSRF now applies uniformly to
+  cookie-authenticated `/api/*` mutations.
+
 ## [2.14.0] - 2026-08-29
 
 ### Added

@@ -48,12 +48,13 @@ class TestDashboardPage:
             timeout=10000
         )
 
-    def test_ac023_settings_menu_reaches_server_pages(self, admin_page: Page):
+    def test_ac023_settings_menu_opens_spa_settings(self, admin_page: Page):
+        """AC-011: the ⚙ menu's Settings item opens the SPA settings, not a server page."""
         admin_page.goto(f"{BASE_URL}/")
         admin_page.wait_for_load_state("networkidle")
         admin_page.get_by_role("button", name="Settings menu").click()
         menu = admin_page.get_by_role("menu")
         expect(menu.get_by_role("menuitem", name="Users")).to_be_visible()
         menu.get_by_role("menuitem", name="Settings").click()
-        admin_page.wait_for_url("**/settings", timeout=10000)
-        expect(admin_page.locator("[data-tab]").first).to_be_visible()
+        admin_page.wait_for_url("**/app/settings**", timeout=10000)
+        expect(admin_page.get_by_test_id("settings-layout")).to_be_visible()

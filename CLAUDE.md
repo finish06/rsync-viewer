@@ -64,16 +64,15 @@ rsync-viewer/
 │   │   │   ├── analytics.py        # Aggregated stats + export
 │   │   │   ├── auth.py             # JWT auth (register/login/refresh/reset)
 │   │   │   ├── api_keys.py         # Per-user API key management
-│   │   │   └── users.py            # Admin user management + user preferences API
+│   │   │   ├── users.py            # Admin user management + user preferences API
+│   │   │   ├── settings.py         # SMTP / OIDC / synthetic / monitoring-wizard settings (admin)
+│   │   │   └── changelog.py        # Parsed CHANGELOG for the SPA changelog section
 │   │   └── deps.py                 # Auth dependencies (API key, JWT, RBAC)
-│   ├── routes/                     # HTMX / UI route handlers
-│   │   ├── pages.py                # Page-level routes (/, /login, /settings, etc.)
+│   ├── routes/                     # Server-rendered pages + HTMX partials that remain
+│   │   ├── pages.py                # Login/register/reset pages, legacy redirects (/settings, /admin/users)
 │   │   ├── auth.py                 # Login/logout/register/OIDC form handlers
-│   │   ├── dashboard.py            # HTMX partials (sync table, charts, analytics)
-│   │   ├── settings.py             # SMTP, OIDC, synthetic monitoring settings
-│   │   ├── api_keys.py             # HTMX API key CRUD
-│   │   ├── webhooks.py             # HTMX webhook CRUD
-│   │   └── admin.py                # Admin user management UI
+│   │   ├── dashboard.py            # HTMX partials still used by notifications
+│   │   └── spa.py                  # Serves the React SPA at / and /app/* (dashboard + settings)
 │   ├── models/                     # SQLModel database models
 │   │   ├── sync_log.py             # SyncLog + ApiKey
 │   │   ├── user.py                 # User + RefreshToken + PasswordResetToken
@@ -132,7 +131,7 @@ rsync-viewer/
 - **Mode:** Standard
 - **Coverage threshold:** 80%
 - **Type checking:** Blocking (mypy)
-- **E2E required:** No
+- **E2E required:** Yes (55 Playwright browser tests, local-only)
 
 All gates defined in `.add/config.json`. Run `/add:verify` to check.
 

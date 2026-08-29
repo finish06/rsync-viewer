@@ -221,15 +221,14 @@ def _is_cookie_authenticated_api_mutation(request: Request) -> bool:
 class CsrfMiddleware(BaseHTTPMiddleware):
     """Validate CSRF tokens on state-changing requests.
 
-    Covers HTMX form posts under CSRF_PROTECTED_PREFIXES and, since the SPA
-    calls /api/v1 with the session cookie, every cookie-authenticated API
-    mutation (specs/settings-ui.md AC-010).
+    The SPA calls /api/v1 with the session cookie, so every
+    cookie-authenticated API mutation is checked (specs/settings-ui.md
+    AC-010). Login/register forms validate their own form token.
     """
 
     async def dispatch(self, request: Request, call_next):
-        if request.method in CSRF_METHODS and (
-            any(request.url.path.startswith(p) for p in CSRF_PROTECTED_PREFIXES)
-            or _is_cookie_authenticated_api_mutation(request)
+        if request.method in CSRF_METHODS and _is_cookie_authenticated_api_mutation(
+            request
         ):
             # Check for CSRF token in form data or header
             csrf_token = request.headers.get("X-CSRF-Token", "")

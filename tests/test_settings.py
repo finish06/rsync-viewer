@@ -3,34 +3,23 @@
 Spec: specs/dark-mode.md
 """
 
+import pytest
+
 
 class TestSettingsPage:
-    """Test GET /settings endpoint — AC-007, AC-008, AC-010"""
+    """GET /settings now redirects into the SPA (specs/settings-ui.md AC-020)."""
 
-    async def test_ac007_settings_page_returns_200(self, client):
-        """AC-007: A settings page exists at /settings"""
-        response = await client.get("/settings")
-        assert response.status_code == 200
+    @pytest.mark.anyio
+    async def test_ac020_settings_redirects_to_spa(self, client):
+        response = await client.get("/settings", follow_redirects=False)
+        assert response.status_code == 302
+        assert response.headers["location"] == "/app/settings"
 
-    async def test_ac007_settings_page_contains_theme_options(self, client):
-        """AC-007: Settings page has theme toggle with light/dark/system"""
-        response = await client.get("/settings")
-        html = response.text
-        assert "Light" in html
-        assert "Dark" in html
-        assert "System" in html
-
-    async def test_ac010_settings_page_has_appearance_section(self, client):
-        """AC-010: Settings page structured for future settings sections"""
-        response = await client.get("/settings")
-        html = response.text
-        assert "Appearance" in html or "Theme" in html
-
-    async def test_ac008_header_has_settings_link(self, client):
-        """AC-008: Settings page is navigable from the header"""
-        response = await client.get("/settings")
-        html = response.text
-        assert "/settings" in html
+    @pytest.mark.anyio
+    async def test_ac020_admin_users_redirects_to_spa(self, client):
+        response = await client.get("/admin/users", follow_redirects=False)
+        assert response.status_code == 302
+        assert response.headers["location"] == "/app/settings/users"
 
 
 class TestThemeCSS:

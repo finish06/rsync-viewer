@@ -70,7 +70,7 @@ Rsync Log Viewer solves this by providing a centralized web dashboard that colle
 | Charts / data | Recharts, TanStack Query, React Router | latest | Client-side charts and data fetching against `/api/v1` |
 | Containerization | Docker + Docker Compose | latest | Multi-stage build (node → python); single container |
 
-**Frontend architecture decision (2026-08-29, M16):** the dashboard is rebuilt as a React SPA because the insight-first UI (drill-down, cross-filtering, live status, client-side chart interaction) is impractical with server-rendered partials. The SPA consumes the existing cookie-authenticated `/api/v1` JSON API and is shipped in the same container — no separate deploy, no CORS. Login, settings, and admin remain Jinja2/HTMX until the SPA is the default experience; they are visited occasionally and gain little from a rebuild.
+**Frontend architecture decision (2026-08-29, M16):** the dashboard is rebuilt as a React SPA because the insight-first UI (drill-down, cross-filtering, live status, client-side chart interaction) is impractical with server-rendered partials. The SPA consumes the existing cookie-authenticated `/api/v1` JSON API and is shipped in the same container — no separate deploy, no CORS. Login, registration, password reset and the notifications log remain Jinja2/HTMX; settings and admin moved into the SPA in M17 (2026-08-29) once the SPA became the default experience.
 
 ### Infrastructure
 
@@ -121,7 +121,7 @@ Production deployment is to a self-hosted homelab server. No staging environment
 | Milestone | Theme | Duration | Status |
 |-----------|-------|----------|--------|
 | M16: Insight UI | Rebuild the dashboard as an interactive React SPA: condensed overview with drill-down, transfers over time, new shows/movies, prominent uptime | 4 weeks | DONE (v2.7.0–v2.12.0, 2026-08-29) |
-| M17: Settings in the SPA | Move API keys, webhooks, email, sign-in, monitoring, users, and changelog into `/app/settings`; retire the HTMX settings pages | 2 weeks | NOW |
+| M17: Settings in the SPA | Move API keys, webhooks, email, sign-in, monitoring, users, and changelog into `/app/settings`; retire the HTMX settings pages | 2 weeks | DONE (v2.13.0–v2.15.0, 2026-08-29) |
 | M12: See Everything | Remaining items not absorbed by M16 (monitor management UI, onboarding wizard) | 2 weeks | NEXT |
 | M13: Stay & Trust | Live dashboard, smart notifications, backup/restore | 3 weeks | NEXT |
 | M14: Build to Last | Event bus, `rsv` CLI, async DB, API versioning | 4 weeks | LATER |
@@ -150,6 +150,21 @@ Production deployment is to a self-hosted homelab server. No staging environment
 - [x] New shows/movies from the last 7 days listed by title, not by file path (TC-005)
 - [x] Synthetic uptime (%) and last-check age visible on every page header (AC-001, liveness pill)
 - [x] Existing Playwright E2E suite green against the SPA; SPA unit coverage ≥ 80% (unit coverage 88 %; dashboard/analytics/login E2E rewritten in C6 and green locally)
+
+#### M17: "Settings in the SPA" (DONE — shipped 2026-08-29 in v2.13.0–v2.15.0; UX artifact awaiting formal sign-off)
+**Goal:** Settings are used sometimes, not often — but when they are, they should feel like the same product as the dashboard. Move API keys, webhooks, email, sign-in, monitoring (synthetic check + client wizard), users and the changelog into `/app/settings/*`, then retire the server-rendered settings/admin pages so there is one UI to maintain.
+**Appetite:** 2 weeks
+**Target maturity:** ga
+**Spec:** specs/settings-ui.md · **UX:** specs/ux/settings-ui-ux.md · **Plan:** docs/plans/settings-ui-plan.md
+**Deliverables:**
+
+| Deliverable | Release | Notes |
+|------------|---------|-------|
+| Settings JSON API + CSRF for cookie-authenticated API mutations | v2.13.0 | SMTP/OIDC/synthetic/wizard/changelog endpoints, admin-only, secrets write-only |
+| `/app/settings/*` sections with role-aware navigation | v2.14.0 | 7 sections, toasts, confirm-before-destroy, 101 Vitest cases |
+| Cut-over: redirects, HTMX removal, E2E rewrite | v2.15.0 | `/settings` and `/admin/users` redirect; 26 legacy files removed; screenshots in `tests/screenshots/settings-ui/` |
+
+**Success criteria:** Every settings task is reachable from the SPA shell without a page reload. Viewers see only what they may change. No `/htmx/*` settings route remains. Legacy bookmarks still land somewhere sensible.
 
 #### M12: "See Everything" (Weeks 1–3)
 Unlock existing backend capabilities + nail the first impression.

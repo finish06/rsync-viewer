@@ -346,14 +346,12 @@ class TestRuntimeStartStop:
     @pytest.mark.anyio
     @pytest.mark.usefixtures("_clean_synthetic_config")
     async def test_ac013_settings_post_enables_task(self, admin_client, db_session):
-        """POST /htmx/synthetic-settings with enabled=on starts the task."""
+        """PUT /api/v1/settings/synthetic with enabled=true starts the task."""
         mock_start = AsyncMock()
-        with patch(
-            "app.services.synthetic_check.start_synthetic_monitoring", mock_start
-        ):
-            response = await admin_client.post(
-                "/htmx/synthetic-settings",
-                data={"enabled": "on", "interval": "120"},
+        with patch("app.api.endpoints.settings.start_synthetic_monitoring", mock_start):
+            response = await admin_client.put(
+                "/api/v1/settings/synthetic",
+                json={"enabled": True, "interval_seconds": 120},
             )
         assert response.status_code == 200
         mock_start.assert_called_once()
@@ -361,12 +359,12 @@ class TestRuntimeStartStop:
     @pytest.mark.anyio
     @pytest.mark.usefixtures("_clean_synthetic_config")
     async def test_ac013_settings_post_disables_task(self, admin_client, db_session):
-        """POST /htmx/synthetic-settings without enabled stops the task."""
+        """PUT /api/v1/settings/synthetic with enabled=false stops the task."""
         mock_stop = AsyncMock()
-        with patch("app.services.synthetic_check.stop_synthetic_monitoring", mock_stop):
-            response = await admin_client.post(
-                "/htmx/synthetic-settings",
-                data={"interval": "300"},
+        with patch("app.api.endpoints.settings.stop_synthetic_monitoring", mock_stop):
+            response = await admin_client.put(
+                "/api/v1/settings/synthetic",
+                json={"enabled": False, "interval_seconds": 300},
             )
         assert response.status_code == 200
         mock_stop.assert_called_once()
@@ -374,13 +372,13 @@ class TestRuntimeStartStop:
     @pytest.mark.anyio
     @pytest.mark.usefixtures("_clean_synthetic_config")
     async def test_ac013_settings_post_writes_db(self, admin_client, db_session):
-        """POST /htmx/synthetic-settings persists config to DB."""
+        """PUT /api/v1/settings/synthetic persists config to DB."""
         with patch(
-            "app.services.synthetic_check.start_synthetic_monitoring", AsyncMock()
+            "app.api.endpoints.settings.start_synthetic_monitoring", AsyncMock()
         ):
-            response = await admin_client.post(
-                "/htmx/synthetic-settings",
-                data={"enabled": "on", "interval": "180"},
+            response = await admin_client.put(
+                "/api/v1/settings/synthetic",
+                json={"enabled": True, "interval_seconds": 180},
             )
         assert response.status_code == 200
 
@@ -421,106 +419,3 @@ class TestLifespanDbConfig:
             async with app.router.lifespan_context(app):
                 pass
             mock_stop.assert_called_once()
-
-
-# ---------------------------------------------------------------------------
-# AC-017: History route
-# ---------------------------------------------------------------------------
-
-
-class TestHistoryRoute:
-    """AC-017: Admin history route returns HTML with timeline and uptime."""
-
-    @pytest.mark.anyio
-    @pytest.mark.usefixtures("_clean_synthetic_config")
-    async def test_ac017_history_returns_html(self, admin_client, db_session):
-        """GET /htmx/synthetic-history returns HTML."""
-        response = await admin_client.get("/htmx/synthetic-history")
-        assert response.status_code == 200
-        assert "text/html" in response.headers.get("content-type", "")
-
-    @pytest.mark.anyio
-    @pytest.mark.usefixtures("_clean_synthetic_config")
-    async def test_ac017_history_shows_results(self, admin_client, db_session):
-        """History shows check results when they exist."""
-        store_check_result(
-            db_session, SyntheticCheckResult(status="passing", latency_ms=25.0)
-        )
-        store_check_result(
-            db_session,
-            SyntheticCheckResult(status="failing", latency_ms=100.0, error="timeout"),
-        )
-
-        response = await admin_client.get("/htmx/synthetic-history")
-        assert response.status_code == 200
-        text = response.text
-        assert "Pass" in text or "passing" in text.lower()
-        assert "Fail" in text or "failing" in text.lower()
-
-    @pytest.mark.anyio
-    @pytest.mark.usefixtures("_clean_synthetic_config")
-    async def test_ac017_history_shows_uptime(self, admin_client, db_session):
-        """History shows uptime percentage."""
-        for _ in range(4):
-            store_check_result(
-                db_session, SyntheticCheckResult(status="passing", latency_ms=10.0)
-            )
-        store_check_result(
-            db_session,
-            SyntheticCheckResult(status="failing", latency_ms=10.0, error="err"),
-        )
-
-        response = await admin_client.get("/htmx/synthetic-history")
-        assert response.status_code == 200
-        assert "80.0%" in response.text
-
-    @pytest.mark.anyio
-    @pytest.mark.usefixtures("_clean_synthetic_config")
-    async def test_ac017_history_empty_state(self, admin_client, db_session):
-        """History shows empty state message when no results."""
-        response = await admin_client.get("/htmx/synthetic-history")
-        assert response.status_code == 200
-        assert "No check history" in response.text
-
-    @pytest.mark.anyio
-    async def test_ac017_history_requires_admin(self, client):
-        """Non-admin gets 403 on history route."""
-        response = await client.get("/htmx/synthetic-history")
-        assert response.status_code == 403
-
-    @pytest.mark.anyio
-    @pytest.mark.usefixtures("_clean_synthetic_config")
-    async def test_ac017_monitoring_setup_includes_history_section(
-        self, admin_client, db_session
-    ):
-        """Monitoring setup page includes check history section."""
-        response = await admin_client.get("/htmx/monitoring-setup")
-        assert response.status_code == 200
-        assert "Check History" in response.text
-
-
-# ---------------------------------------------------------------------------
-# AC-018: Auto-refresh
-# ---------------------------------------------------------------------------
-
-
-class TestAutoRefresh:
-    """AC-018: History container auto-refreshes every 60s."""
-
-    @pytest.mark.anyio
-    @pytest.mark.usefixtures("_clean_synthetic_config")
-    async def test_ac018_history_has_auto_refresh_trigger(
-        self, admin_client, db_session
-    ):
-        """Response HTML contains hx-trigger='every 60s'."""
-        response = await admin_client.get("/htmx/synthetic-history")
-        assert response.status_code == 200
-        assert 'hx-trigger="every 60s"' in response.text
-
-    @pytest.mark.anyio
-    @pytest.mark.usefixtures("_clean_synthetic_config")
-    async def test_ac018_history_targets_itself(self, admin_client, db_session):
-        """Response container targets itself for swap."""
-        response = await admin_client.get("/htmx/synthetic-history")
-        assert response.status_code == 200
-        assert "synthetic-history-container" in response.text
