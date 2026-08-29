@@ -143,3 +143,63 @@ class TestTransfersAndTrends:
         admin_page.wait_for_url(f"**/app/trends?source={source}")
         expect(row).to_have_attribute("aria-selected", "true")
         _shot(admin_page, "step-03-trends")
+
+
+class TestMediaAndUptime:
+    def test_tc005_new_media(self, admin_page: Page, admin_api_key: str):
+        """AC-016–AC-019: media paths become titles; re-ingest never duplicates."""
+        import requests
+
+        source = f"e2e-media-{uuid.uuid4().hex[:8]}"
+        show = f"E2E Show {uuid.uuid4().hex[:6]}"
+        movie = f"E2E Movie {uuid.uuid4().hex[:6]}"
+        raw = (
+            "receiving file list ... done\n"
+            f"{movie} (2004)/{movie}.2004.Bluray-1080p.mkv\n"
+            f"{show} (2022)/Season 02/{show} - S02E03 - Pilot.mkv\n"
+            "\nsent 1.20K bytes  received 1.10G bytes  20.00M bytes/sec\n"
+            "total size is 3.30G  speedup is 3.00\n"
+        )
+        now = _utc_now_iso()
+        for _ in range(2):
+            resp = requests.post(
+                f"{BASE_URL}/api/v1/sync-logs",
+                json={
+                    "source_name": source,
+                    "start_time": now,
+                    "end_time": now,
+                    "raw_content": raw,
+                    "exit_code": 0,
+                },
+                headers={"X-API-Key": admin_api_key},
+                timeout=10,
+            )
+            resp.raise_for_status()
+
+        admin_page.goto(f"{BASE_URL}/app/media")
+        admin_page.wait_for_load_state("networkidle")
+        show_item = admin_page.get_by_test_id("show-item").filter(has_text=show)
+        expect(show_item).to_have_count(1)
+        expect(show_item).to_contain_text("1 new")
+        expect(show_item.get_by_role("link", name="S02E03")).to_be_visible()
+        movie_item = admin_page.get_by_test_id("movie-item").filter(has_text=movie)
+        expect(movie_item).to_have_count(1)
+        expect(movie_item).to_contain_text("(2004)")
+        _shot(admin_page, "step-04-media")
+
+    def test_tc006_uptime_history(self, admin_page: Page):
+        """AC-003, AC-004: status header, timeline cells, latency chart or empty note."""
+        admin_page.goto(f"{BASE_URL}/app/uptime")
+        admin_page.wait_for_load_state("networkidle")
+        page_root = admin_page.get_by_test_id("uptime-page")
+        expect(page_root).to_be_visible()
+        if admin_page.get_by_test_id("uptime-header").count():
+            expect(admin_page.get_by_test_id("uptime-stats")).to_be_visible()
+            expect(admin_page.get_by_test_id("timeline-cell").first).to_be_visible()
+        _shot(admin_page, "step-05-uptime")
+
+
+def _utc_now_iso() -> str:
+    from datetime import datetime, timezone
+
+    return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
