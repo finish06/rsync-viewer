@@ -87,6 +87,9 @@ class SyncLogList(BaseModel):
     file_count: Optional[int] = Field(None, description="Number of files transferred")
     status: str = Field(..., description="Sync status (completed, failed, etc.)")
     is_dry_run: bool = Field(False, description="Whether this was a dry run")
+    exit_code: Optional[int] = Field(
+        None, description="rsync exit code (non-zero marks a failed transfer)"
+    )
 
 
 class SyncLogDetail(SyncLogRead):

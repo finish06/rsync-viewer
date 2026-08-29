@@ -208,7 +208,7 @@ rsync-viewer/
 │   ├── rate_limit.py          # SlowAPI rate limiter instance
 │   ├── templating.py          # Jinja2 template engine + custom filters
 │   └── main.py               # FastAPI application entry point
-├── tests/                    # Test suite (950+ tests, 95% coverage)
+├── tests/                    # Test suite (950+ unit/integration, 55 E2E, 95% coverage)
 ├── specs/                    # Feature specifications
 ├── docs/                     # Documentation, milestones, plans
 ├── .github/workflows/        # CI/CD pipeline
@@ -260,6 +260,20 @@ python3 -m ruff format .
 python3 -m ruff format --check .
 ```
 
+### Frontend (React SPA)
+
+The insight dashboard at `/app` is a React + TypeScript + Vite app in `frontend/`, built into `app/static/app/` and served by FastAPI (no separate deployment). The Docker image builds it in a Node stage automatically.
+
+```bash
+cd frontend
+npm ci --ignore-scripts        # platform binaries are optional deps; scripts are not needed
+npm run dev                    # http://localhost:5173 — proxies /api, /login, /settings… to :8000
+npm run lint && npm run typecheck && npm run test:coverage
+npm run build                  # writes app/static/app/ (gitignored); then open http://localhost:8000/app
+```
+
+Unit tests use Vitest + Testing Library with MSW mocking the `/api/v1` contract (`frontend/src/test/handlers.ts`); coverage must stay ≥ 80 %. Login, settings, and admin remain server-rendered Jinja pages.
+
 ### Running Tests
 
 ```bash
@@ -276,13 +290,21 @@ docker compose -f docker-compose.dev.yml run --rm test \
 
 ### E2E Tests
 
-The end-to-end test spins up a full Docker stack (Postgres, hub API, SSH server, rsync client) and verifies the complete sync pipeline. Requires Docker.
+**Playwright browser tests** cover all major pages and flows (login, dashboard, settings, API keys, webhooks, admin, password reset) including happy paths and error scenarios. Requires a running local instance and Playwright:
+
+```bash
+docker-compose up -d
+pip3 install pytest-playwright requests pytest-timeout && python3 -m playwright install chromium
+python3 -m pytest tests/e2e/ -v --rootdir=tests/e2e
+```
+
+**Docker pipeline test** spins up a full stack (Postgres, hub API, SSH server, rsync client) and verifies the complete rsync sync pipeline:
 
 ```bash
 ./tests/e2e/run-e2e.sh
 ```
 
-Run this before opening a pull request.
+Run both before opening a pull request.
 
 ### Pre-Commit Hook
 

@@ -7,6 +7,16 @@ and this project adheres to [Conventional Commits](https://www.conventionalcommi
 
 ## [Unreleased]
 
+## [2.9.0] - 2026-08-29
+
+### Added
+
+- **Insight UI preview at `/app`** (M16 cycle C3, `specs/insight-ui.md` AC-001/006/007/008/023/025/026): new React + TypeScript SPA in `frontend/` with the Overview page — liveness pill (synthetic status, 24 h uptime, last-check age) on every page, per-source health cards with 14-day sparklines, the "New this week" media panel, and a 7-day activity strip that expands inline to transfers and their file lists / failure output. Settings live behind a secondary menu. The legacy dashboard at `/` is unchanged until cut-over.
+- Frontend toolchain: Vite 8, Vitest + Testing Library + MSW (42 tests, ≥ 80 % coverage enforced), oxlint, Prettier; CI `frontend` job; multi-stage Dockerfile builds the SPA into the image; `.dockerignore`
+- Playwright E2E `tests/e2e/test_insight_ui.py` (overview glance, drill-down, deep-link redirect, nav, mobile) with screenshots under `tests/screenshots/insight-ui/`
+- `GET /api/v1/sync-logs` list items now include `exit_code` so list views can mark failed transfers
+- Overview hides sources with no activity in the window behind a "show N inactive sources" toggle
+
 ## [2.8.0] - 2026-08-29
 
 ### Added

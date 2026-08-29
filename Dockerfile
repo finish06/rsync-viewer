@@ -1,3 +1,15 @@
+# ---- Stage 1: build the React SPA (specs/insight-ui.md AC-025) ----
+FROM node:22-alpine AS frontend
+WORKDIR /frontend
+COPY frontend/package.json frontend/package-lock.json ./
+# --ignore-scripts: platform binaries (rolldown, oxlint) are optional deps that
+# need no build; skipping scripts avoids fsevents' node-gyp compile on macOS.
+RUN npm ci --ignore-scripts --no-audit --no-fund
+COPY frontend/ ./
+# vite.config.ts writes to ../app/static/app; give it that path inside the stage
+RUN mkdir -p /app/static && npm run build
+
+# ---- Stage 2: Python runtime ----
 FROM python:3.11-slim
 
 ARG APP_VERSION=dev
@@ -15,6 +27,9 @@ COPY alembic.ini .
 COPY alembic ./alembic
 COPY CHANGELOG.md .
 COPY entrypoint.sh .
+
+# Built SPA assets, served by the /static mount and the /app shell route
+COPY --from=frontend /app/static/app ./app/static/app
 
 ENTRYPOINT ["/app/entrypoint.sh"]
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers", "--forwarded-allow-ips", "*"]
