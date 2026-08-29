@@ -8,7 +8,8 @@ __pycache__
 .mypy_cache
 htmlcov
 .coverage
-tests
+tests/screenshots
+tests/e2e
 docs
 specs
 reports
