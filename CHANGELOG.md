@@ -7,6 +7,13 @@ and this project adheres to [Conventional Commits](https://www.conventionalcommi
 
 ## [Unreleased]
 
+## [2.11.0] - 2026-08-29
+
+### Added
+
+- **Media page** (`/app/media`, M16 cycle C5, AC-019): new shows (with per-episode `SxxEyy` chips) and movies for a 7/14/30/90-day window, each linking to the day-and-source Transfers view where it arrived
+- **Uptime page** (`/app/uptime`, AC-004, AC-007): synthetic check status header, 24 h / 7 d uptime and check counts, a 100-check timeline (failing checks expose their error on hover), latency chart, recent failures, and an explanatory disabled state linking to Settings → Monitoring
+
 ## [2.10.0] - 2026-08-29
 
 ### Added
