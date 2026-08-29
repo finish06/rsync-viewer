@@ -98,3 +98,48 @@ class TestNavigationAndAuth:
         assert scroll_width <= 375, f"horizontal overflow: {scroll_width}px"
         _shot(page, "step-06-mobile")
         page.close()
+
+
+class TestTransfersAndTrends:
+    def test_tc003_filtered_transfers_via_url(
+        self, admin_page: Page, admin_api_key: str
+    ):
+        """AC-009, AC-011, AC-012: filters restored from the URL and applied."""
+        source = f"e2e-xfer-{uuid.uuid4().hex[:8]}"
+        ingest_sync_log(admin_api_key, source)
+
+        admin_page.goto(f"{BASE_URL}/app/transfers?source={source}&range=30d")
+        admin_page.wait_for_load_state("networkidle")
+
+        expect(admin_page.get_by_role("button", name="30d")).to_have_attribute(
+            "aria-pressed", "true"
+        )
+        day = admin_page.get_by_test_id("transfer-day").first
+        expect(day).to_contain_text("Today")
+        expect(admin_page.get_by_test_id("transfer-source")).to_have_count(1)
+        expect(admin_page.get_by_test_id("transfer-source").first).to_contain_text(
+            source
+        )
+
+        admin_page.reload()
+        admin_page.wait_for_load_state("networkidle")
+        expect(admin_page.get_by_test_id("transfer-source").first).to_contain_text(
+            source
+        )
+        _shot(admin_page, "step-07-transfers-filtered")
+
+    def test_tc004_trends_source_filter(self, admin_page: Page, admin_api_key: str):
+        """AC-013, AC-014: four charts; clicking a source row filters and updates URL."""
+        source = f"e2e-trend-{uuid.uuid4().hex[:8]}"
+        ingest_sync_log(admin_api_key, source)
+
+        admin_page.goto(f"{BASE_URL}/app/trends")
+        admin_page.wait_for_load_state("networkidle")
+        expect(admin_page.get_by_test_id("trend-chart")).to_have_count(4)
+
+        row = admin_page.get_by_test_id("source-row").filter(has_text=source).first
+        expect(row).to_be_visible(timeout=15000)
+        row.click()
+        admin_page.wait_for_url(f"**/app/trends?source={source}")
+        expect(row).to_have_attribute("aria-selected", "true")
+        _shot(admin_page, "step-03-trends")

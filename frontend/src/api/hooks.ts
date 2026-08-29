@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 
 import { buildQuery, fetchJson } from "./client";
 import type {
@@ -73,6 +73,22 @@ export function useSyncLogs(params: SyncLogParams) {
     queryFn: () =>
       fetchJson<PaginatedSyncLogs>(`/sync-logs${buildQuery(params)}`),
     refetchInterval: 60_000,
+  });
+}
+
+/** Cursor-paginated list for infinite scroll (AC-011). */
+export function useInfiniteSyncLogs(
+  params: Omit<SyncLogParams, "cursor" | "direction">,
+) {
+  return useInfiniteQuery({
+    queryKey: ["sync-logs", "infinite", params] as const,
+    initialPageParam: null as string | null,
+    queryFn: ({ pageParam }) =>
+      fetchJson<PaginatedSyncLogs>(
+        `/sync-logs${buildQuery({ ...params, cursor: pageParam ?? undefined })}`,
+      ),
+    getNextPageParam: (last) =>
+      last.pagination?.has_next ? last.pagination.next_cursor : null,
   });
 }
 

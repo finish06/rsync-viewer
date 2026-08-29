@@ -7,6 +7,13 @@ and this project adheres to [Conventional Commits](https://www.conventionalcommi
 
 ## [Unreleased]
 
+## [2.10.0] - 2026-08-29
+
+### Added
+
+- **Transfers page** (`/app/transfers`, M16 cycle C4, AC-009–AC-012): transfers grouped day → source → sync with per-group counts, bytes, files, and failures; every sync expands inline to its file list and failure output; filters (source, 7d/30d/90d/custom range, all/failed, dry runs) mirror the URL so views can be linked and survive reload; cursor-based infinite scroll with a Load-more fallback
+- **Trends page** (`/app/trends`, AC-013–AC-015): four linked charts (bytes, files, average duration, success/failure) with a shared hover cursor; period (daily/weekly/monthly), range, and source controls in the URL; a per-source comparison table that filters the charts on click; clicking a bar opens Transfers filtered to that day
+
 ## [2.9.0] - 2026-08-29
 
 ### Added
