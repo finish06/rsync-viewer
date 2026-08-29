@@ -4,6 +4,8 @@
 import { HttpResponse, http } from "msw";
 
 import type {
+  ApiKeyRead,
+  ChangelogResponse,
   MediaNewResponse,
   MediaSummary,
   PaginatedSyncLogs,
@@ -13,6 +15,11 @@ import type {
   SyncLogDetail,
   SyntheticCheck,
   SyntheticStatus,
+  OidcSettings,
+  SmtpSettings,
+  SyntheticSettings,
+  UserRead,
+  WebhookRead,
 } from "../api/types";
 
 export const syntheticStatusPassing: SyntheticStatus = {
@@ -238,7 +245,253 @@ export const mediaSummary: MediaSummary = {
   new_episodes: 2,
 };
 
+export const smtpSettings: SmtpSettings = {
+  configured: true,
+  host: "smtp.example.com",
+  port: 587,
+  username: "alerts",
+  encryption: "starttls",
+  from_address: "alerts@example.com",
+  from_name: "Rsync Viewer",
+  enabled: true,
+  has_password: true,
+  encryption_key_configured: true,
+  updated_at: new Date().toISOString(),
+};
+
+export const oidcSettings: OidcSettings = {
+  configured: false,
+  issuer_url: null,
+  client_id: null,
+  provider_name: null,
+  scopes: "openid email profile",
+  enabled: false,
+  hide_local_login: false,
+  has_client_secret: false,
+  callback_url: "http://localhost/auth/oidc/callback",
+  encryption_key_configured: true,
+  updated_at: null,
+};
+
+export const syntheticSettings: SyntheticSettings = {
+  enabled: true,
+  interval_seconds: 300,
+  last_status: "passing",
+  last_check_at: new Date().toISOString(),
+  last_latency_ms: 42,
+  last_error: null,
+};
+
+export const apiKeys: ApiKeyRead[] = [
+  {
+    id: "aaaaaaaa-0000-4000-8000-000000000001",
+    name: "laptop-backup",
+    key_prefix: "rsv_ab12",
+    role_override: null,
+    created_at: new Date(Date.now() - 5 * 86_400_000).toISOString(),
+    last_used_at: new Date(Date.now() - 3_600_000).toISOString(),
+  },
+];
+
+export const users: UserRead[] = [
+  {
+    id: "bbbbbbbb-0000-4000-8000-000000000001",
+    username: "cal",
+    email: "cal@example.com",
+    role: "admin",
+    is_active: true,
+    last_login_at: new Date().toISOString(),
+    created_at: "2026-01-01T00:00:00Z",
+  },
+  {
+    id: "bbbbbbbb-0000-4000-8000-000000000002",
+    username: "ops",
+    email: "ops@example.com",
+    role: "operator",
+    is_active: true,
+    last_login_at: null,
+    created_at: "2026-02-01T00:00:00Z",
+  },
+];
+
+export const webhooks: WebhookRead[] = [
+  {
+    id: "cccccccc-0000-4000-8000-000000000001",
+    name: "Discord ops",
+    url: "https://discord.com/api/webhooks/123/abc",
+    headers: null,
+    webhook_type: "discord",
+    source_filters: ["movies"],
+    options: { color: 16711749, username: "Rsync Viewer" },
+    enabled: true,
+    consecutive_failures: 0,
+    created_at: "2026-03-01T00:00:00Z",
+    updated_at: "2026-03-01T00:00:00Z",
+  },
+  {
+    id: "cccccccc-0000-4000-8000-000000000002",
+    name: "Home Assistant",
+    url: "https://ha.local/api/webhook/xyz",
+    headers: { Authorization: "Bearer secret" },
+    webhook_type: "generic",
+    source_filters: null,
+    options: null,
+    enabled: false,
+    consecutive_failures: 3,
+    created_at: "2026-03-02T00:00:00Z",
+    updated_at: "2026-03-02T00:00:00Z",
+  },
+];
+
+export const changelog: ChangelogResponse = {
+  app_version: "2.13.0",
+  versions: [
+    {
+      version: "2.13.0",
+      date: "2026-08-29",
+      sections: { Added: [{ text: "Settings API", children: [] }] },
+    },
+    {
+      version: "2.12.0",
+      date: "2026-08-29",
+      sections: {
+        Changed: [
+          { text: "SPA is the dashboard", children: ["legacy removed"] },
+        ],
+      },
+    },
+  ],
+  has_more: true,
+};
+
 export const handlers = [
+  http.get("/api/v1/settings/smtp", () => HttpResponse.json(smtpSettings)),
+  http.put("/api/v1/settings/smtp", async ({ request }) => {
+    const body = (await request.json()) as Partial<SmtpSettings>;
+    return HttpResponse.json({
+      ...smtpSettings,
+      ...body,
+      has_password: true,
+      configured: true,
+    });
+  }),
+  http.post("/api/v1/settings/smtp/test", async ({ request }) => {
+    const body = (await request.json()) as { to_address: string };
+    return HttpResponse.json({ sent: true, to_address: body.to_address });
+  }),
+  http.get("/api/v1/settings/oidc", () => HttpResponse.json(oidcSettings)),
+  http.put("/api/v1/settings/oidc", async ({ request }) => {
+    const body = (await request.json()) as Record<string, unknown>;
+    return HttpResponse.json({
+      ...oidcSettings,
+      ...body,
+      configured: true,
+      has_client_secret: true,
+    });
+  }),
+  http.post("/api/v1/settings/oidc/test-discovery", async ({ request }) => {
+    const body = (await request.json()) as { issuer_url: string };
+    return HttpResponse.json({
+      issuer_url: body.issuer_url,
+      endpoints: {
+        authorization_endpoint: `${body.issuer_url}/authorize`,
+        jwks_uri: `${body.issuer_url}/jwks`,
+      },
+    });
+  }),
+  http.get("/api/v1/settings/synthetic", () =>
+    HttpResponse.json(syntheticSettings),
+  ),
+  http.put("/api/v1/settings/synthetic", async ({ request }) => {
+    const body = (await request.json()) as {
+      enabled: boolean;
+      interval_seconds: number;
+    };
+    return HttpResponse.json({
+      ...syntheticSettings,
+      ...body,
+      interval_seconds: Math.max(30, body.interval_seconds),
+    });
+  }),
+  http.post("/api/v1/settings/monitoring-setup", async ({ request }) => {
+    const body = (await request.json()) as { source_name: string };
+    const source = body.source_name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+    return HttpResponse.json(
+      {
+        source_name: source,
+        key_name: `rsync-client-${source}`,
+        api_key: "rsv_newkey123",
+        snippet: `services:\n  rsync-client-${source}:\n    environment:\n      - RSYNC_VIEWER_API_KEY=rsv_newkey123`,
+      },
+      { status: 201 },
+    );
+  }),
+  http.get("/api/v1/changelog", ({ request }) => {
+    const all = new URL(request.url).searchParams.get("all") === "true";
+    return HttpResponse.json(
+      all ? { ...changelog, has_more: false } : changelog,
+    );
+  }),
+  http.get("/api/v1/api-keys", () => HttpResponse.json(apiKeys)),
+  http.post("/api/v1/api-keys", async ({ request }) => {
+    const body = (await request.json()) as {
+      name: string;
+      role_override?: string | null;
+    };
+    return HttpResponse.json(
+      {
+        id: "aaaaaaaa-0000-4000-8000-000000000009",
+        name: body.name,
+        key: "rsv_brandnewkey_0123456789",
+        key_prefix: "rsv_bran",
+        role: body.role_override ?? "operator",
+        created_at: new Date().toISOString(),
+      },
+      { status: 201 },
+    );
+  }),
+  http.delete(
+    "/api/v1/api-keys/:id",
+    () => new HttpResponse(null, { status: 204 }),
+  ),
+  http.get("/api/v1/users", () => HttpResponse.json(users)),
+  http.put("/api/v1/users/:id/role", async ({ params, request }) => {
+    const body = (await request.json()) as { role: UserRead["role"] };
+    const user = users.find((u) => u.id === params.id)!;
+    return HttpResponse.json({ ...user, role: body.role });
+  }),
+  http.put("/api/v1/users/:id/status", async ({ params, request }) => {
+    const body = (await request.json()) as { is_active: boolean };
+    const user = users.find((u) => u.id === params.id)!;
+    return HttpResponse.json({ ...user, is_active: body.is_active });
+  }),
+  http.delete(
+    "/api/v1/users/:id",
+    () => new HttpResponse(null, { status: 204 }),
+  ),
+  http.post("/api/v1/users/:id/reset-password", () =>
+    HttpResponse.json({ message: "Password reset email sent" }),
+  ),
+  http.get("/api/v1/webhooks", () => HttpResponse.json(webhooks)),
+  http.post("/api/v1/webhooks", async ({ request }) => {
+    const body = (await request.json()) as Partial<WebhookRead>;
+    return HttpResponse.json(
+      { ...webhooks[0], ...body, id: "cccccccc-0000-4000-8000-000000000009" },
+      { status: 201 },
+    );
+  }),
+  http.put("/api/v1/webhooks/:id", async ({ params, request }) => {
+    const body = (await request.json()) as Partial<WebhookRead>;
+    const wh = webhooks.find((w) => w.id === params.id)!;
+    return HttpResponse.json({ ...wh, ...body });
+  }),
+  http.delete(
+    "/api/v1/webhooks/:id",
+    () => new HttpResponse(null, { status: 204 }),
+  ),
+  http.post("/api/v1/webhooks/:id/test", () =>
+    HttpResponse.json({ status: "sent", http_status: 204 }),
+  ),
   http.get("/api/v1/synthetic/status", () =>
     HttpResponse.json(syntheticStatusPassing),
   ),

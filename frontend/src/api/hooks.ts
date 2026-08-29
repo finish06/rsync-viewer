@@ -1,6 +1,11 @@
-import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 
-import { buildQuery, fetchJson } from "./client";
+import { buildQuery, fetchJson, mutateJson } from "./client";
 import type {
   MediaNewResponse,
   MediaSummary,
@@ -13,6 +18,20 @@ import type {
   SyntheticCheck,
   SyntheticStatus,
   UserPreferences,
+  ApiKeyCreated,
+  ApiKeyRead,
+  ChangelogResponse,
+  MonitoringSetupRequest,
+  MonitoringSetupResult,
+  OidcDiscovery,
+  OidcSettings,
+  OidcSettingsWrite,
+  SmtpSettings,
+  SmtpSettingsWrite,
+  SyntheticSettings,
+  UserRead,
+  WebhookRead,
+  WebhookWrite,
 } from "./types";
 
 export const queryKeys = {
@@ -159,4 +178,210 @@ export function useMediaSummary(days = 7) {
     queryFn: () =>
       fetchJson<MediaSummary>(`/media/summary${buildQuery({ days })}`),
   });
+}
+
+// ---------------------------------------------------------------------------
+// Settings (specs/settings-ui.md)
+// ---------------------------------------------------------------------------
+
+export const settingsKeys = {
+  smtp: ["settings", "smtp"] as const,
+  oidc: ["settings", "oidc"] as const,
+  synthetic: ["settings", "synthetic"] as const,
+  changelog: (all: boolean) => ["changelog", all] as const,
+  apiKeys: (all: boolean) => ["api-keys", all] as const,
+  users: ["users"] as const,
+  webhooks: ["webhooks"] as const,
+};
+
+export function useSmtpSettings() {
+  return useQuery({
+    queryKey: settingsKeys.smtp,
+    queryFn: () => fetchJson<SmtpSettings>("/settings/smtp"),
+  });
+}
+
+export function useSaveSmtpSettings() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: SmtpSettingsWrite) =>
+      mutateJson<SmtpSettings>("/settings/smtp", "PUT", body),
+    onSuccess: (data) => qc.setQueryData(settingsKeys.smtp, data),
+  });
+}
+
+export function useTestSmtp() {
+  return useMutation({
+    mutationFn: (to_address: string) =>
+      mutateJson<{ sent: boolean; to_address: string }>(
+        "/settings/smtp/test",
+        "POST",
+        { to_address },
+      ),
+  });
+}
+
+export function useOidcSettings() {
+  return useQuery({
+    queryKey: settingsKeys.oidc,
+    queryFn: () => fetchJson<OidcSettings>("/settings/oidc"),
+  });
+}
+
+export function useSaveOidcSettings() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: OidcSettingsWrite) =>
+      mutateJson<OidcSettings>("/settings/oidc", "PUT", body),
+    onSuccess: (data) => qc.setQueryData(settingsKeys.oidc, data),
+  });
+}
+
+export function useTestOidcDiscovery() {
+  return useMutation({
+    mutationFn: (issuer_url: string) =>
+      mutateJson<OidcDiscovery>("/settings/oidc/test-discovery", "POST", {
+        issuer_url,
+      }),
+  });
+}
+
+export function useSyntheticSettings() {
+  return useQuery({
+    queryKey: settingsKeys.synthetic,
+    queryFn: () => fetchJson<SyntheticSettings>("/settings/synthetic"),
+  });
+}
+
+export function useSaveSyntheticSettings() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { enabled: boolean; interval_seconds: number }) =>
+      mutateJson<SyntheticSettings>("/settings/synthetic", "PUT", body),
+    onSuccess: (data) => {
+      qc.setQueryData(settingsKeys.synthetic, data);
+      void qc.invalidateQueries({ queryKey: queryKeys.syntheticStatus });
+    },
+  });
+}
+
+export function useMonitoringSetup() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: MonitoringSetupRequest) =>
+      mutateJson<MonitoringSetupResult>(
+        "/settings/monitoring-setup",
+        "POST",
+        body,
+      ),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ["api-keys"] }),
+  });
+}
+
+export function useChangelog(all = false) {
+  return useQuery({
+    queryKey: settingsKeys.changelog(all),
+    queryFn: () =>
+      fetchJson<ChangelogResponse>(
+        `/changelog${buildQuery({ all: all || undefined })}`,
+      ),
+    staleTime: Infinity,
+  });
+}
+
+export function useApiKeys(all = false) {
+  return useQuery({
+    queryKey: settingsKeys.apiKeys(all),
+    queryFn: () =>
+      fetchJson<ApiKeyRead[]>(
+        `/api-keys${buildQuery({ all: all || undefined })}`,
+      ),
+  });
+}
+
+export function useCreateApiKey() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { name: string; role_override?: string | null }) =>
+      mutateJson<ApiKeyCreated>("/api-keys", "POST", body),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ["api-keys"] }),
+  });
+}
+
+export function useRevokeApiKey() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => mutateJson<void>(`/api-keys/${id}`, "DELETE"),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ["api-keys"] }),
+  });
+}
+
+export function useUsers() {
+  return useQuery({
+    queryKey: settingsKeys.users,
+    queryFn: () => fetchJson<UserRead[]>("/users"),
+  });
+}
+
+export function useUserMutations() {
+  const qc = useQueryClient();
+  const invalidate = () =>
+    void qc.invalidateQueries({ queryKey: settingsKeys.users });
+  const changeRole = useMutation({
+    mutationFn: ({ id, role }: { id: string; role: UserRead["role"] }) =>
+      mutateJson<UserRead>(`/users/${id}/role`, "PUT", { role }),
+    onSuccess: invalidate,
+  });
+  const changeStatus = useMutation({
+    mutationFn: ({ id, is_active }: { id: string; is_active: boolean }) =>
+      mutateJson<UserRead>(`/users/${id}/status`, "PUT", { is_active }),
+    onSuccess: invalidate,
+  });
+  const remove = useMutation({
+    mutationFn: (id: string) => mutateJson<void>(`/users/${id}`, "DELETE"),
+    onSuccess: invalidate,
+  });
+  const resetPassword = useMutation({
+    mutationFn: (id: string) =>
+      mutateJson<{ message?: string; reset_token?: string }>(
+        `/users/${id}/reset-password`,
+        "POST",
+      ),
+  });
+  return { changeRole, changeStatus, remove, resetPassword };
+}
+
+export function useWebhooks() {
+  return useQuery({
+    queryKey: settingsKeys.webhooks,
+    queryFn: () => fetchJson<WebhookRead[]>("/webhooks"),
+  });
+}
+
+export function useWebhookMutations() {
+  const qc = useQueryClient();
+  const invalidate = () =>
+    void qc.invalidateQueries({ queryKey: settingsKeys.webhooks });
+  const create = useMutation({
+    mutationFn: (body: WebhookWrite) =>
+      mutateJson<WebhookRead>("/webhooks", "POST", body),
+    onSuccess: invalidate,
+  });
+  const update = useMutation({
+    mutationFn: ({ id, body }: { id: string; body: Partial<WebhookWrite> }) =>
+      mutateJson<WebhookRead>(`/webhooks/${id}`, "PUT", body),
+    onSuccess: invalidate,
+  });
+  const remove = useMutation({
+    mutationFn: (id: string) => mutateJson<void>(`/webhooks/${id}`, "DELETE"),
+    onSuccess: invalidate,
+  });
+  const test = useMutation({
+    mutationFn: (id: string) =>
+      mutateJson<{ status: string; http_status: number }>(
+        `/webhooks/${id}/test`,
+        "POST",
+      ),
+  });
+  return { create, update, remove, test };
 }

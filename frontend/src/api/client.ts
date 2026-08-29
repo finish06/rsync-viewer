@@ -23,6 +23,14 @@ function redirectToLogin(): void {
 
 export type QueryValue = string | number | boolean | null | undefined;
 
+/** Double-submit token: the server sets a non-httpOnly csrf_token cookie. */
+export function csrfToken(): string {
+  const match = document.cookie.match(/(?:^|;)\s*csrf_token=([^;]+)/);
+  return match ? decodeURIComponent(match[1]) : "";
+}
+
+const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
+
 export function buildQuery(params: object): string {
   const search = new URLSearchParams();
   for (const [key, value] of Object.entries(params) as [string, QueryValue][]) {
@@ -37,10 +45,22 @@ export async function fetchJson<T>(
   path: string,
   init: RequestInit = {},
 ): Promise<T> {
+  const method = (init.method ?? "GET").toUpperCase();
+  const headers: Record<string, string> = {
+    Accept: "application/json",
+    ...((init.headers as Record<string, string> | undefined) ?? {}),
+  };
+  if (!SAFE_METHODS.has(method)) {
+    headers["X-CSRF-Token"] = csrfToken();
+    if (init.body !== undefined && !headers["Content-Type"]) {
+      headers["Content-Type"] = "application/json";
+    }
+  }
   const response = await fetch(`${API_BASE}${path}`, {
     credentials: "include",
-    headers: { Accept: "application/json", ...(init.headers ?? {}) },
     ...init,
+    method,
+    headers,
   });
 
   if (response.status === 401) {
@@ -66,4 +86,16 @@ export async function fetchJson<T>(
 
   if (response.status === 204) return undefined as T;
   return (await response.json()) as T;
+}
+
+/** JSON mutation helper: serialises the body and sends the CSRF header. */
+export function mutateJson<T>(
+  path: string,
+  method: "POST" | "PUT" | "PATCH" | "DELETE",
+  body?: unknown,
+): Promise<T> {
+  return fetchJson<T>(path, {
+    method,
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
 }

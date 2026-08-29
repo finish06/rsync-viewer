@@ -59,7 +59,7 @@ describe("Shell (AC-001, AC-023)", () => {
     const menu = screen.getByRole("menu");
     expect(
       within(menu).getByRole("menuitem", { name: "Settings" }),
-    ).toHaveAttribute("href", "/settings");
+    ).toHaveAttribute("href", "/app/settings");
     expect(
       within(menu).getByRole("menuitem", { name: "Log out" }),
     ).toBeInTheDocument();
@@ -82,8 +82,8 @@ describe("Shell (AC-001, AC-023)", () => {
       const menu = screen.getByRole("menu");
       expect(menu).toHaveTextContent("vic · viewer");
       expect(
-        within(menu).queryByRole("menuitem", { name: "Settings" }),
-      ).not.toBeInTheDocument();
+        within(menu).getByRole("menuitem", { name: "Settings" }),
+      ).toHaveAttribute("href", "/app/settings");
       expect(
         within(menu).queryByRole("menuitem", { name: "Users" }),
       ).not.toBeInTheDocument();

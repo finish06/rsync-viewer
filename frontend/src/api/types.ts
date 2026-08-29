@@ -153,3 +153,157 @@ export interface ApiError {
   detail?: string;
   path?: string;
 }
+
+// --- Settings (specs/settings-ui.md) ---
+
+export type SmtpEncryption = "none" | "starttls" | "ssl_tls";
+
+export interface SmtpSettings {
+  configured: boolean;
+  host: string | null;
+  port: number | null;
+  username: string | null;
+  encryption: SmtpEncryption;
+  from_address: string | null;
+  from_name: string | null;
+  enabled: boolean;
+  has_password: boolean;
+  encryption_key_configured: boolean;
+  updated_at: string | null;
+}
+
+export interface SmtpSettingsWrite {
+  host: string;
+  port: number;
+  username?: string | null;
+  password?: string | null;
+  encryption: SmtpEncryption;
+  from_address: string;
+  from_name: string;
+  enabled: boolean;
+}
+
+export interface OidcSettings {
+  configured: boolean;
+  issuer_url: string | null;
+  client_id: string | null;
+  provider_name: string | null;
+  scopes: string;
+  enabled: boolean;
+  hide_local_login: boolean;
+  has_client_secret: boolean;
+  callback_url: string;
+  encryption_key_configured: boolean;
+  updated_at: string | null;
+}
+
+export interface OidcSettingsWrite {
+  issuer_url: string;
+  client_id: string;
+  client_secret?: string | null;
+  provider_name: string;
+  scopes: string;
+  enabled: boolean;
+  hide_local_login: boolean;
+}
+
+export interface OidcDiscovery {
+  issuer_url: string;
+  endpoints: Record<string, string>;
+}
+
+export interface SyntheticSettings {
+  enabled: boolean;
+  interval_seconds: number;
+  last_status: string;
+  last_check_at: string | null;
+  last_latency_ms: number | null;
+  last_error: string | null;
+}
+
+export interface MonitoringSetupRequest {
+  source_name: string;
+  rsync_source: string;
+  cron_schedule?: string;
+  ssh_key_path?: string;
+  rsync_args?: string;
+  sync_mode?: "pull" | "push";
+}
+
+export interface MonitoringSetupResult {
+  source_name: string;
+  key_name: string;
+  api_key: string;
+  snippet: string;
+}
+
+export interface ChangelogItem {
+  text: string;
+  children: string[];
+}
+
+export interface ChangelogVersion {
+  version: string;
+  date: string | null;
+  sections: Record<string, ChangelogItem[]>;
+}
+
+export interface ChangelogResponse {
+  app_version: string;
+  versions: ChangelogVersion[];
+  has_more: boolean;
+}
+
+export interface ApiKeyRead {
+  id: string;
+  name: string;
+  key_prefix: string;
+  user_id?: string | null;
+  role_override: string | null;
+  created_at: string;
+  last_used_at: string | null;
+  expires_at?: string | null;
+}
+
+export interface ApiKeyCreated {
+  id: string;
+  name: string;
+  key: string;
+  key_prefix: string;
+  role: string;
+  created_at: string;
+}
+
+export interface UserRead {
+  id: string;
+  username: string;
+  email: string;
+  role: "admin" | "operator" | "viewer";
+  is_active: boolean;
+  last_login_at: string | null;
+  created_at: string;
+}
+
+export interface WebhookRead {
+  id: string;
+  name: string;
+  url: string;
+  headers: Record<string, string> | null;
+  webhook_type: "generic" | "discord";
+  source_filters: string[] | null;
+  options: Record<string, unknown> | null;
+  enabled: boolean;
+  consecutive_failures: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface WebhookWrite {
+  name: string;
+  url: string;
+  headers?: Record<string, string> | null;
+  webhook_type: "generic" | "discord";
+  source_filters?: string[] | null;
+  options?: Record<string, unknown> | null;
+  enabled: boolean;
+}
