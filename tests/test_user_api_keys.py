@@ -84,7 +84,8 @@ def _make_client(user: User) -> AsyncClient:
     return AsyncClient(
         transport=ASGITransport(app=app),
         base_url="http://test",
-        cookies={"access_token": jwt_token},
+        cookies={"access_token": jwt_token, "csrf_token": "test-csrf-token"},
+        headers={"X-CSRF-Token": "test-csrf-token"},
     )
 
 

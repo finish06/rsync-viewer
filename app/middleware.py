@@ -203,12 +203,33 @@ CSRF_PROTECTED_PREFIXES = (
 CSRF_METHODS = {"POST", "PUT", "DELETE", "PATCH"}
 
 
+def _is_cookie_authenticated_api_mutation(request: Request) -> bool:
+    """True for /api/* mutations that rely on the session cookie for auth.
+
+    Requests carrying an API key or a Bearer token are not CSRF-prone
+    (browsers do not attach those headers cross-site) and stay exempt.
+    """
+    if not request.url.path.startswith("/api/"):
+        return False
+    if request.headers.get("x-api-key"):
+        return False
+    if request.headers.get("authorization", "").startswith("Bearer "):
+        return False
+    return "access_token" in request.cookies
+
+
 class CsrfMiddleware(BaseHTTPMiddleware):
-    """Validate CSRF tokens on state-changing form submissions."""
+    """Validate CSRF tokens on state-changing requests.
+
+    Covers HTMX form posts under CSRF_PROTECTED_PREFIXES and, since the SPA
+    calls /api/v1 with the session cookie, every cookie-authenticated API
+    mutation (specs/settings-ui.md AC-010).
+    """
 
     async def dispatch(self, request: Request, call_next):
-        if request.method in CSRF_METHODS and any(
-            request.url.path.startswith(p) for p in CSRF_PROTECTED_PREFIXES
+        if request.method in CSRF_METHODS and (
+            any(request.url.path.startswith(p) for p in CSRF_PROTECTED_PREFIXES)
+            or _is_cookie_authenticated_api_mutation(request)
         ):
             # Check for CSRF token in form data or header
             csrf_token = request.headers.get("X-CSRF-Token", "")

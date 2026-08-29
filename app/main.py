@@ -28,6 +28,8 @@ from app.api.endpoints import (
     synthetic,
     sources,
     media,
+    settings as settings_api,
+    changelog,
 )
 from app.errors import make_error_response, INTERNAL_ERROR, VALIDATION_ERROR
 from app.logging_config import setup_logging
@@ -298,6 +300,8 @@ app.include_router(sources.router, prefix="/api/v1")
 # React SPA shell (specs/insight-ui.md AC-022)
 app.include_router(spa.router)
 app.include_router(media.router, prefix="/api/v1")
+app.include_router(settings_api.router, prefix="/api/v1")
+app.include_router(changelog.router, prefix="/api/v1")
 
 # HTMX / UI route modules (AC-001, AC-002)
 app.include_router(pages.router)

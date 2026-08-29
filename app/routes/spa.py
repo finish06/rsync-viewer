@@ -12,11 +12,12 @@ import json
 from pathlib import Path
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 
 from app.api.deps import OptionalUserDep
 from app.config import Settings, get_settings
+from app.csrf import generate_csrf_token
 
 router = APIRouter()
 
@@ -44,7 +45,9 @@ def _user_context_script(user) -> str:
     )
 
 
-def _index_response(settings: Settings, user=None) -> Response:
+def _index_response(
+    settings: Settings, user=None, request: Request | None = None
+) -> Response:
     index = Path(settings.spa_dist_dir) / "index.html"
     if not index.is_file():
         raise HTTPException(
@@ -52,11 +55,23 @@ def _index_response(settings: Settings, user=None) -> Response:
         )
     html = index.read_text(encoding="utf-8")
     html = html.replace("<head>", "<head>" + _user_context_script(user), 1)
-    return HTMLResponse(html, headers={"Cache-Control": "no-store"})
+    response = HTMLResponse(html, headers={"Cache-Control": "no-store"})
+    # The SPA sends this cookie's value as X-CSRF-Token on every mutation
+    # (double-submit); make sure a session always has one.
+    if request is not None and not request.cookies.get("csrf_token"):
+        response.set_cookie(
+            "csrf_token",
+            generate_csrf_token(),
+            httponly=False,
+            samesite="lax",
+            secure=not settings.debug,
+        )
+    return response
 
 
 @router.get("/", include_in_schema=False)
 async def root(
+    request: Request,
     user: OptionalUserDep = None,
     tab: Optional[str] = Query(None),
     settings: Settings = Depends(get_settings),
@@ -64,13 +79,15 @@ async def root(
     """The dashboard is the SPA; legacy ``?tab=`` links redirect to their new home."""
     if tab in LEGACY_TAB_TARGETS:
         return RedirectResponse(url=LEGACY_TAB_TARGETS[tab], status_code=302)
-    return _index_response(settings, user)
+    return _index_response(settings, user, request)
 
 
 @router.get("/app", include_in_schema=False)
 @router.get("/app/{path:path}", include_in_schema=False)
 async def spa_index(
-    user: OptionalUserDep = None, settings: Settings = Depends(get_settings)
+    request: Request,
+    user: OptionalUserDep = None,
+    settings: Settings = Depends(get_settings),
 ) -> Response:
     """Return the SPA shell for any /app route; the client router takes over."""
-    return _index_response(settings, user)
+    return _index_response(settings, user, request)
