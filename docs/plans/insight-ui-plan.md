@@ -11,7 +11,8 @@
 | C1 | **DONE** — PR #42 → v2.7.0 |
 | C2 | **DONE** — PR #43 → v2.8.0 |
 | C3 | **DONE** — `feature/spa-scaffold` → v2.9.0. Notes: Vite 8 template ships oxlint (not ESLint) and TypeScript 6; `npm ci --ignore-scripts` is required because `fsevents` has no prebuilt binary for Node 26 and its node-gyp build hangs, while rolldown/oxlint platform binaries are *optional* deps that must stay installed (do not use `--omit=optional`). Recharts resolved to 3.x. |
-| C4–C6 | pending |
+| C4 | **code complete** — `feature/spa-transfers-trends` (branched after C3 merge). Recharts 3 chart `onClick` receives `activeIndex` (no `activePayload`); status=failed is a client-side filter because the list API has no exit-code filter. |
+| C5–C6 | pending |
 
 ## Cycles (each one PR, independently shippable)
 
