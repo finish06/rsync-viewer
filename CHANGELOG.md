@@ -7,6 +7,17 @@ and this project adheres to [Conventional Commits](https://www.conventionalcommi
 
 ## [Unreleased]
 
+## [2.7.0] - 2026-08-29
+
+### Added
+
+- Insight UI backend (M16, `specs/insight-ui.md`): `GET /api/v1/synthetic/status` and `/synthetic/history` (liveness + uptime), `GET /api/v1/sources/health` (per-source status, failure streak, 14-day daily series), and `/app` SPA shell routes served from `SPA_DIST_DIR`
+- PRD 0.4.0 with the M16 "Insight UI" milestone and the React + TypeScript frontend architecture decision; `specs/ux/insight-ui-ux.md` wireframes (pending sign-off); `docs/plans/insight-ui-plan.md`
+
+### Changed
+
+- Synthetic check results now retain 2016 rows (7 days at the 5-minute default) instead of 100 so 24 h / 7 d uptime figures are meaningful
+
 ## [2.6.2] - 2026-08-28
 
 Consolidated release notes: versions 2.4.0 through 2.6.1 were auto-tagged from
