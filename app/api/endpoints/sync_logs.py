@@ -27,6 +27,7 @@ from app.schemas.sync_log import (
 from app.metrics import record_sync
 from app.services.rsync_parser import RsyncParser
 from app.services.synthetic_check import SYNTHETIC_SOURCE_NAME
+from app.services.media_catalog import record_media_safely
 from app.services.webhook_dispatcher import dispatch_webhooks
 
 logger = logging.getLogger(__name__)
@@ -103,6 +104,9 @@ async def create_sync_log(
     session.add(sync_log)
     session.commit()
     session.refresh(sync_log)
+
+    # Catalogue any movies/episodes in the file list (never fails ingestion)
+    record_media_safely(session, sync_log)
 
     # Record Prometheus metrics
     duration_seconds = None

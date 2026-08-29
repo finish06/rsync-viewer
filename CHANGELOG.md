@@ -7,6 +7,13 @@ and this project adheres to [Conventional Commits](https://www.conventionalcommi
 
 ## [Unreleased]
 
+## [2.8.0] - 2026-08-29
+
+### Added
+
+- Media catalogue (M16, `specs/insight-ui.md` AC-016–AC-021): rsync file lists are classified into movies and TV episodes at ingest (`app/services/media_classifier.py`), stored once per title/episode in the new `media_items` table (survives log retention), and exposed via `GET /api/v1/media/new` and `/media/summary` for the "new shows and movies" view
+- `python -m scripts.backfill_media` back-fills the catalogue from existing sync logs (idempotent)
+
 ## [2.7.0] - 2026-08-29
 
 ### Added
