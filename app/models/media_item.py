@@ -34,5 +34,8 @@ class MediaItem(SQLModel, table=True):
         ),
     )
     first_seen_at: datetime = Field(index=True)
+    # Set when rsync reported the file (or its directory) deleted; cleared on
+    # re-transfer. Retired items are hidden from "new" views (AC-029).
+    removed_at: Optional[datetime] = Field(default=None, index=True)
     dedupe_key: str = Field(max_length=300, unique=True)
     created_at: datetime = Field(default_factory=utc_now)

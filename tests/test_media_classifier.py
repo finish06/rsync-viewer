@@ -110,3 +110,96 @@ def test_ac016_file_list_dedupes_and_preserves_order():
 
 def test_ac021_never_raises_on_garbage():
     assert classify_file_list([None, 123, "   ", "/", "\\\\"]) == []  # type: ignore[list-item]
+
+
+# ---------------------------------------------------------------------------
+# AC-028: rsync control lines are never media
+# ---------------------------------------------------------------------------
+
+from app.services.media_classifier import parse_rsync_line, split_file_list  # noqa: E402
+
+MOVIE_PATH = "Movies/Bloodlands (2021)/Bloodlands.2021.1080p.mkv"
+
+CONTROL_LINES = [
+    f"deleting {MOVIE_PATH}",
+    f"*deleting   {MOVIE_PATH}",
+    "deleting Movies/Bloodlands (2021)/",
+    "*deleting   TV/Severance (2022)/Season 02/",
+    "created directory /mnt/media/Movies/Bloodlands (2021)",
+    "sending incremental file list",
+    "receiving incremental file list",
+    "Number of files: 1,234 (reg: 1,200, dir: 34)",
+    "Number of created files: 3 (reg: 2, dir: 1)",
+    "Number of deleted files: 1",
+    "Number of regular files transferred: 2",
+    "Total file size: 18.70G bytes",
+    "Total transferred file size: 1.20G bytes",
+    "Literal data: 1.20G bytes",
+    "Matched data: 0 bytes",
+    "File list size: 65.53K",
+    "File list generation time: 0.001 seconds",
+    "File list transfer time: 0.000 seconds",
+    "cannot delete non-empty directory: Movies/Bloodlands (2021)",
+    'skipping non-regular file "Movies/Bloodlands (2021)/link.mkv"',
+    f".f..t...... {MOVIE_PATH}",  # attribute-only change, not a transfer
+    f"hf          {MOVIE_PATH}",  # hard link
+    "cd+++++++++ Movies/Bloodlands (2021)/",
+]
+
+
+@pytest.mark.parametrize("line", CONTROL_LINES)
+def test_ac028_control_lines_are_not_media(line):
+    assert classify_path(line) is None
+    assert classify_file_list([line]) == []
+
+
+@pytest.mark.parametrize(
+    "line",
+    [
+        f">f+++++++++ {MOVIE_PATH}",
+        f"<f.st...... {MOVIE_PATH}",
+        f"cf+++++++++ {MOVIE_PATH}",
+    ],
+)
+def test_ac028_itemized_transfers_classified_by_path(line):
+    match = classify_path(line)
+    assert match is not None
+    assert (match.kind, match.title, match.year) == ("movie", "Bloodlands", 2021)
+    assert match.path == MOVIE_PATH
+
+
+@pytest.mark.parametrize(
+    "line,expected",
+    [
+        (MOVIE_PATH, ("transfer", MOVIE_PATH)),
+        (f"deleting {MOVIE_PATH}", ("deletion", MOVIE_PATH)),
+        (f"*deleting   {MOVIE_PATH}", ("deletion", MOVIE_PATH)),
+        (
+            "deleting Movies/Bloodlands (2021)/",
+            ("deletion", "Movies/Bloodlands (2021)/"),
+        ),
+        (f">f+++++++++ {MOVIE_PATH}", ("transfer", MOVIE_PATH)),
+        (f".f..t...... {MOVIE_PATH}", None),
+        ("created directory /mnt/x", None),
+        ("sending incremental file list", None),
+        ("Total file size: 18.70G bytes", None),
+        ("", None),
+        (42, None),
+    ],
+)
+def test_ac028_parse_rsync_line(line, expected):
+    assert parse_rsync_line(line) == expected
+
+
+def test_ac028_split_file_list_separates_deletions():
+    transfers, deletions = split_file_list(
+        [
+            f"deleting {MOVIE_PATH}",
+            "TV/Severance (2022)/Season 02/Severance - S02E03.mkv",
+            "sending incremental file list",
+            "deleting Movies/Old (1999)/",
+            None,
+        ]
+    )
+    assert transfers == ["TV/Severance (2022)/Season 02/Severance - S02E03.mkv"]
+    assert deletions == [MOVIE_PATH, "Movies/Old (1999)/"]
