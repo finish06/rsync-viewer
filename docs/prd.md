@@ -1,9 +1,9 @@
 # Rsync Log Viewer — Product Requirements Document
 
-**Version:** 0.2.0
+**Version:** 0.4.0
 **Created:** 2026-02-19
 **Author:** finish06
-**Status:** Draft
+**Status:** Active
 
 ## 1. Problem Statement
 
@@ -45,10 +45,15 @@ Rsync Log Viewer solves this by providing a centralized web dashboard that colle
 
 ### Future Scope (Post-MVP)
 
-- OIDC single sign-on authentication (M7) — COMPLETE
-- Decentralized rsync client containers with automatic log shipping (M10)
-- Multi-user authentication and role-based access (M9) — COMPLETE
-- Prometheus metrics export and Grafana dashboards (M6) — COMPLETE
+- ~~OIDC single sign-on authentication (M7)~~ — COMPLETE
+- ~~Multi-user authentication and role-based access (M9)~~ — COMPLETE
+- ~~Prometheus metrics export and Grafana dashboards (M6)~~ — COMPLETE
+- Source health dashboard with sparklines (M12)
+- Live SSE dashboard updates (M13)
+- Internal event bus for decoupled integrations (M14)
+- Home Assistant + Grafana ecosystem integrations (M15)
+- `rsv` CLI tool for zero-friction rsync wrapping (M14)
+- Rsync client container with auto log shipping (M15)
 
 ## 5. Architecture
 
@@ -60,8 +65,12 @@ Rsync Log Viewer solves this by providing a centralized web dashboard that colle
 | Backend Framework | FastAPI | latest | Async web framework with OpenAPI support |
 | ORM | SQLModel | latest | SQLAlchemy + Pydantic integration |
 | Database | PostgreSQL | 16+ | JSONB for file lists, indexed queries |
-| Frontend | Jinja2 + HTMX | latest | Server-rendered with dynamic updates |
-| Containerization | Docker + Docker Compose | latest | Development and production deployment |
+| Frontend (insight UI) | React 19 + TypeScript + Vite | latest | SPA under `frontend/`, built into `app/static/app/`, served by FastAPI (M16) |
+| Frontend (admin/settings/auth) | Jinja2 + HTMX | latest | Server-rendered; low-frequency screens, migrated last |
+| Charts / data | Recharts, TanStack Query, React Router | latest | Client-side charts and data fetching against `/api/v1` |
+| Containerization | Docker + Docker Compose | latest | Multi-stage build (node → python); single container |
+
+**Frontend architecture decision (2026-08-29, M16):** the dashboard is rebuilt as a React SPA because the insight-first UI (drill-down, cross-filtering, live status, client-side chart interaction) is impractical with server-rendered partials. The SPA consumes the existing cookie-authenticated `/api/v1` JSON API and is shipped in the same container — no separate deploy, no CORS. Login, settings, and admin remain Jinja2/HTMX until the SPA is the default experience; they are visited occasionally and gain little from a rebuild.
 
 ### Infrastructure
 
@@ -86,32 +95,140 @@ Production deployment is to a self-hosted homelab server. No staging environment
 
 ## 6. Milestones & Roadmap
 
-### Current Maturity: GA (v2.0.0, promoted 2026-03-03)
+### Current Maturity: GA (v2.5.0, promoted 2026-03-03)
 
 ### Roadmap
 
-| Milestone | Goal | Target Maturity | Status | Success Criteria |
-|-----------|------|-----------------|--------|------------------|
-| M1: Foundation | Stabilize existing features, add CI/CD | poc → alpha | COMPLETE | CI pipeline, 80% coverage, conventional commits |
-| M2: Notifications | Webhook alerts for failed syncs | alpha | COMPLETE | HA/Discord webhooks, settings UI, notification history |
-| M3: Reliability | Error handling, logging, security hardening | alpha → beta | COMPLETE | Structured logging, input validation, rate limiting, key hashing |
-| M4: Analytics & Performance | Trend analysis, dashboards, query optimization | beta | COMPLETE | Statistics API, Chart.js charts, cursor pagination, DB indexes |
-| M5: API Performance | Debounce API key `last_used_at` writes | alpha | COMPLETE | Configurable debounce, zero regression, fewer DB writes |
-| M6: Observability | Prometheus metrics, Grafana dashboards, project docs | beta | COMPLETE | /metrics endpoint, Grafana templates, setup/architecture docs |
-| M9: Multi-User | User accounts, JWT auth, role-based access control | beta → ga | COMPLETE | Registration/login, Admin/Operator/Viewer roles, per-user API keys |
-| M11: Polish & Infrastructure | UI consistency, SMTP email, codebase cleanup | beta | COMPLETE | SMTP settings UI, sync logs responsive, deprecation cleanup |
-| M7: OIDC Authentication | OpenID Connect single sign-on via PocketId or generic provider | beta → ga | COMPLETE | OIDC login, OIDC settings UI, auto-create/link users |
-| M10: Rsync Client & Sync Management | Decentralized rsync clients with automatic log shipping to the central viewer hub | beta → ga | LATER | Alpine client image <30MB, pull/push modes, cron schedule, README, client examples |
+#### Completed (v1.0–v2.5)
+
+| Milestone | Goal | Status |
+|-----------|------|--------|
+| M1: Foundation | CI/CD, 80% coverage, conventional commits | COMPLETE |
+| M2: Notifications | Webhook alerts, Discord, settings UI | COMPLETE |
+| M3: Reliability | Structured logging, security hardening | COMPLETE |
+| M4: Analytics & Performance | Statistics API, charts, cursor pagination | COMPLETE |
+| M5: API Performance | API key debounce | COMPLETE |
+| M6: Observability | Prometheus metrics, Grafana dashboards, docs | COMPLETE |
+| M9: Multi-User | JWT auth, RBAC, per-user API keys | COMPLETE |
+| M11: Polish & Infrastructure | SMTP email, responsive UI, cleanup | COMPLETE |
+| M7: OIDC Authentication | OpenID Connect SSO | COMPLETE |
+| M-GA: GA Promotion | Smoke tests, PR template, glossary, SLAs | COMPLETE |
+
+#### Next: 2026 Roadmap (Q2–Q3)
+
+*Source: 3-agent swarm analysis (2026-03-20) — `.swarm/roadmap/final.md`*
+
+| Milestone | Theme | Duration | Status |
+|-----------|-------|----------|--------|
+| M16: Insight UI | Rebuild the dashboard as an interactive React SPA: condensed overview with drill-down, transfers over time, new shows/movies, prominent uptime | 4 weeks | NOW |
+| M12: See Everything | Remaining items not absorbed by M16 (monitor management UI, onboarding wizard) | 2 weeks | NEXT |
+| M13: Stay & Trust | Live dashboard, smart notifications, backup/restore | 3 weeks | NEXT |
+| M14: Build to Last | Event bus, `rsv` CLI, async DB, API versioning | 4 weeks | LATER |
+| M15: Grow the Ecosystem | Home Assistant, Grafana templates, PWA, client container | 3 weeks | LATER |
+
+#### M16: "Insight UI" (NOW — added 2026-08-29)
+**Goal:** Replace the click-to-see-information dashboard with a UI that shows what happened at a glance and lets the user dive into detail: what was transferred (condensed, expandable), how transfers trend over time, which new shows and movies arrived, and — most prominently — whether the system is up and syncing (synthetic monitoring, source liveness). Settings become a secondary destination.
+**Appetite:** 4 weeks
+**Target maturity:** ga (no regression in gates; SPA gets its own unit tests + existing Playwright E2E)
+**Spec:** specs/insight-ui.md · **UX:** specs/ux/insight-ui-ux.md
+**Deliverables:**
+
+| Deliverable | Effort | Notes |
+|------------|--------|-------|
+| SPA scaffold + build pipeline | 2d | `frontend/` (Vite, React, TS), served at `/app`, multi-stage Dockerfile, CI job (lint, typecheck, vitest) |
+| Overview page: liveness banner + source health cards + activity strip | 5d | Synthetic uptime %, last check, streak; per-source status/last sync/sparkline; condensed "what was sent" feed |
+| Transfers page: condensed timeline with drill-down | 4d | Grouped by day/source, expand to files, failure details inline |
+| Trends page: transfers over time | 3d | Bytes/files/duration/success over time with cross-filtering, source comparison |
+| Media page: new shows & movies | 4d | Backend media classifier over `file_list` (TV vs movie path heuristics) + API + UI |
+| Uptime page: synthetic monitoring history | 2d | Check history API + heatmap/timeline; also feeds the overview banner |
+| Cut-over: `/` serves the SPA; legacy tabs removed | 1d | Settings/admin/login links preserved |
+
+**Success criteria:**
+- [ ] "Is everything OK?" answerable from the overview in under 2 seconds without a click
+- [ ] Any transfer's files and failure details reachable in ≤ 2 clicks from the overview
+- [ ] New shows/movies from the last 7 days listed by title, not by file path
+- [ ] Synthetic uptime (%) and last-check age visible on every page header
+- [ ] Existing Playwright E2E suite green against the SPA; SPA unit coverage ≥ 80%
+
+#### M12: "See Everything" (Weeks 1–3)
+Unlock existing backend capabilities + nail the first impression.
+
+| Deliverable | Effort | Notes |
+|------------|--------|-------|
+| Sync Monitor Management UI | 2–3d | Create/edit/delete monitors from dashboard (backend exists, no UI) |
+| Failure Drill-Down View | 1–2d | Stderr, exit code, file list — one click from sync table |
+| Source Health Dashboard + Sparklines | 5–7d | Status cards with at-a-glance health per source |
+| Onboarding Wizard | 3–5d | Zero-state detection, pre-filled scripts, "waiting for first sync" |
+| Relative Timestamps + Timezone | 1–2d | "3m ago" within 24h window |
+| Webhook Test Button + OpenAPI Docs Link | 1d | Quick wins — wire existing backend features |
+
+**Success criteria:** New user goes from `docker-compose up` to first monitored sync in < 5 minutes. Source health visible at a glance. Failed sync details one click away.
+
+#### M13: "Stay & Trust" (Weeks 4–6)
+Make the daily experience delightful + build operational trust.
+
+| Deliverable | Effort | Notes |
+|------------|--------|-------|
+| Live Dashboard (SSE) | 5–7d | Auto-refresh within 2s of new sync arrival |
+| Smart Notifications | 3–5d | Context, deep links, streak info, comparison to baseline |
+| Backup & Restore Tooling | 2–3d | pg_dump scripts, rotation, documented recovery |
+| Global Search (PostgreSQL FTS) | 2–3d | Full-text search across sources, hostnames, errors |
+| CSV/JSON Analytics Export | 1d | One-click export |
+| Keyboard Shortcuts | 1–2d | j/k navigation, /, Enter, Escape |
+| Mobile-Responsive Polish | 1–2d | No horizontal scroll, correct tap targets |
+
+**Success criteria:** Dashboard updates live. Discord notifications include direct links + "3rd consecutive failure" context. Backup + restore tested and documented.
+
+#### M14: "Build to Last" (Weeks 7–10)
+Architectural hardening + developer platform.
+
+| Deliverable | Effort | Notes |
+|------------|--------|-------|
+| Internal Event Bus | 2w | `sync_log.created`, `sync_log.failed`, `monitor.stale_detected` events |
+| `rsv` CLI Tool | 5–7d | `rsv push`, `rsv wrap -- rsync ...` captures output + timing |
+| API Versioning Policy | 1w | Deprecation headers, documented sunset schedule |
+| DB Migration Automation | 1w | alembic check in CI, rollback testing |
+| Improved Detail Modal | 3–5d | Syntax highlighting, diff view, file grouping |
+| Async Database Layer | 2–3w | AsyncSession + asyncpg, non-blocking p95 |
+
+**Success criteria:** All side-effects fire via event bus. `rsv wrap` captures output automatically. All DB operations non-blocking.
+
+#### M15: "Grow the Ecosystem" (Weeks 11–14)
+Connect to the broader homelab stack.
+
+| Deliverable | Effort | Notes |
+|------------|--------|-------|
+| Rsync Client Container | 5–7d | Alpine image, auto-ships logs to viewer |
+| Home Assistant Integration | 3–4d | Sensors for sync status, failure count |
+| Grafana Dashboard Templates | 2d | Pre-built dashboards consuming Prometheus metrics |
+| PWA Support | 3–5d | Installable, offline last-known status, app icon |
+| Webhook Template Library | 2d | Discord, Slack, Telegram, Pushover presets |
+
+**Success criteria:** Official client container auto-reports. Home Assistant sensors show sync health. App installable on phone home screen.
+
+#### Deferred (Revisit on Demand)
+
+| Item | Reason | Revisit When |
+|------|--------|--------------|
+| Multi-Tenant Architecture | RBAC covers household use; disproportionate effort | Demand from multi-user deployments |
+| Horizontal Scaling (Redis) | Single-server homelab doesn't benefit | >10 concurrent connections sustained |
+| Plugin/Extension Architecture | Speculative; each backup tool differs | Community requests for Borgmatic/Restic support |
+| Source Grouping / Tags | Premature for 5–20 sources | Users with 50+ sources |
+| Bulk Log Import | Onboarding wizard solves cold-start differently | Explicit user requests |
 
 ### Dependency Chain
 
+**Completed milestones:**
 ```
-M3 (Reliability) → M4 (Analytics & Performance) → M6 (Observability)
-                 ↘ M9 (Multi-User) → M11 (Polish & Infrastructure) → M7 (OIDC Authentication)
-                 ↘ M10 (Rsync Client & Sync Management)
+M1 → M2 → M3 → M4 → M6 → M9 → M11 → M7 → M-GA (all COMPLETE)
 ```
 
-M3 is the gate to beta promotion. M4 and M6 can partially overlap. M7 (OIDC) depends on M9 (Multi-User) for the User model and JWT infrastructure. M10 is independent.
+**2026 roadmap:**
+```
+M12 (See Everything) → M13 (Stay & Trust) → M14 (Build to Last) → M15 (Ecosystem)
+```
+
+M12 has zero backend dependencies (pure UI wiring). M13's SSE builds on M12's source health dashboard. M14's event bus benefits from M13's notification improvements. M15's client container benefits from M14's `rsv` CLI and event bus.
 
 ### Milestone Detail
 
@@ -271,11 +388,11 @@ M3 is the gate to beta promotion. M4 and M6 can partially overlap. M7 (OIDC) dep
 
 ### Maturity Promotion Path
 
-| From | To | Gate Milestone | Requirements |
-|------|-----|----------------|-------------|
-| poc | alpha | M1 | CI/CD pipeline, 80% coverage, PRD exists, webhook MVP |
-| alpha | beta | M3 | Structured logging, error handling, security hardening, all specs written |
-| beta | ga | M10 + M9 | 30+ days stability, comprehensive monitoring, multi-user, rsync client distribution |
+| From | To | Gate Milestone | Requirements | Status |
+|------|-----|----------------|-------------|--------|
+| poc | alpha | M1 | CI/CD pipeline, 80% coverage, PRD exists | DONE (2026-02-20) |
+| alpha | beta | M3 | Structured logging, error handling, security hardening | DONE (2026-02-24) |
+| beta | ga | M-GA | 30+ days stability, monitoring, multi-user, SLAs | DONE (2026-03-03) |
 
 ## 7. Key Features
 
@@ -331,3 +448,5 @@ Rsync Log Viewer is designed for single-instance homelab deployment:
 |------|---------|--------|---------|
 | 2026-02-19 | 0.1.0 | finish06 | Initial draft from /add:init interview |
 | 2026-02-22 | 0.2.0 | finish06 | Full roadmap with M3-M10 milestones, specs for all features, TODO conversion |
+| 2026-03-20 | 0.3.0 | finish06 | 2026 roadmap (M12-M15) from 3-agent swarm analysis; all prior milestones marked COMPLETE |
+| 2026-08-29 | 0.4.0 | finish06 | M16 Insight UI: React SPA rebuild of the dashboard (frontend architecture decision), M12 rescoped |
