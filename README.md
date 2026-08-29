@@ -1,5 +1,7 @@
 # Rsync Log Viewer
 
+<p align="center"><img src="docs/brand/hero-1600.jpg" alt="Rsync Viewer — see every sync" width="800"></p>
+
 A web application for collecting, parsing, and visualizing rsync synchronization logs. Built with FastAPI, PostgreSQL, and HTMX for homelab deployment.
 
 [![CI](https://github.com/finish06/rsync-viewer/actions/workflows/ci.yml/badge.svg)](https://github.com/finish06/rsync-viewer/actions/workflows/ci.yml)
