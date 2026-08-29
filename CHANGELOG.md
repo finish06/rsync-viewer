@@ -7,6 +7,16 @@ and this project adheres to [Conventional Commits](https://www.conventionalcommi
 
 ## [Unreleased]
 
+## [2.13.0] - 2026-08-29
+
+### Added
+
+- Settings API for the SPA (M17 cycle S1, `specs/settings-ui.md` AC-001–AC-009): `GET/PUT /api/v1/settings/smtp` + `POST /settings/smtp/test`, `GET/PUT /api/v1/settings/oidc` + `POST /settings/oidc/test-discovery`, `GET/PUT /api/v1/settings/synthetic`, `POST /api/v1/settings/monitoring-setup` (provisions an rsync-client key and returns the compose snippet), and `GET /api/v1/changelog`. Secrets are write-only and never returned.
+
+### Security
+
+- Cookie-authenticated **mutating** requests to `/api/v1/*` now require the `X-CSRF-Token` double-submit header (AC-010). Requests authenticated with `X-API-Key` or `Authorization: Bearer` are unaffected. The SPA shell sets the `csrf_token` cookie when a session lacks one.
+
 ## [2.12.0] - 2026-08-29
 
 ### Changed

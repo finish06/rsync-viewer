@@ -121,7 +121,8 @@ Production deployment is to a self-hosted homelab server. No staging environment
 | Milestone | Theme | Duration | Status |
 |-----------|-------|----------|--------|
 | M16: Insight UI | Rebuild the dashboard as an interactive React SPA: condensed overview with drill-down, transfers over time, new shows/movies, prominent uptime | 4 weeks | DONE (v2.7.0–v2.12.0, 2026-08-29) |
-| M12: See Everything | Remaining items not absorbed by M16 (monitor management UI, onboarding wizard) | 2 weeks | NOW |
+| M17: Settings in the SPA | Move API keys, webhooks, email, sign-in, monitoring, users, and changelog into `/app/settings`; retire the HTMX settings pages | 2 weeks | NOW |
+| M12: See Everything | Remaining items not absorbed by M16 (monitor management UI, onboarding wizard) | 2 weeks | NEXT |
 | M13: Stay & Trust | Live dashboard, smart notifications, backup/restore | 3 weeks | NEXT |
 | M14: Build to Last | Event bus, `rsv` CLI, async DB, API versioning | 4 weeks | LATER |
 | M15: Grow the Ecosystem | Home Assistant, Grafana templates, PWA, client container | 3 weeks | LATER |
