@@ -66,6 +66,9 @@ As a **homelab operator who runs scheduled rsync jobs for media and backups**, I
 | AC-019 | The Media page shows "New this week" counts and two lists — Shows (title, new-episode count, latest `S01E05` label) and Movies (title, year) — each linking to the originating transfer. | Must |
 | AC-020 | Existing sync logs can be back-filled with `python -m scripts.backfill_media` (idempotent). | Must |
 | AC-021 | Unclassifiable paths are ignored silently; a sync log with no media never errors ingestion. | Must |
+| AC-028 | rsync control lines that end up in `file_list` are never classified as media: `deleting …` and itemized `*deleting …`, `created directory …`, `sending/receiving incremental file list`, `--stats` summary lines (`Number of …`, `Total …`, `Literal/Matched data`, `File list …`), and attribute-only/hard-link itemize lines. Itemized transfer lines (`>f…`, `<f…`, `cf…` + path) are classified by their path. | Must |
+| AC-029 | A deletion line for a known item sets `media_items.removed_at` (to the sync's `start_time`); a directory deletion (`deleting dir/`) retires every item of that source whose path is under the directory; a later transfer of the same item clears `removed_at` without changing `first_seen_at`. Retired items are excluded from `/media/new` and `/media/summary`. Deletions are applied before transfers within one log. | Must |
+| AC-030 | A migration adds `removed_at` and repairs phantom rows created from deletion lines: when the real item exists it is retired at the phantom's `first_seen_at` and the phantom deleted; otherwise the phantom becomes the real item (path, title and dedupe key corrected) marked removed. Re-running `scripts.backfill_media` applies historical deletions. | Must |
 
 ### Navigation, serving, and quality
 
@@ -111,6 +114,13 @@ As a **homelab operator who runs scheduled rsync jobs for media and backups**, I
 **Expected:** Movies lists "The Polar Express (2004)"; Shows lists "Severance" with 1 new episode (S02E03). Ingesting the same log again changes nothing.
 **Screenshot Checkpoint:** `step-04-media.png`
 **Maps to:** AC-016–AC-019
+
+### TC-008: Deleted media never shows as new
+1. Ingest a log whose file list contains `deleting Movies/Old Film (2001)/Old Film.mkv` and a real transfer `Movies/New Film (2024)/New Film.mkv`.
+2. Media page shows only *New Film*; the summary counts one movie.
+3. Ingest a second log with `deleting Movies/New Film (2024)/` — *New Film* disappears from the page.
+4. Ingest a third log transferring `Movies/New Film (2024)/New Film.mkv` again — it reappears but is not counted as new (original `first_seen_at` kept).
+**Maps to:** AC-028–AC-030
 
 ### TC-006: Uptime history
 **Precondition:** ≥ 50 synthetic checks with a failing streak.

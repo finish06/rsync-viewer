@@ -127,3 +127,234 @@ class TestAC020Backfill:
 
         assert backfill_media(db_session) == 0
         assert len(_items(db_session)) == 2
+
+
+# ---------------------------------------------------------------------------
+# AC-029: deletions retire items; AC-030: phantom repair
+# ---------------------------------------------------------------------------
+
+from app.services.media_classifier import classify_path  # noqa: E402
+from app.services.media_repair import repair_phantom_media  # noqa: E402
+
+MOVIE = "Movies/The Polar Express (2004)/The Polar Express (2004).mkv"
+EPISODE = "TV/Severance (2022)/Season 02/Severance - S02E03 - Who Is Alive.mkv"
+EPISODE_2 = "TV/Severance (2022)/Season 02/Severance - S02E04 - Woe's Hollow.mkv"
+
+
+class TestAC029Deletions:
+    def test_ac029_deletion_line_retires_item(self, db_session, create_sync_log):
+        now = utc_now()
+        first = create_sync_log(
+            source_name="media",
+            start_time=now - timedelta(days=3),
+            file_list=[MOVIE, EPISODE],
+        )
+        assert record_media(db_session, first) == 2
+        deletion = create_sync_log(
+            source_name="media",
+            start_time=now - timedelta(days=1),
+            file_list=[f"deleting {MOVIE}", "sending incremental file list"],
+        )
+        assert record_media(db_session, deletion) == 0
+        db_session.commit()
+
+        items = {i.title: i for i in _items(db_session)}
+        assert items["The Polar Express"].removed_at is not None
+        assert (
+            items["The Polar Express"].removed_at.date()
+            == (now - timedelta(days=1)).date()
+        )
+        assert (
+            items["The Polar Express"].first_seen_at.date()
+            == (now - timedelta(days=3)).date()
+        )
+        assert items["Severance"].removed_at is None
+
+    def test_ac029_directory_deletion_retires_by_prefix_within_source(
+        self, db_session, create_sync_log
+    ):
+        record_media(
+            db_session,
+            create_sync_log(source_name="media", file_list=[EPISODE, EPISODE_2, MOVIE]),
+        )
+        record_media(
+            db_session,
+            create_sync_log(source_name="mirror", file_list=[EPISODE]),
+        )
+        # mirror's episode has the same dedupe key → only one row exists, owned by "media"
+        record_media(
+            db_session,
+            create_sync_log(
+                source_name="media",
+                file_list=["*deleting   TV/Severance (2022)/Season 02/"],
+            ),
+        )
+        db_session.commit()
+        by_path = {i.path: i for i in _items(db_session)}
+        assert by_path[EPISODE].removed_at is not None
+        assert by_path[EPISODE_2].removed_at is not None
+        assert by_path[MOVIE].removed_at is None
+
+        # A directory deletion from another source does not touch these paths
+        record_media(
+            db_session,
+            create_sync_log(source_name="photos", file_list=["deleting Movies/"]),
+        )
+        db_session.commit()
+        assert {i.path: i for i in _items(db_session)}[MOVIE].removed_at is None
+
+    def test_ac029_retransfer_unretires_keeping_first_seen(
+        self, db_session, create_sync_log
+    ):
+        now = utc_now()
+        record_media(
+            db_session,
+            create_sync_log(
+                source_name="media",
+                start_time=now - timedelta(days=5),
+                file_list=[MOVIE],
+            ),
+        )
+        record_media(
+            db_session,
+            create_sync_log(source_name="media", file_list=[f"deleting {MOVIE}"]),
+        )
+        # deletions apply before transfers inside one log
+        assert (
+            record_media(
+                db_session,
+                create_sync_log(
+                    source_name="media", file_list=[f"deleting {MOVIE}", MOVIE]
+                ),
+            )
+            == 0
+        )
+        db_session.commit()
+        item = _items(db_session)[0]
+        assert item.removed_at is None
+        assert item.first_seen_at.date() == (now - timedelta(days=5)).date()
+
+    async def test_ac029_api_excludes_retired(self, client, db_session):
+        payload = _payload()
+        payload["raw_content"] = (
+            "receiving file list ... done\n"
+            f"deleting {MOVIE}\n{MOVIE}\n{EPISODE}\n" + RSYNC_TAIL
+        )
+        assert (await client.post("/api/v1/sync-logs", json=payload)).status_code == 201
+        summary = (await client.get("/api/v1/media/summary?days=7")).json()
+        assert (summary["new_movies"], summary["new_episodes"]) == (1, 1)
+
+        payload["raw_content"] = (
+            "receiving file list ... done\n"
+            f"deleting {MOVIE}\ndeleting TV/Severance (2022)/\n" + RSYNC_TAIL
+        )
+        assert (await client.post("/api/v1/sync-logs", json=payload)).status_code == 201
+        summary = (await client.get("/api/v1/media/summary?days=7")).json()
+        assert (
+            summary["new_movies"],
+            summary["new_shows"],
+            summary["new_episodes"],
+        ) == (
+            0,
+            0,
+            0,
+        )
+        new = (await client.get("/api/v1/media/new?days=7")).json()
+        assert new["movies"] == [] and new["shows"] == []
+
+
+def _phantom(db_session: Session, raw_line: str, first_seen_at) -> MediaItem:
+    """Insert a row the old classifier would have produced from a deletion line."""
+    match = classify_path(raw_line.split(" ", 1)[1].strip())
+    assert match is not None
+    row = MediaItem(
+        kind=match.kind,
+        title="deleting " + match.title if match.kind == "movie" else match.title,
+        year=match.year,
+        season=match.season,
+        episode=match.episode,
+        path=raw_line,
+        source_name="media",
+        first_seen_at=first_seen_at,
+        dedupe_key="phantom|" + match.dedupe_key,
+    )
+    db_session.add(row)
+    db_session.commit()
+    return row
+
+
+class TestAC030PhantomRepair:
+    def test_ac030_phantom_with_real_row_retires_real_and_is_deleted(
+        self, db_session, create_sync_log
+    ):
+        now = utc_now()
+        record_media(
+            db_session,
+            create_sync_log(
+                source_name="media",
+                start_time=now - timedelta(days=9),
+                file_list=[MOVIE],
+            ),
+        )
+        db_session.commit()
+        phantom_id = _phantom(
+            db_session, f"deleting {MOVIE}", now - timedelta(days=2)
+        ).id
+
+        counts = repair_phantom_media(db_session.connection())
+        db_session.commit()
+        db_session.expire_all()
+
+        assert counts == {"retired": 1, "converted": 0, "dropped": 0}
+        items = _items(db_session)
+        assert len(items) == 1
+        assert items[0].id != phantom_id
+        assert items[0].path == MOVIE
+        assert items[0].removed_at.date() == (now - timedelta(days=2)).date()
+        assert items[0].first_seen_at.date() == (now - timedelta(days=9)).date()
+
+    def test_ac030_phantom_without_real_row_becomes_retired_item(self, db_session):
+        now = utc_now()
+        phantom = _phantom(db_session, f"deleting {EPISODE}", now - timedelta(days=4))
+        _phantom(db_session, "*deleting   " + MOVIE, now - timedelta(days=1))
+
+        counts = repair_phantom_media(db_session.connection())
+        db_session.commit()
+        db_session.expire_all()
+
+        assert counts == {"retired": 0, "converted": 2, "dropped": 0}
+        by_path = {i.path: i for i in _items(db_session)}
+        episode = by_path[EPISODE]
+        assert episode.id == phantom.id
+        assert (episode.title, episode.season, episode.episode) == ("Severance", 2, 3)
+        assert episode.dedupe_key == classify_path(EPISODE).dedupe_key
+        assert episode.removed_at.date() == (now - timedelta(days=4)).date()
+        assert by_path[MOVIE].title == "The Polar Express"
+        assert by_path[MOVIE].removed_at is not None
+
+        # idempotent
+        assert repair_phantom_media(db_session.connection()) == {
+            "retired": 0,
+            "converted": 0,
+            "dropped": 0,
+        }
+
+    def test_ac030_unclassifiable_phantom_is_dropped(self, db_session):
+        row = MediaItem(
+            kind="movie",
+            title="deleting Movies",
+            year=None,
+            path="deleting Movies/readme.txt",
+            source_name="media",
+            first_seen_at=utc_now(),
+            dedupe_key="movie|deleting movies|None|None|None",
+        )
+        db_session.add(row)
+        db_session.commit()
+        assert repair_phantom_media(db_session.connection()) == {
+            "retired": 0,
+            "converted": 0,
+            "dropped": 1,
+        }
+        db_session.commit()
+        assert _items(db_session) == []

@@ -7,6 +7,23 @@ and this project adheres to [Conventional Commits](https://www.conventionalcommi
 
 ## [Unreleased]
 
+## [2.15.1] - 2026-08-29
+
+### Fixed
+- rsync control lines (`deleting …`, `*deleting …`, `created directory …`,
+  `--stats` summaries, attribute-only itemize entries) were classified as
+  movies/episodes, creating phantom rows such as "deleting Movies/…". They are
+  now recognised and never become media; itemized transfer lines are
+  classified by their path (specs/insight-ui.md AC-028).
+- A deletion now retires the matching media item (`removed_at`), a directory
+  deletion retires everything under it for that source, and a later
+  re-transfer un-retires it; retired items are excluded from the Media page
+  and the "new this week" counts (AC-029).
+- Migration adds `media_items.removed_at` and repairs existing phantom rows:
+  the real item is retired where it exists, otherwise the phantom is converted
+  into a retired item. Re-run `python -m scripts.backfill_media` after
+  deploying to apply historical deletions (AC-030).
+
 ## [2.15.0] - 2026-08-29
 
 ### Changed

@@ -3,12 +3,17 @@
 import logging
 from uuid import uuid4
 
+from sqlalchemy import update
 from sqlalchemy.dialects.postgresql import insert
-from sqlmodel import Session
+from sqlmodel import Session, col
 
 from app.models.media_item import MediaItem
 from app.models.sync_log import SyncLog
-from app.services.media_classifier import classify_file_list
+from app.services.media_classifier import (
+    classify_file_list,
+    classify_transfer_path,
+    split_file_list,
+)
 from app.services.synthetic_check import SYNTHETIC_SOURCE_NAME
 from app.utils import utc_now
 
@@ -24,9 +29,21 @@ def record_media(session: Session, sync_log: SyncLog) -> int:
     """
     if sync_log.is_dry_run or sync_log.source_name == SYNTHETIC_SOURCE_NAME:
         return 0
-    matches = classify_file_list(sync_log.file_list or [])
+    transfers, deletions = split_file_list(sync_log.file_list or [])
+    # Deletions first: a file removed and re-sent in one run ends up present.
+    retire_media(session, sync_log, deletions)
+    matches = classify_file_list(transfers)
     if not matches:
         return 0
+    unretire = (
+        update(MediaItem)
+        .where(
+            col(MediaItem.dedupe_key).in_([m.dedupe_key for m in matches]),
+            col(MediaItem.removed_at).is_not(None),
+        )
+        .values(removed_at=None)
+    )
+    session.exec(unretire)  # type: ignore[call-overload]
 
     now = utc_now()
     rows = [
@@ -58,12 +75,50 @@ def record_media(session: Session, sync_log: SyncLog) -> int:
     return len(result.all())
 
 
+def retire_media(session: Session, sync_log: SyncLog, deletions: list[str]) -> int:
+    """Mark items removed by this sync's deletion lines (AC-029).
+
+    ``dir/`` retires every item of the same source under that path; a file
+    path retires the item it classifies to (whichever source first saw it).
+    Returns the number of rows newly retired. Does not commit.
+    """
+    retired = 0
+    for path in deletions:
+        normalised = path.replace("\\", "/")
+        if normalised.endswith("/"):
+            statement = (
+                update(MediaItem)
+                .where(
+                    col(MediaItem.source_name) == sync_log.source_name,
+                    col(MediaItem.path).startswith(normalised, autoescape=True),
+                    col(MediaItem.removed_at).is_(None),
+                )
+                .values(removed_at=sync_log.start_time)
+            )
+        else:
+            match = classify_transfer_path(normalised)
+            if match is None:
+                continue
+            statement = (
+                update(MediaItem)
+                .where(
+                    col(MediaItem.dedupe_key) == match.dedupe_key,
+                    col(MediaItem.removed_at).is_(None),
+                )
+                .values(removed_at=sync_log.start_time)
+            )
+        result = session.exec(statement)  # type: ignore[call-overload]
+        retired += result.rowcount or 0
+    return retired
+
+
 def record_media_safely(session: Session, sync_log: SyncLog) -> None:
     """Ingest-path wrapper: media classification must never fail a sync log."""
     try:
         inserted = record_media(session, sync_log)
+        # Always commit: a deletion-only log retires rows without inserting.
+        session.commit()
         if inserted:
-            session.commit()
             logger.info(
                 "Media items recorded",
                 extra={"source_name": sync_log.source_name, "inserted": inserted},

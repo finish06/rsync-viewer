@@ -31,7 +31,10 @@ def _recent_items(session: SessionDep, days: int) -> list[MediaItem]:
     cutoff = utc_now() - timedelta(days=days)
     stmt = (
         select(MediaItem)
-        .where(col(MediaItem.first_seen_at) >= cutoff)
+        .where(
+            col(MediaItem.first_seen_at) >= cutoff,
+            col(MediaItem.removed_at).is_(None),
+        )
         .order_by(col(MediaItem.first_seen_at).desc(), col(MediaItem.title))
     )
     return list(session.exec(stmt).all())
