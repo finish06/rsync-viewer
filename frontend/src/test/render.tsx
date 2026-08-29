@@ -3,6 +3,8 @@ import { render, type RenderOptions } from "@testing-library/react";
 import type { ReactElement, ReactNode } from "react";
 import { MemoryRouter } from "react-router";
 
+import { ToastProvider } from "../components/Toast";
+
 export function makeQueryClient(): QueryClient {
   return new QueryClient({
     defaultOptions: {
@@ -24,7 +26,9 @@ export function renderWithProviders(
   function Wrapper({ children }: { children: ReactNode }) {
     return (
       <QueryClientProvider client={queryClient}>
-        <MemoryRouter initialEntries={[route]}>{children}</MemoryRouter>
+        <ToastProvider>
+          <MemoryRouter initialEntries={[route]}>{children}</MemoryRouter>
+        </ToastProvider>
       </QueryClientProvider>
     );
   }

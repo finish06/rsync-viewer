@@ -7,6 +7,22 @@ and this project adheres to [Conventional Commits](https://www.conventionalcommi
 
 ## [Unreleased]
 
+## [2.14.0] - 2026-08-29
+
+### Added
+- **Settings in the SPA** (`/app/settings/*`) — API keys, webhooks, email (SMTP),
+  sign-in (OIDC), monitoring (synthetic check + rsync-client wizard), users and
+  changelog are now React sections with role-aware navigation, inline
+  validation, confirm-before-destroy buttons and toast feedback
+  (spec: `specs/settings-ui.md`, AC-011…AC-019).
+- Shared `ToastProvider`, form primitives (`FormBits`) and CSRF-aware
+  `mutateJson` client helper for cookie-authenticated API mutations.
+
+### Changed
+- The Settings, Users and Changelog links in the SPA shell now open the new
+  in-app sections instead of the server-rendered pages. The legacy `/settings`
+  and `/admin/users` pages still exist until the cut-over release.
+
 ## [2.13.0] - 2026-08-29
 
 ### Added

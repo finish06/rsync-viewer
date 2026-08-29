@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { NavLink, Outlet } from "react-router";
+import { Link, NavLink, Outlet } from "react-router";
 
 import { usePreferences } from "../api/hooks";
 import { currentUser, hasRole, type Role } from "./user";
@@ -16,11 +16,16 @@ export const NAV = [
   { to: "/app/uptime", label: "Uptime" },
 ];
 
-const SECONDARY: { href: string; label: string; minRole?: Role }[] = [
+const SECONDARY: {
+  href: string;
+  label: string;
+  minRole?: Role;
+  spa?: boolean;
+}[] = [
+  { href: "/app/settings", label: "Settings", spa: true },
+  { href: "/app/settings/users", label: "Users", minRole: "admin", spa: true },
   { href: "/notifications", label: "Notifications" },
-  { href: "/settings", label: "Settings", minRole: "operator" },
-  { href: "/admin/users", label: "Users", minRole: "admin" },
-  { href: "/settings#changelog", label: "Changelog" },
+  { href: "/app/settings/changelog", label: "Changelog", spa: true },
 ];
 
 /** Apply the server-stored theme once per load; the toggle keeps localStorage in sync afterwards. */
@@ -144,16 +149,28 @@ function SecondaryMenu() {
               {user.username} · {user.role}
             </div>
           )}
-          {items.map((item) => (
-            <a
-              key={item.href}
-              role="menuitem"
-              href={item.href}
-              className="block px-3 py-1.5 text-sm hover:bg-bg-secondary"
-            >
-              {item.label}
-            </a>
-          ))}
+          {items.map((item) =>
+            item.spa ? (
+              <Link
+                key={item.href}
+                role="menuitem"
+                to={item.href}
+                onClick={() => setOpen(false)}
+                className="block px-3 py-1.5 text-sm hover:bg-bg-secondary"
+              >
+                {item.label}
+              </Link>
+            ) : (
+              <a
+                key={item.href}
+                role="menuitem"
+                href={item.href}
+                className="block px-3 py-1.5 text-sm hover:bg-bg-secondary"
+              >
+                {item.label}
+              </a>
+            ),
+          )}
           <form method="post" action="/logout">
             <button
               type="submit"

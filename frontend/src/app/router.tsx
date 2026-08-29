@@ -5,6 +5,8 @@ import { OverviewPage } from "../features/overview/OverviewPage";
 import { TransfersPage } from "../features/transfers/TransfersPage";
 import { TrendsPage } from "../features/trends/TrendsPage";
 import { UptimePage } from "../features/uptime/UptimePage";
+import { SettingsLayout } from "../features/settings/SettingsLayout";
+import { SettingsSectionPage } from "../features/settings/SettingsSectionPage";
 import { Shell } from "./Shell";
 
 // The FastAPI app serves index.html for every /app/* path (AC-022), so the
@@ -21,6 +23,17 @@ export const routes = [
       { path: "trends", element: <TrendsPage /> },
       { path: "media", element: <MediaPage /> },
       { path: "uptime", element: <UptimePage /> },
+      {
+        path: "settings",
+        element: <SettingsLayout />,
+        children: [
+          {
+            index: true,
+            element: <Navigate to="/app/settings/api-keys" replace />,
+          },
+          { path: ":section", element: <SettingsSectionPage /> },
+        ],
+      },
       { path: "*", element: <Navigate to="/app" replace /> },
     ],
   },
