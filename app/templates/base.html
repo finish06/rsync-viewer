@@ -34,7 +34,7 @@
             <nav class="header-nav">
                 {% if user %}
                     {% if user.role in ['admin', 'operator'] %}
-                    <a href="/settings">Settings</a>
+                    <a href="/app/settings">Settings</a>
                     {% endif %}
                     <span class="user-info">{{ user.username }} <span class="role-badge role-{{ user.role }}">{{ user.role }}</span></span>
                     <form method="post" action="/logout" style="display:inline;">

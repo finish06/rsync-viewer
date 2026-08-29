@@ -1,137 +1,114 @@
-"""E2E tests for webhook management — happy paths.
+"""E2E tests for webhook management in the SPA — specs/settings-ui.md.
 
-Spec: specs/e2e-playwright-happy-path.md
-AC-016, AC-022, TC-005
+TC-002: create a Discord webhook with a colour, test it (mock URL → inline
+failure, no stack trace), toggle it off, edit it, delete it. Plus a
+client-side validation case for a non-Discord URL on a Discord webhook.
+Screenshots: tests/screenshots/settings-ui/
 """
 
 import uuid
+from pathlib import Path
 
 from playwright.sync_api import Page, expect
 
 from tests.e2e.conftest import BASE_URL
 
-
-def _open_settings_webhooks(page: Page):
-    """Navigate to settings and wait for webhooks list to load."""
-    page.goto(f"{BASE_URL}/settings")
-    page.wait_for_load_state("networkidle")
-    page.wait_for_function(
-        """() => {
-            const el = document.getElementById('webhooks-list');
-            return el && el.innerHTML.trim().length > 10;
-        }""",
-        timeout=10000,
-    )
+SCREENSHOTS = (
+    Path(__file__).resolve().parents[2] / "tests" / "screenshots" / "settings-ui"
+)
 
 
-def _create_webhook(page: Page, name: str) -> None:
-    """Create a webhook via the settings UI modal."""
-    add_btn = page.locator('[hx-get="/htmx/webhooks/add"]')
-    if add_btn.count() == 0:
-        add_btn = page.locator(
-            'button:has-text("Add Webhook"), a:has-text("Add Webhook")'
-        )
-    add_btn.first.click()
-    page.wait_for_selector(".modal-backdrop, .modal", timeout=5000)
+def _shot(page: Page, name: str) -> None:
+    SCREENSHOTS.mkdir(parents=True, exist_ok=True)
+    page.screenshot(path=str(SCREENSHOTS / f"{name}.png"), full_page=True)
 
-    # Fill the form fields using their IDs
-    page.locator("#wh-name").fill(name)
-    page.locator("#wh-url").fill("https://httpbin.org/post")
 
-    # Submit
-    page.locator(
-        '.modal button[type="submit"], .modal input[type="submit"]'
-    ).first.click()
-
-    # Wait for the response to swap the webhooks list (the form hx-target
-    # is #webhooks-list and the response includes closeModal trigger)
-    page.wait_for_timeout(3000)
+def _fake_discord_url() -> str:
+    webhook_id = str(uuid.uuid4().int)[:18]
+    token = uuid.uuid4().hex
+    return f"https://discord.com/api/webhooks/{webhook_id}/{token}"
 
 
 class TestWebhookLifecycle:
-    """TC-005: Webhook create, verify, toggle, delete lifecycle."""
+    def test_tc002_discord_webhook_test_toggle_edit_delete(self, admin_page: Page):
+        admin_page.goto(f"{BASE_URL}/app/settings/webhooks")
+        admin_page.wait_for_load_state("networkidle")
 
-    def test_ac016_create_webhook(self, admin_page: Page):
-        """Create a webhook via the settings UI."""
-        _open_settings_webhooks(admin_page)
+        section = admin_page.get_by_test_id("webhooks-section")
+        expect(section).to_be_visible()
+        section.get_by_role("button", name="+ Add webhook").click()
 
-        wh_name = f"e2e-wh-{uuid.uuid4().hex[:8]}"
-        _create_webhook(admin_page, wh_name)
+        form = admin_page.get_by_test_id("webhook-form")
+        expect(form).to_be_visible()
+        name = f"e2e-webhook-{uuid.uuid4().hex[:8]}"
+        form.get_by_label("Name", exact=True).fill(name)
+        form.get_by_label("Webhook type").select_option("discord")
+        form.get_by_label("URL", exact=True).fill(_fake_discord_url())
+        form.get_by_label("Embed colour").fill("#00ff88")
+        form.get_by_label("Bot username").fill("E2E Bot")
+        _shot(admin_page, "step-20-webhook-form")
+        form.get_by_role("button", name="Save").click()
 
-        # After creation, the list should refresh via HTMX swap.
-        # Reload to be sure.
-        _open_settings_webhooks(admin_page)
-        expect(admin_page.locator(f"text={wh_name}")).to_be_visible(timeout=5000)
+        row = admin_page.get_by_test_id("webhook-row").filter(has_text=name)
+        expect(row).to_be_visible(timeout=10000)
+        expect(row).to_have_attribute("data-status", "ok")
+        expect(row).to_contain_text("discord")
+        _shot(admin_page, "step-21-webhook-row")
 
-    def test_ac016_webhook_appears_in_list(self, admin_page: Page):
-        """Created webhook shows in the webhooks list with its URL."""
-        _open_settings_webhooks(admin_page)
+        # Test delivery against a well-formed but unregistered Discord URL:
+        # Discord answers fast with a non-2xx, so the API returns 502 and the
+        # UI must show that inline — never a raw traceback.
+        row.get_by_role("button", name="Test").click()
+        alert = row.get_by_role("alert")
+        expect(alert).to_be_visible(timeout=15000)
+        alert_text = alert.text_content() or ""
+        assert "Traceback" not in alert_text
+        assert '  File "' not in alert_text
 
-        wh_name = f"e2e-whlist-{uuid.uuid4().hex[:8]}"
-        _create_webhook(admin_page, wh_name)
+        # Toggle off — data-status flips and the button relabels.
+        row.get_by_role("button", name="⏻ on").click()
+        expect(row).to_have_attribute("data-status", "never", timeout=10000)
+        expect(row.get_by_role("button", name="⏻ off")).to_be_visible()
 
-        _open_settings_webhooks(admin_page)
+        # Edit — rename and save.
+        row.get_by_role("button", name="Edit").click()
+        edit_form = row.get_by_test_id("webhook-form")
+        expect(edit_form).to_be_visible()
+        new_name = f"{name}-edited"
+        edit_form.get_by_label("Name", exact=True).fill(new_name)
+        edit_form.get_by_role("button", name="Save").click()
 
-        # Webhook name should be in the list
-        expect(admin_page.locator(f"text={wh_name}")).to_be_visible(timeout=5000)
+        edited_row = admin_page.get_by_test_id("webhook-row").filter(has_text=new_name)
+        expect(edited_row).to_be_visible(timeout=10000)
 
-        # The row with our webhook should contain the URL
-        wh_row = admin_page.locator(f"tr:has-text('{wh_name}')")
-        expect(wh_row).to_be_visible(timeout=5000)
-        expect(wh_row.locator("text=httpbin.org")).to_be_visible()
+        # Delete — arm then confirm.
+        edited_row.get_by_role("button", name="Delete").click()
+        edited_row.get_by_role("button", name="Confirm").click()
+        expect(
+            admin_page.get_by_test_id("webhook-row").filter(has_text=new_name)
+        ).to_have_count(0, timeout=10000)
 
-    def test_ac016_toggle_webhook(self, admin_page: Page):
-        """Toggle a webhook enabled/disabled."""
-        _open_settings_webhooks(admin_page)
+    def test_tc002_invalid_discord_url_shows_inline_validation_error(
+        self, admin_page: Page
+    ):
+        admin_page.goto(f"{BASE_URL}/app/settings/webhooks")
+        admin_page.wait_for_load_state("networkidle")
+        section = admin_page.get_by_test_id("webhooks-section")
+        section.get_by_role("button", name="+ Add webhook").click()
 
-        wh_name = f"e2e-whtoggle-{uuid.uuid4().hex[:8]}"
-        _create_webhook(admin_page, wh_name)
-        _open_settings_webhooks(admin_page)
+        form = admin_page.get_by_test_id("webhook-form")
+        form.get_by_label("Name", exact=True).fill(
+            f"e2e-invalid-{uuid.uuid4().hex[:8]}"
+        )
+        form.get_by_label("Webhook type").select_option("discord")
+        form.get_by_label("URL", exact=True).fill(
+            "https://example.com/not-a-discord-webhook"
+        )
+        form.get_by_role("button", name="Save").click()
 
-        expect(admin_page.locator(f"text={wh_name}")).to_be_visible(timeout=5000)
+        alert = form.get_by_role("alert")
+        expect(alert).to_be_visible()
+        expect(alert).to_contain_text("Discord webhooks need a URL")
 
-        # Find toggle button in our webhook's row
-        wh_row = admin_page.locator(f"tr:has-text('{wh_name}')")
-        toggle_btn = wh_row.locator('[hx-post*="toggle"]')
-        if toggle_btn.count() > 0:
-            toggle_btn.click()
-            admin_page.wait_for_timeout(2000)
-            # Page should still be on settings (HTMX update)
-            assert "/settings" in admin_page.url
-
-    def test_ac016_delete_webhook(self, admin_page: Page):
-        """Delete a webhook from the list."""
-        _open_settings_webhooks(admin_page)
-
-        wh_name = f"e2e-whdel-{uuid.uuid4().hex[:8]}"
-        _create_webhook(admin_page, wh_name)
-        _open_settings_webhooks(admin_page)
-
-        expect(admin_page.locator(f"text={wh_name}")).to_be_visible(timeout=5000)
-
-        # Accept confirm dialog
-        admin_page.on("dialog", lambda dialog: dialog.accept())
-
-        # Find and click delete button in the specific row
-        wh_row = admin_page.locator(f"tr:has-text('{wh_name}')")
-        delete_btn = wh_row.locator("[hx-delete]")
-        if delete_btn.count() == 0:
-            delete_btn = wh_row.locator(
-                'button:has-text("Delete"), button:has-text("Remove")'
-            )
-        delete_btn.first.click()
-        admin_page.wait_for_timeout(3000)
-
-        # Reload and verify webhook is gone
-        _open_settings_webhooks(admin_page)
-        expect(admin_page.locator(f"text={wh_name}")).to_have_count(0, timeout=5000)
-
-    def test_ac022_webhook_crud_htmx(self, admin_page: Page):
-        """Webhook CRUD updates DOM via HTMX without full page reload."""
-        _open_settings_webhooks(admin_page)
-
-        wh_name = f"e2e-whhtmx-{uuid.uuid4().hex[:8]}"
-        _create_webhook(admin_page, wh_name)
-
-        # Should still be on settings (HTMX, no navigation)
-        assert "/settings" in admin_page.url
+        form.get_by_role("button", name="Cancel").click()
+        expect(admin_page.get_by_test_id("webhook-form")).to_have_count(0)

@@ -248,8 +248,9 @@ class TestAdminAccess:
     @pytest.mark.asyncio
     async def test_ac006_admin_settings(self, db_session, admin_user):
         client = _make_cookie_client(db_session, admin_user)
-        resp = await client.get("/settings")
-        assert resp.status_code == 200
+        resp = await client.get("/settings", follow_redirects=False)
+        assert resp.status_code == 302
+        assert resp.headers["location"] == "/app/settings"
         await client.aclose()
         app.dependency_overrides.clear()
 
@@ -308,8 +309,9 @@ class TestOperatorAccess:
     @pytest.mark.asyncio
     async def test_ac007_operator_settings(self, db_session, operator_user):
         client = _make_cookie_client(db_session, operator_user)
-        resp = await client.get("/settings")
-        assert resp.status_code == 200
+        resp = await client.get("/settings", follow_redirects=False)
+        assert resp.status_code == 302
+        assert resp.headers["location"] == "/app/settings"
         await client.aclose()
         app.dependency_overrides.clear()
 
@@ -358,10 +360,14 @@ class TestViewerAccess:
         app.dependency_overrides.clear()
 
     @pytest.mark.asyncio
-    async def test_ac008_viewer_cannot_access_settings(self, db_session, viewer_user):
+    async def test_ac008_viewer_settings_redirects_to_spa(
+        self, db_session, viewer_user
+    ):
+        # The SPA shows viewers only their own API keys and the changelog.
         client = _make_cookie_client(db_session, viewer_user)
-        resp = await client.get("/settings")
-        assert resp.status_code == 403
+        resp = await client.get("/settings", follow_redirects=False)
+        assert resp.status_code == 302
+        assert resp.headers["location"] == "/app/settings"
         await client.aclose()
         app.dependency_overrides.clear()
 

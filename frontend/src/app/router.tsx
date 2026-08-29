@@ -5,7 +5,10 @@ import { OverviewPage } from "../features/overview/OverviewPage";
 import { TransfersPage } from "../features/transfers/TransfersPage";
 import { TrendsPage } from "../features/trends/TrendsPage";
 import { UptimePage } from "../features/uptime/UptimePage";
-import { SettingsLayout } from "../features/settings/SettingsLayout";
+import {
+  SettingsIndex,
+  SettingsLayout,
+} from "../features/settings/SettingsLayout";
 import { SettingsSectionPage } from "../features/settings/SettingsSectionPage";
 import { Shell } from "./Shell";
 
@@ -27,10 +30,7 @@ export const routes = [
         path: "settings",
         element: <SettingsLayout />,
         children: [
-          {
-            index: true,
-            element: <Navigate to="/app/settings/api-keys" replace />,
-          },
+          { index: true, element: <SettingsIndex /> },
           { path: ":section", element: <SettingsSectionPage /> },
         ],
       },

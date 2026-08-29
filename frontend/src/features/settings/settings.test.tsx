@@ -11,7 +11,11 @@ import {
 } from "../../test/handlers";
 import { renderWithProviders } from "../../test/render";
 import { server } from "../../test/setup";
-import { SettingsLayout, visibleSections } from "./SettingsLayout";
+import {
+  SettingsIndex,
+  SettingsLayout,
+  visibleSections,
+} from "./SettingsLayout";
 import { SettingsSectionPage } from "./SettingsSectionPage";
 import { toWrite } from "./WebhooksSection";
 
@@ -19,6 +23,7 @@ function renderSettings(route: string) {
   return renderWithProviders(
     <Routes>
       <Route path="/app/settings" element={<SettingsLayout />}>
+        <Route index element={<SettingsIndex />} />
         <Route path=":section" element={<SettingsSectionPage />} />
       </Route>
     </Routes>,
@@ -55,6 +60,15 @@ describe("SettingsLayout (AC-011)", () => {
       "webhooks",
       "changelog",
     ]);
+  });
+
+  it("lands on API keys and honours the legacy #changelog fragment (AC-020)", async () => {
+    renderSettings("/app/settings");
+    expect(await screen.findByTestId("api-keys-section")).toBeInTheDocument();
+    renderSettings("/app/settings#changelog");
+    expect(await screen.findAllByTestId("changelog-version")).not.toHaveLength(
+      0,
+    );
   });
 
   it("blocks direct links to admin sections for non-admins", async () => {

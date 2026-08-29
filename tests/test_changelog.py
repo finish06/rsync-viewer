@@ -9,7 +9,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from app.services.changelog_parser import parse_changelog
-from app.schemas.changelog import ChangelogItem, ChangelogVersion
+from app.schemas.changelog import ChangelogVersion
 
 
 # ── Sample CHANGELOG.md content for tests ──────────────────────────────────
@@ -218,129 +218,63 @@ class TestChangelogParserEdgeCases:
 # ── Settings Page Tests (AC-001, AC-006) ─────────────────────────────────
 
 
-class TestSettingsChangelog:
-    """TASK-003: Settings page changelog tab visibility."""
+CHANGELOG_WITH_NESTED = """\
+# Changelog
+
+## [2.0.0] - 2026-03-03
+
+### Added
+
+- New dashboard with analytics
+  - Chart.js integration
+  - Export to CSV
+- API v2 endpoints
+
+### Fixed
+
+- Login redirect loop
+
+## [1.9.0] - 2026-03-01
+
+### Changed
+
+- Updated dependencies
+"""
+
+
+class TestChangelogNestedSublists:
+    """Indented sub-items become ``ChangelogItem.children``."""
+
+    def test_ac008_nested_sublists_parsed(self):
+        versions = parse_changelog(content=CHANGELOG_WITH_NESTED)
+        v200 = next(v for v in versions if v.version == "2.0.0")
+        added = v200.sections["Added"]
+        assert len(added) == 2
+        assert added[0].text == "New dashboard with analytics"
+        assert added[0].children == ["Chart.js integration", "Export to CSV"]
+        assert added[1].text == "API v2 endpoints"
+        assert added[1].children == []
+
+
+class TestChangelogApi:
+    """The SPA reads the changelog from /api/v1/changelog (settings-ui AC-009)."""
 
     @pytest.mark.anyio
-    async def test_ac001_changelog_tab_visible_when_file_exists(self, client):
-        """AC-001: Changelog tab appears when CHANGELOG.md exists and is parseable."""
+    async def test_ac003_list_hides_unreleased_and_paginates(self, client):
         with patch(
-            "app.routes.pages.parse_changelog",
-            return_value=[
-                ChangelogVersion(
-                    version="1.0.0",
-                    date="2026-01-26",
-                    sections={"Added": [ChangelogItem(text="Initial release")]},
-                )
-            ],
+            "app.api.endpoints.changelog.parse_changelog",
+            return_value=parse_changelog(content=VALID_CHANGELOG),
         ):
-            response = await client.get("/settings")
-            assert response.status_code == 200
-            assert "Changelog" in response.text
+            response = await client.get("/api/v1/changelog")
+        assert response.status_code == 200
+        body = response.json()
+        versions = [v["version"] for v in body["versions"]]
+        assert "Unreleased" not in versions
+        assert versions[:2] == ["1.7.0", "1.6.0"]
+        assert body["has_more"] is False
 
     @pytest.mark.anyio
-    async def test_ac006_changelog_tab_hidden_when_no_file(self, client):
-        """AC-006: Changelog tab hidden when CHANGELOG.md is missing."""
-        with patch("app.routes.pages.parse_changelog", return_value=[]):
-            response = await client.get("/settings")
-            assert response.status_code == 200
-            # The tab should not be rendered
-            assert (
-                "Changelog" not in response.text or "changelog-tab" not in response.text
-            )
-
-
-# ── HTMX Endpoint Tests (AC-003, AC-004) ────────────────────────────────
-
-
-class TestChangelogEndpoints:
-    """TASK-004: HTMX endpoint tests."""
-
-    @pytest.mark.anyio
-    async def test_ac003_get_changelog_list(self, client):
-        """AC-003: GET /htmx/changelog returns version accordion list."""
-        with patch(
-            "app.routes.pages.parse_changelog",
-            return_value=[
-                ChangelogVersion(
-                    version="1.7.0",
-                    date="2026-02-24",
-                    sections={"Added": [ChangelogItem(text="New feature")]},
-                ),
-                ChangelogVersion(
-                    version="1.6.0",
-                    date="2026-02-23",
-                    sections={"Fixed": [ChangelogItem(text="Bug fix")]},
-                ),
-            ],
-        ):
-            response = await client.get("/htmx/changelog")
-            assert response.status_code == 200
-            assert "1.7.0" in response.text
-            assert "1.6.0" in response.text
-
-    @pytest.mark.anyio
-    async def test_ac004_get_version_detail(self, client):
-        """AC-004: GET /htmx/changelog/{version} returns grouped sections."""
-        with patch(
-            "app.routes.pages.parse_changelog",
-            return_value=[
-                ChangelogVersion(
-                    version="1.7.0",
-                    date="2026-02-24",
-                    sections={
-                        "Added": [
-                            ChangelogItem(text="Setup guide"),
-                            ChangelogItem(text="Architecture diagram"),
-                        ],
-                        "Fixed": [ChangelogItem(text="E2E test isolation")],
-                    },
-                ),
-            ],
-        ):
-            response = await client.get("/htmx/changelog/1.7.0")
-            assert response.status_code == 200
-            assert "Added" in response.text
-            assert "Fixed" in response.text
-            assert "Setup guide" in response.text
-
-    @pytest.mark.anyio
-    async def test_ac004_version_not_found_returns_404(self, client):
-        """AC-004: Unknown version returns 404."""
-        with patch("app.routes.pages.parse_changelog", return_value=[]):
-            response = await client.get("/htmx/changelog/99.99.99")
-            assert response.status_code == 404
-
-
-# ── Current Badge Test (AC-005) ──────────────────────────────────────────
-
-
-class TestCurrentBadge:
-    """TASK-005: Current version badge."""
-
-    @pytest.mark.anyio
-    async def test_ac005_current_version_badge(self, client):
-        """AC-005: Version matching app version displays 'Current' badge."""
-        with (
-            patch(
-                "app.routes.pages.parse_changelog",
-                return_value=[
-                    ChangelogVersion(
-                        version="1.7.0",
-                        date="2026-02-24",
-                        sections={"Added": [ChangelogItem(text="New feature")]},
-                    ),
-                    ChangelogVersion(
-                        version="1.6.0",
-                        date="2026-02-23",
-                        sections={"Fixed": [ChangelogItem(text="Bug fix")]},
-                    ),
-                ],
-            ),
-            patch("app.routes.pages.get_settings") as mock_settings,
-        ):
-            settings_obj = mock_settings.return_value
-            settings_obj.app_version = "1.7.0"
-            response = await client.get("/htmx/changelog")
-            assert response.status_code == 200
-            assert "Current" in response.text
+    async def test_ac005_current_version_reported(self, client):
+        response = await client.get("/api/v1/changelog")
+        assert response.status_code == 200
+        assert response.json()["app_version"]

@@ -70,12 +70,8 @@ from app.routes import (
     pages,
     auth as htmx_auth,
     dashboard,
-    settings,
-    api_keys as htmx_api_keys,
-    webhooks as htmx_webhooks,
-    admin,
     spa,
-)  # noqa: E501
+)
 
 # Backward-compat re-exports — tests import these from app.main
 from app.templating import (  # noqa: F401
@@ -307,10 +303,6 @@ app.include_router(changelog.router, prefix="/api/v1")
 app.include_router(pages.router)
 app.include_router(htmx_auth.router)
 app.include_router(dashboard.router)
-app.include_router(settings.router)
-app.include_router(htmx_api_keys.router)
-app.include_router(htmx_webhooks.router)
-app.include_router(admin.router)
 
 
 # ---------------------------------------------------------------------------

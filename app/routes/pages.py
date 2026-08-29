@@ -1,8 +1,7 @@
 import logging
-from pathlib import Path
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import RedirectResponse
 from sqlmodel import Session
 
@@ -11,8 +10,6 @@ from app.csrf import generate_csrf_token
 from app.database import get_session
 from app.api.deps import OptionalUserDep
 from app.templating import templates
-from app.services.auth import role_at_least, ROLE_OPERATOR
-from app.services.changelog_parser import parse_changelog
 from app.services.oidc import get_oidc_config
 
 logger = logging.getLogger(__name__)
@@ -115,53 +112,17 @@ async def register_page(request: Request):
     return response
 
 
+# Settings moved into the SPA (specs/settings-ui.md AC-020). The old URLs stay
+# as redirects so bookmarks and the legacy Jinja nav keep working; the SPA
+# handles the ``#changelog`` fragment itself since fragments never reach us.
 @router.get("/settings")
-async def settings_page(request: Request, user: OptionalUserDep = None):
-    """Settings page — requires Operator+ role."""
-    if user and not role_at_least(user.role, ROLE_OPERATOR):
-        raise HTTPException(status_code=403, detail="Requires operator role")
-    changelog_versions = parse_changelog(path=Path("CHANGELOG.md"))
-    return templates.TemplateResponse(
-        request,
-        "settings.html",
-        context={"changelog_available": len(changelog_versions) > 0, "user": user},
-    )
+async def settings_redirect() -> RedirectResponse:
+    return RedirectResponse(url="/app/settings", status_code=302)
 
 
-@router.get("/htmx/changelog")
-async def htmx_changelog_list(request: Request, show_all: bool = False):
-    """HTMX partial: changelog version accordion list."""
-    versions = [
-        v
-        for v in parse_changelog(path=Path("CHANGELOG.md"))
-        if v.version != "Unreleased"
-    ]
-    current_settings = get_settings()
-    has_more = len(versions) > 5 and not show_all
-    display_versions = versions if show_all else versions[:5]
-    return templates.TemplateResponse(
-        request,
-        "partials/changelog_list.html",
-        context={
-            "versions": display_versions,
-            "app_version": current_settings.app_version,
-            "has_more": has_more,
-        },
-    )
-
-
-@router.get("/htmx/changelog/{version}")
-async def htmx_changelog_detail(request: Request, version: str):
-    """HTMX partial: expanded version content with grouped sections."""
-    versions = parse_changelog(path=Path("CHANGELOG.md"))
-    target = next((v for v in versions if v.version == version), None)
-    if target is None:
-        raise HTTPException(status_code=404, detail=f"Version {version} not found")
-    return templates.TemplateResponse(
-        request,
-        "partials/changelog_detail.html",
-        context={"version": target},
-    )
+@router.get("/admin/users")
+async def admin_users_redirect() -> RedirectResponse:
+    return RedirectResponse(url="/app/settings/users", status_code=302)
 
 
 @router.get("/forgot-password")

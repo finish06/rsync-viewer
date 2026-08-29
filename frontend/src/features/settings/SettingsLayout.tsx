@@ -1,4 +1,4 @@
-import { NavLink, Outlet } from "react-router";
+import { Navigate, NavLink, Outlet, useLocation } from "react-router";
 
 import { currentUser, hasRole, type Role } from "../../app/user";
 
@@ -64,6 +64,13 @@ export function SettingsLayout() {
       </div>
     </div>
   );
+}
+
+/** `/app/settings` lands on API keys; legacy `/settings#changelog` links keep working. */
+export function SettingsIndex() {
+  const { hash } = useLocation();
+  const section = hash === "#changelog" ? "changelog" : "api-keys";
+  return <Navigate to={`/app/settings/${section}`} replace />;
 }
 
 /** Guard for direct links to admin-only sections. */

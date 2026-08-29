@@ -720,7 +720,7 @@ class TestSyntheticSettingsUI:
     async def test_ac010_get_settings_partial_returns_html(
         self, test_engine, db_session
     ):
-        """GET /htmx/synthetic-settings returns HTML partial (admin only)."""
+        """GET /api/v1/settings/synthetic reports the in-process state (admin only)."""
         import os
         from datetime import timedelta
 
@@ -789,9 +789,13 @@ class TestSyntheticSettingsUI:
                 headers={"X-CSRF-Token": csrf_token},
                 cookies={"access_token": jwt_token, "csrf_token": csrf_token},
             ) as admin_client:
-                response = await admin_client.get("/htmx/synthetic-settings")
+                response = await admin_client.get("/api/v1/settings/synthetic")
             assert response.status_code == 200
-            assert "synthetic" in response.text.lower()
+            # ``enabled`` comes from the DB config; the runtime fields reflect
+            # the in-process state seeded above.
+            body = response.json()
+            assert body["last_status"] == "passing"
+            assert body["last_latency_ms"] == 42.5
         finally:
             sc_module._state = original_state
             app.dependency_overrides.clear()
@@ -799,7 +803,7 @@ class TestSyntheticSettingsUI:
 
     @pytest.mark.anyio
     async def test_ac010_post_toggle_updates_state(self, test_engine, db_session):
-        """POST /htmx/synthetic-settings toggles enable/disable (admin only)."""
+        """PUT /api/v1/settings/synthetic toggles enable/disable (admin only)."""
         import os
         from datetime import timedelta
         from unittest.mock import AsyncMock, patch
@@ -870,12 +874,12 @@ class TestSyntheticSettingsUI:
                 cookies={"access_token": jwt_token, "csrf_token": csrf_token},
             ) as admin_client:
                 with patch(
-                    "app.services.synthetic_check.start_synthetic_monitoring",
+                    "app.api.endpoints.settings.start_synthetic_monitoring",
                     AsyncMock(),
                 ):
-                    response = await admin_client.post(
-                        "/htmx/synthetic-settings",
-                        data={"enabled": "on", "interval": "120"},
+                    response = await admin_client.put(
+                        "/api/v1/settings/synthetic",
+                        json={"enabled": True, "interval_seconds": 120},
                     )
             assert response.status_code == 200
         finally:

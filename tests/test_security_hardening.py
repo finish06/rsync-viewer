@@ -281,32 +281,46 @@ class TestCsrfProtection:
     async def test_ac011_form_post_without_csrf_rejected(
         self, client, test_engine, db_session
     ):
-        """State-changing form POST without CSRF token is rejected."""
+        """Cookie-authenticated API POST without CSRF token is rejected."""
         from httpx import ASGITransport, AsyncClient
         from app.main import app
         from app.database import get_session
+        from app.models.user import User
+        from app.services.auth import hash_password, ROLE_OPERATOR
+        from tests.conftest import _make_test_jwt
 
-        # Use a client WITHOUT CSRF tokens
+        user = User(
+            username="csrf-form-user",
+            email="csrf-form@test.local",
+            password_hash=hash_password("TestPass1!"),
+            role=ROLE_OPERATOR,
+        )
+        db_session.add(user)
+        db_session.flush()
+
         def get_test_session():
             yield db_session
 
         app.dependency_overrides[get_session] = get_test_session
 
+        # Session cookie but NO CSRF cookie/header
         async with AsyncClient(
             transport=ASGITransport(app=app),
             base_url="http://test",
+            cookies={
+                "access_token": _make_test_jwt(str(user.id), user.username, user.role)
+            },
         ) as no_csrf_client:
             response = await no_csrf_client.post(
-                "/htmx/webhooks",
-                data={"name": "test", "url": "http://example.com"},
+                "/api/v1/webhooks",
+                json={"name": "test", "url": "http://example.com"},
             )
-            # Should be rejected (403 Forbidden) without CSRF token
             assert response.status_code == 403
 
     async def test_ac011c_htmx_post_without_csrf_header_rejected(
         self, test_engine, db_session
     ):
-        """AC-011c: HTMX POST to CSRF-protected path without X-CSRF-Token returns 403."""
+        """AC-011c: cookie-authenticated API POST without X-CSRF-Token returns 403."""
         import os
         from httpx import ASGITransport, AsyncClient
         from app.main import app
@@ -345,8 +359,8 @@ class TestCsrfProtection:
             cookies={"access_token": jwt_token},
         ) as no_csrf_client:
             response = await no_csrf_client.post(
-                "/htmx/api-keys",
-                data={"name": "test-key"},
+                "/api/v1/api-keys",
+                json={"name": "test-key"},
             )
             assert response.status_code == 403
             body = response.json()
@@ -358,11 +372,11 @@ class TestCsrfProtection:
     async def test_ac011a_htmx_post_with_csrf_header_succeeds(
         self, client, test_engine, db_session
     ):
-        """AC-011a: HTMX POST with matching X-CSRF-Token header and cookie succeeds."""
+        """AC-011a: API POST with matching X-CSRF-Token header and cookie succeeds."""
         # The default client fixture has both csrf_token cookie and X-CSRF-Token header
         response = await client.post(
-            "/htmx/api-keys",
-            data={"name": "csrf-ok-key"},
+            "/api/v1/api-keys",
+            json={"name": "csrf-ok-key"},
         )
         # Should NOT be 403 — CSRF passes; may be 200 or other success code
         assert response.status_code != 403
@@ -370,7 +384,7 @@ class TestCsrfProtection:
     async def test_ac011c_htmx_delete_without_csrf_rejected(
         self, test_engine, db_session
     ):
-        """AC-011c: HTMX DELETE to CSRF-protected path without token returns 403."""
+        """AC-011c: cookie-authenticated API DELETE without token returns 403."""
         import os
         from httpx import ASGITransport, AsyncClient
         from app.main import app
@@ -408,7 +422,7 @@ class TestCsrfProtection:
             cookies={"access_token": jwt_token},
         ) as no_csrf_client:
             response = await no_csrf_client.delete(
-                "/htmx/api-keys/00000000-0000-0000-0000-000000000000",
+                "/api/v1/api-keys/00000000-0000-0000-0000-000000000000",
             )
             assert response.status_code == 403
             body = response.json()
@@ -461,8 +475,8 @@ class TestCsrfProtection:
             cookies={"csrf_token": cookie_token, "access_token": jwt_token},
         ) as client:
             response = await client.post(
-                "/htmx/api-keys",
-                data={"name": "mismatch-key"},
+                "/api/v1/api-keys",
+                json={"name": "mismatch-key"},
             )
             assert response.status_code == 403
             body = response.json()
