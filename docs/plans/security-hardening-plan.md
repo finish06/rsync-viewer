@@ -37,11 +37,13 @@ GREEN
 - `alembic revision -m "add api_keys active/prefix index"` → `alembic/versions/<rev>_add_api_keys_active_prefix_index.py`
   - `upgrade`: `op.create_index("ix_api_keys_active_prefix", "api_keys", ["is_active", "key_prefix"])`
   - `downgrade`: `op.drop_index(...)`
-- `.github/workflows/ci.yml` test job: after pytest, run `docker compose -f docker-compose.dev.yml run --rm test alembic check`.
+- CI: no separate step needed — the drift test runs inside the existing pytest job (the `postgres` superuser in `docker-compose.dev.yml` can `CREATE DATABASE`).
 
 VERIFY: `alembic upgrade head && alembic check` locally; full suite.
 
-Files: `alembic/versions/<new>.py` (create), `tests/test_migrations.py` (create), `.github/workflows/ci.yml` (modify).
+Files: `alembic/versions/b7c2d9e1f3a4_add_api_keys_active_prefix_index.py` (create), `tests/test_migrations.py` (create), `CHANGELOG.md`.
+
+**Status: DONE** — commits `9abc1c2` (fix) and `e8b846f` (docs) on `feature/performance-optimization`. Implementation notes: the test builds `alembic.config.Config()` without `alembic.ini` because `env.py`'s `fileConfig()` call reconfigures logging with `disable_existing_loggers=True` and silently broke two `caplog`-based retention tests that ran later in the suite. A local, untracked `.git/hooks/pre-commit` already runs ruff + the full pytest suite (~2 min); Phase 2.4's pre-commit item should be reframed as "version the hook via `.pre-commit-config.yaml`" rather than "add one".
 
 ---
 
@@ -83,7 +85,9 @@ GREEN
 
 VERIFY: full suite; confirm the settings page (already operator-gated at `pages.py:142`) still loads its webhook partial for operators.
 
-Files: `app/api/endpoints/analytics.py`, `monitors.py`, `failures.py`, `webhooks.py`; `app/routes/webhooks.py`; `app/api/deps.py` (docstring); `tests/conftest.py` (viewer fixture); four test files.
+Files: `app/api/endpoints/analytics.py`, `monitors.py`, `failures.py`, `webhooks.py`; `app/routes/webhooks.py`; `app/api/deps.py` (docstring); `tests/test_security_hardening_v2.py` (new; viewer fixtures live there rather than in conftest).
+
+**Status: DONE** (branch `fix/api-rbac-gaps`). Implementation notes: the analytics guard is router-level (`dependencies=[...]`). Adding the guard to `htmx_webhooks_list` broke 13 existing tests because the create/update/delete/toggle handlers re-render the list by calling the route function directly (`await htmx_webhooks_list(request, session)`), which passed `user=None`. Extracted `_render_webhook_list(request, session)` (no auth) and pointed the four call sites at it — a small instance of the Phase 3.3 "handlers calling handlers" cleanup.
 
 ---
 

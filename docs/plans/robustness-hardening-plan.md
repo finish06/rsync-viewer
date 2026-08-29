@@ -137,7 +137,7 @@ ignore_missing_imports = true
 
 ### 2.4 Pre-commit and CI
 - `.pre-commit-config.yaml`: ruff check --fix, ruff format, mypy, gitleaks (or detect-secrets), check-added-large-files, end-of-file-fixer, conventional-pre-commit. Gate 1 currently depends on humans remembering to run ruff.
-- `ci.yml`: add gitleaks step; add `alembic check` (from 0.4); add an E2E job using `tests/e2e/docker-compose.e2e.yml` on PRs to `main` (77 Playwright tests never run in CI); scope `permissions: contents: write, packages: write` to the `build-push` job only; pin actions to SHAs; add a Trivy/Grype scan after build.
+- `ci.yml`: GitHub auto-disabled this workflow for 60-day inactivity (found 2026-08-27; re-enabled with `gh workflow enable CI`). Either accept that a `gh workflow enable` may be needed after quiet periods, or add a `workflow_dispatch` trigger so runs can be started manually without close/reopen tricks. Add gitleaks step; add `alembic check` (from 0.4); add an E2E job using `tests/e2e/docker-compose.e2e.yml` on PRs to `main` (77 Playwright tests never run in CI); scope `permissions: contents: write, packages: write` to the `build-push` job only; pin actions to SHAs; add a Trivy/Grype scan after build.
 
 ### 2.5 Tests
 - `.add/config.json` says `unit: pytest tests/unit/` and `integration: pytest tests/integration/`, but `tests/integration/` is empty and ~45 test files sit flat in `tests/`. Either move files into `unit/`/`integration/` or fix the config so the gate command runs the whole suite.
@@ -198,6 +198,7 @@ Every feature is implemented twice with logic in handlers. `registration.py`, `s
 - `routes/settings.py:346-371` imports `engine` directly and starts/stops the background task from a request handler.
 
 ### 3.6 Small cleanups
+- `asyncio.get_event_loop()` inside coroutines (`routes/auth.py`, `api/endpoints/auth.py`, `api/deps.py`) → `asyncio.get_running_loop()`.
 - 32 imports inside function bodies (`synthetic_check.py`, `settings.py`, `oidc.py`, `users.py`, `main.py:322`) — none are real cycles; hoist them.
 - Delete the `main.py:73-81` re-export shim and update tests to import from `app.templating`; drop the module-level `_start_time`/`_hostname` fallbacks duplicating `app.state`.
 - Naming: `*Read` vs `*Response` schemas; `settings_cfg`/`settings`/`current_settings`; `_form_str()` vs `str(form.get())`.

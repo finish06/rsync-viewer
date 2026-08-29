@@ -6,12 +6,13 @@ import logging
 from datetime import date, datetime
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import StreamingResponse
 from sqlmodel import select, func, case, col, extract
 
-from app.api.deps import SessionDep
+from app.api.deps import SessionDep, require_role_or_api_key
 from app.models.sync_log import SyncLog
+from app.services.auth import ROLE_VIEWER
 from app.services.synthetic_check import SYNTHETIC_SOURCE_NAME
 from app.schemas.analytics import (
     ExportRecord,
@@ -23,7 +24,12 @@ from app.schemas.analytics import (
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/analytics", tags=["analytics"])
+# Router-level auth so a new analytics endpoint cannot be added unauthenticated
+router = APIRouter(
+    prefix="/analytics",
+    tags=["analytics"],
+    dependencies=[Depends(require_role_or_api_key(ROLE_VIEWER))],
+)
 
 MAX_EXPORT_LIMIT = 10000
 

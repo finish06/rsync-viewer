@@ -55,7 +55,14 @@ async def htmx_webhooks_list(
     session: Session = Depends(get_session),
     user: OptionalUserDep = None,
 ):
-    """HTMX partial: webhook list table."""
+    """HTMX partial: webhook list table. Requires Operator+ (URLs are secrets)."""
+    if not user or not role_at_least(user.role, ROLE_OPERATOR):
+        raise HTTPException(status_code=403, detail="Requires operator role")
+    return await _render_webhook_list(request, session)
+
+
+async def _render_webhook_list(request: Request, session: Session):
+    """Render the webhook list partial. Callers must have checked the role."""
     webhooks_list = session.exec(
         select(WebhookEndpoint).order_by(WebhookEndpoint.name)
     ).all()
@@ -169,16 +176,21 @@ async def htmx_webhook_create(
     logger.info("Webhook created via UI", extra={"webhook_name": name})
 
     # Return updated list with closeModal trigger
-    response = await htmx_webhooks_list(request, session)
+    response = await _render_webhook_list(request, session)
     response.headers["HX-Trigger"] = "closeModal"
     return response
 
 
 @router.get("/htmx/webhooks/{webhook_id}/edit")
 async def htmx_webhook_edit_form(
-    request: Request, webhook_id: UUID, session: Session = Depends(get_session)
+    request: Request,
+    webhook_id: UUID,
+    session: Session = Depends(get_session),
+    user: OptionalUserDep = None,
 ):
-    """HTMX partial: pre-filled webhook edit form."""
+    """HTMX partial: pre-filled webhook edit form. Requires Operator+ role."""
+    if not user or not role_at_least(user.role, ROLE_OPERATOR):
+        raise HTTPException(status_code=403, detail="Requires operator role")
     webhook = session.get(WebhookEndpoint, webhook_id)
     if not webhook:
         return HTMLResponse("<p>Webhook not found.</p>", status_code=404)
@@ -300,7 +312,7 @@ async def htmx_webhook_update(
 
     logger.info("Webhook updated via UI", extra={"webhook_id": str(webhook_id)})
 
-    response = await htmx_webhooks_list(request, session)
+    response = await _render_webhook_list(request, session)
     response.headers["HX-Trigger"] = "closeModal"
     return response
 
@@ -324,7 +336,7 @@ async def htmx_webhook_delete(
 
     logger.info("Webhook deleted via UI", extra={"webhook_id": str(webhook_id)})
 
-    return await htmx_webhooks_list(request, session)
+    return await _render_webhook_list(request, session)
 
 
 @router.post("/htmx/webhooks/{webhook_id}/toggle")
@@ -346,7 +358,7 @@ async def htmx_webhook_toggle(
     session.add(webhook)
     session.commit()
 
-    return await htmx_webhooks_list(request, session)
+    return await _render_webhook_list(request, session)
 
 
 @router.post("/htmx/webhooks/{webhook_id}/test")

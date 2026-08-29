@@ -7,20 +7,36 @@ and this project adheres to [Conventional Commits](https://www.conventionalcommi
 
 ## [Unreleased]
 
+## [2.6.2] - 2026-08-28
+
+Consolidated release notes: versions 2.4.0 through 2.6.1 were auto-tagged from
+`main` without changelog sections, so everything since 2.3.1 is listed here.
+
+### Security
+
+- **Analytics API requires authentication** — `/api/v1/analytics/{summary,sources,export}` returned data to anonymous callers; now viewer role or a valid API key is required (router-level guard)
+- **Monitors and failures endpoints enforce roles** — accept API key *or* JWT; reads need viewer, monitor mutations need operator (viewer-scoped keys previously could create/delete monitors)
+- **Webhook URLs and headers hidden from viewers** — `GET /api/v1/webhooks`, `/htmx/webhooks`, and `/htmx/webhooks/{id}/edit` now require operator (URLs and auth headers are secrets)
+
 ### Added
 
 - Persist user theme preferences in database (server-side injection, fire-and-forget PATCH)
 - Add `/version` endpoint with build and runtime metadata
 - Add pip-audit security scanning to CI pipeline
 - Externalize app version via `APP_VERSION` env var
+- Migration-drift test: upgrade a fresh database to head and run `alembic check` in the suite
+- Robustness review plan (`docs/plans/robustness-hardening-plan.md`) and `specs/security-hardening-v2.md`
 
 ### Changed
 
 - Extract shared helpers and eliminate code duplication (P3 refactoring)
+- Defer `raw_content` and `file_list` on list queries; offload login bcrypt to the thread pool; composite index on `api_keys(is_active, key_prefix)`
+- Pin `ruff==0.15.2` in CI and dev requirements (unquoted `ruff>=0.3.0` was a shell redirect installing latest)
 
 ### Fixed
 
-- Add missing Alembic migration for `ix_api_keys_active_prefix` index and a migration-drift test (`alembic check` against a fresh database)
+- Add missing Alembic migration for `ix_api_keys_active_prefix` index (the model declared it but production never received it)
+- CI: upgrade runner setuptools before `pip-audit`; make `test_send_email_async_delegates` a native async test (pytest-asyncio 1.4 compatibility)
 - Prevent grep exit code 1 from failing CI auto-tag step
 - Security and performance review findings (P0+P1)
 - Resolve verify findings — CVEs, mypy errors, coverage gaps, stale branches
