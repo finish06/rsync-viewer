@@ -4,7 +4,7 @@ import { useSourcesHealth, useSyncLogs } from "../../api/hooks";
 import { EmptyNote, ErrorCard, Panel, Skeleton } from "../../components/Panel";
 import { ActivityStrip } from "./ActivityStrip";
 import { NewThisWeek } from "./NewThisWeek";
-import { SourceCard } from "./SourceCard";
+import { SourceGrid } from "./SourceGrid";
 
 const ACTIVITY_DAYS = 7;
 
@@ -38,11 +38,7 @@ export function OverviewPage() {
         )}
         {noSourcesEver && <WaitingForFirstSync />}
         {health.isSuccess && health.data.length > 0 && (
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {health.data.map((source) => (
-              <SourceCard key={source.source_name} source={source} />
-            ))}
-          </div>
+          <SourceGrid sources={health.data} />
         )}
       </Panel>
 

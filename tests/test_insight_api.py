@@ -223,3 +223,18 @@ class TestAC005SourcesHealth:
                 "/api/v1/sources/health?days=0"
             )
         ).status_code == 422
+
+
+class TestAC008ListExposesExitCode:
+    """AC-008/AC-009: list views must be able to mark failed transfers."""
+
+    async def test_ac008_sync_log_list_items_include_exit_code(
+        self, client, create_sync_log
+    ):
+        create_sync_log(source_name="nas", exit_code=11)
+        create_sync_log(source_name="ok", exit_code=0)
+        resp = await client.get("/api/v1/sync-logs?limit=10")
+        assert resp.status_code == 200
+        by_source = {i["source_name"]: i for i in resp.json()["items"]}
+        assert by_source["nas"]["exit_code"] == 11
+        assert by_source["ok"]["exit_code"] == 0

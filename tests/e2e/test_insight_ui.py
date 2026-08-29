@@ -4,6 +4,7 @@ TC-001 (overview glance), TC-008 (deep link while logged out), TC-009 (mobile).
 Screenshots: tests/screenshots/insight-ui/
 """
 
+import re
 import uuid
 from pathlib import Path
 
@@ -11,7 +12,9 @@ from playwright.sync_api import Page, expect
 
 from tests.e2e.conftest import BASE_URL, ingest_sync_log
 
-SCREENSHOTS = Path("tests/screenshots/insight-ui")
+SCREENSHOTS = (
+    Path(__file__).resolve().parents[2] / "tests" / "screenshots" / "insight-ui"
+)
 
 
 def _shot(page: Page, name: str) -> None:
@@ -31,7 +34,7 @@ class TestOverview:
         pill = admin_page.get_by_test_id("liveness-pill")
         expect(pill).to_be_visible()
         expect(pill).to_have_attribute(
-            "data-status", r"passing|failing|unknown|disabled"
+            "data-status", re.compile(r"passing|failing|unknown|disabled")
         )
 
         card = admin_page.get_by_test_id("source-card").filter(has_text=source)
