@@ -1,0 +1,130 @@
+@import "tailwindcss";
+
+/* Theme tokens — same palette as app/static/css/styles.css so the SPA and the
+   server-rendered settings/admin pages look like one product. Dark mode is the
+   data-theme attribute set by the bootstrap script in index.html. */
+:root {
+  --bg: #f9fafb;
+  --bg-secondary: #f3f4f6;
+  --card: #ffffff;
+  --border: #e5e7eb;
+  --text: #111827;
+  --muted: #6b7280;
+  --primary: #2563eb;
+  --primary-hover: #1d4ed8;
+  --ok: #10b981;
+  --warn: #f59e0b;
+  --danger: #ef4444;
+  --neutral: #9ca3af;
+  --code-bg: #1f2937;
+  --code-text: #f9fafb;
+  --ring: rgba(37, 99, 235, 0.25);
+}
+
+[data-theme="dark"] {
+  --bg: #111827;
+  --bg-secondary: #1f2937;
+  --card: #1f2937;
+  --border: #374151;
+  --text: #f9fafb;
+  --muted: #9ca3af;
+  --primary: #3b82f6;
+  --primary-hover: #2563eb;
+  --ok: #34d399;
+  --warn: #fbbf24;
+  --danger: #f87171;
+  --neutral: #6b7280;
+  --code-bg: #0f172a;
+  --code-text: #e2e8f0;
+  --ring: rgba(59, 130, 246, 0.35);
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-bg-secondary: var(--bg-secondary);
+  --color-card: var(--card);
+  --color-border: var(--border);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-ok: var(--ok);
+  --color-warn: var(--warn);
+  --color-danger: var(--danger);
+  --color-neutral: var(--neutral);
+  --color-code-bg: var(--code-bg);
+  --color-code-text: var(--code-text);
+  --font-sans:
+    system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", monospace;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Status colours by data attribute so components stay declarative */
+[data-status="ok"] {
+  --status: var(--ok);
+}
+[data-status="failed"] {
+  --status: var(--danger);
+}
+[data-status="stale"] {
+  --status: var(--warn);
+}
+[data-status="never"],
+[data-status="disabled"],
+[data-status="unknown"] {
+  --status: var(--neutral);
+}
+[data-status="passing"] {
+  --status: var(--ok);
+}
+[data-status="failing"] {
+  --status: var(--danger);
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--bg-secondary) 25%,
+    var(--border) 50%,
+    var(--bg-secondary) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+  border-radius: 0.375rem;
+}
+
+@keyframes shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+  }
+}
