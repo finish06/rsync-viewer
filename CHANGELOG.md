@@ -7,6 +7,8 @@ and this project adheres to [Conventional Commits](https://www.conventionalcommi
 
 ## [Unreleased]
 
+## [2.7.0] - 2026-08-29
+
 ### Added
 
 - Insight UI backend (M16, `specs/insight-ui.md`): `GET /api/v1/synthetic/status` and `/synthetic/history` (liveness + uptime), `GET /api/v1/sources/health` (per-source status, failure streak, 14-day daily series), and `/app` SPA shell routes served from `SPA_DIST_DIR`
