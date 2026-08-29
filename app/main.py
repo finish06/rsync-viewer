@@ -25,6 +25,8 @@ from app.api.endpoints import (
     auth,
     api_keys,
     users,
+    synthetic,
+    sources,
 )
 from app.errors import make_error_response, INTERNAL_ERROR, VALIDATION_ERROR
 from app.logging_config import setup_logging
@@ -68,6 +70,7 @@ from app.routes import (
     api_keys as htmx_api_keys,
     webhooks as htmx_webhooks,
     admin,
+    spa,
 )  # noqa: E501
 
 # Backward-compat re-exports — tests import these from app.main
@@ -287,6 +290,11 @@ app.include_router(analytics.router, prefix="/api/v1")
 app.include_router(auth.router, prefix="/api/v1")
 app.include_router(api_keys.router, prefix="/api/v1")
 app.include_router(users.router, prefix="/api/v1")
+app.include_router(synthetic.router, prefix="/api/v1")
+app.include_router(sources.router, prefix="/api/v1")
+
+# React SPA shell (specs/insight-ui.md AC-022)
+app.include_router(spa.router)
 
 # HTMX / UI route modules (AC-001, AC-002)
 app.include_router(pages.router)

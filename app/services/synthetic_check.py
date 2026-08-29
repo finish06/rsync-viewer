@@ -50,7 +50,8 @@ total size is 100  speedup is 0.54"""
 
 MINIMUM_INTERVAL_SECONDS = 30
 REQUEST_TIMEOUT_SECONDS = 10.0
-MAX_RESULT_ROWS = 100
+# Seven days at the 5-minute default interval, so 24h/7d uptime is meaningful
+MAX_RESULT_ROWS = 2016
 
 
 @dataclass

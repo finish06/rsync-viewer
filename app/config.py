@@ -41,6 +41,7 @@ class Settings(BaseSettings):
     )
     app_version: str = "dev"
     base_url: str = "http://127.0.0.1:8000"  # Used by synthetic monitoring
+    spa_dist_dir: str = "app/static/app"  # Vite build output served at /app
 
     @property
     def effective_encryption_key(self) -> str:

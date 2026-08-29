@@ -59,6 +59,11 @@ TODO/
 scripts/migrate_api_keys.py
 scripts/full_schema_sync.py
 
+# Frontend build output (produced by `npm run build` / Docker node stage)
+app/static/app/
+frontend/node_modules/
+frontend/coverage/
+
 # ADD — ephemeral artifacts (don't commit)
 .add/away-logs/
 tests/screenshots/errors/
