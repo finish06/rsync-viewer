@@ -310,3 +310,35 @@ def create_sync_log(db_session: Session):
         return sync_log
 
     return _create
+
+
+@pytest.fixture(scope="session", autouse=True)
+def spa_index_stub(tmp_path_factory):
+    """Point SPA_DIST_DIR at a stub index.html so "/" and "/app" work without a build.
+
+    Uses the real frontend/index.html (bootstrap script included) when present,
+    otherwise a minimal stand-in with the same head markers.
+    """
+    from pathlib import Path
+
+    source = Path("frontend/index.html")
+    dist = tmp_path_factory.mktemp("spa")
+    if source.is_file():
+        html = source.read_text(encoding="utf-8")
+    else:
+        html = (
+            "<!doctype html><html><head><script>"
+            'var theme = localStorage.getItem("theme");'
+            'document.documentElement.setAttribute("data-theme", theme);'
+            '</script></head><body><div id="root"></div></body></html>'
+        )
+    (dist / "index.html").write_text(html, encoding="utf-8")
+    previous = os.environ.get("SPA_DIST_DIR")
+    os.environ["SPA_DIST_DIR"] = str(dist)
+    get_settings.cache_clear()
+    yield dist
+    if previous is None:
+        os.environ.pop("SPA_DIST_DIR", None)
+    else:
+        os.environ["SPA_DIST_DIR"] = previous
+    get_settings.cache_clear()

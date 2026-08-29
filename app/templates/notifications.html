@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block title %}Notifications - Rsync Log Viewer{% endblock %}
+
+{% block content %}
+<section class="settings-section">
+    <h2>Notifications</h2>
+    <p class="text-muted">Webhook delivery history. Live activity, transfers, and trends moved to the <a href="/">dashboard</a>.</p>
+    <div id="notifications-container"
+         hx-get="/htmx/notifications"
+         hx-trigger="load"
+         hx-swap="innerHTML">
+        <p>Loading notifications…</p>
+    </div>
+</section>
+{% endblock %}

@@ -144,11 +144,11 @@ Production deployment is to a self-hosted homelab server. No staging environment
 | Cut-over: `/` serves the SPA; legacy tabs removed | 1d | Settings/admin/login links preserved |
 
 **Success criteria:**
-- [ ] "Is everything OK?" answerable from the overview in under 2 seconds without a click
-- [ ] Any transfer's files and failure details reachable in ≤ 2 clicks from the overview
-- [ ] New shows/movies from the last 7 days listed by title, not by file path
-- [ ] Synthetic uptime (%) and last-check age visible on every page header
-- [ ] Existing Playwright E2E suite green against the SPA; SPA unit coverage ≥ 80%
+- [x] "Is everything OK?" answerable from the overview in under 2 seconds without a click (TC-001, `tests/screenshots/insight-ui/step-01-overview.png`)
+- [x] Any transfer's files and failure details reachable in ≤ 2 clicks from the overview (TC-002)
+- [x] New shows/movies from the last 7 days listed by title, not by file path (TC-005)
+- [x] Synthetic uptime (%) and last-check age visible on every page header (AC-001, liveness pill)
+- [ ] Existing Playwright E2E suite green against the SPA; SPA unit coverage ≥ 80% (unit coverage 88 %; E2E rewrite in C6 — verify on merge)
 
 #### M12: "See Everything" (Weeks 1–3)
 Unlock existing backend capabilities + nail the first impression.

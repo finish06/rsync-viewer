@@ -81,41 +81,6 @@ def create_notification(db_session, create_webhook):
 # === Analytics Tab Tests (AC-011 through AC-014) ===
 
 
-class TestAnalyticsQuickSelect:
-    """AC-011: Analytics tab displays quick-select buttons."""
-
-    async def test_ac011_analytics_has_quick_select_buttons(self, client):
-        """AC-011: Analytics partial contains quick-select buttons."""
-        response = await client.get("/htmx/analytics")
-        assert response.status_code == 200
-        html = response.text
-        assert "quick-select" in html
-        assert "Last 7 Days" in html
-        assert "Last 30 Days" in html
-        assert "Max" in html
-        assert "Custom" in html
-
-    async def test_ac020_analytics_uses_correct_css_classes(self, client):
-        """AC-020: Analytics quick-select uses .quick-select and .quick-select-btn classes."""
-        response = await client.get("/htmx/analytics")
-        html = response.text
-        assert "quick-select-btn" in html
-
-
-class TestAnalyticsDefaultRange:
-    """AC-014: Analytics defaults to Last 30 Days."""
-
-    async def test_ac014_analytics_default_30d(self, client):
-        """AC-014: Analytics quick-select defaults to 30d active."""
-        response = await client.get("/htmx/analytics")
-        html = response.text
-        # The 30d button should have the active class by default
-        assert 'data-range="30d"' in html
-
-
-# === Notifications Tab Tests (AC-015 through AC-019) ===
-
-
 class TestNotificationsQuickSelect:
     """AC-015: Notifications tab displays quick-select buttons."""
 

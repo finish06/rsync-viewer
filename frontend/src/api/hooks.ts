@@ -12,6 +12,7 @@ import type {
   SyncLogDetail,
   SyntheticCheck,
   SyntheticStatus,
+  UserPreferences,
 } from "./types";
 
 export const queryKeys = {
@@ -140,6 +141,15 @@ export function useMediaNew(days = 7, kind?: "show" | "movie") {
     queryKey: queryKeys.mediaNew(days, kind),
     queryFn: () =>
       fetchJson<MediaNewResponse>(`/media/new${buildQuery({ days, kind })}`),
+  });
+}
+
+/** Stored user preferences (theme) — applied on load so a new browser matches the server. */
+export function usePreferences() {
+  return useQuery({
+    queryKey: ["users", "me", "preferences"] as const,
+    queryFn: () => fetchJson<UserPreferences>("/users/me/preferences"),
+    staleTime: Infinity,
   });
 }
 

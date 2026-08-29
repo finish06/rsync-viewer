@@ -10,7 +10,13 @@
       // then localStorage, then system — applied before first paint.
       (function () {
         try {
-          var theme = localStorage.getItem("theme") || "system";
+          // window.__USER_THEME__ is injected by the server for signed-in users
+          var theme = window.__USER_THEME__ || localStorage.getItem("theme") || "system";
+          if (window.__USER_THEME__) {
+            try {
+              localStorage.setItem("theme", window.__USER_THEME__);
+            } catch (e) {}
+          }
           var dark =
             theme === "dark" ||
             (theme === "system" &&

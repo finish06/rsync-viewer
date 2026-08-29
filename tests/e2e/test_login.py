@@ -85,12 +85,11 @@ class TestLoginFlow:
         admin_page.goto(f"{BASE_URL}/")
         admin_page.wait_for_load_state("networkidle")
 
-        # Find and click logout (typically a form POST)
-        logout = admin_page.locator('a[href="/logout"], form[action="/logout"] button')
-        if logout.count() > 0:
-            logout.first.click()
-            admin_page.wait_for_url("**/login*", timeout=10000)
-            assert "/login" in admin_page.url
+        # Logout lives in the SPA's secondary menu (specs/insight-ui.md AC-023)
+        admin_page.get_by_role("button", name="Settings menu").click()
+        admin_page.get_by_role("menuitem", name="Log out").click()
+        admin_page.wait_for_url("**/login*", timeout=10000)
+        assert "/login" in admin_page.url
 
 
 class TestLoginErrors:

@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { NavLink, Outlet } from "react-router";
 
+import { usePreferences } from "../api/hooks";
+import { currentUser, hasRole, type Role } from "./user";
 import { LivenessPill } from "../features/liveness/LivenessPill";
 import { ThemeToggle } from "./ThemeToggle";
 
@@ -14,11 +16,29 @@ export const NAV = [
   { to: "/app/uptime", label: "Uptime" },
 ];
 
-const SECONDARY = [
-  { href: "/settings", label: "Settings" },
-  { href: "/admin/users", label: "Users" },
+const SECONDARY: { href: string; label: string; minRole?: Role }[] = [
+  { href: "/notifications", label: "Notifications" },
+  { href: "/settings", label: "Settings", minRole: "operator" },
+  { href: "/admin/users", label: "Users", minRole: "admin" },
   { href: "/settings#changelog", label: "Changelog" },
 ];
+
+/** Apply the server-stored theme once per load; the toggle keeps localStorage in sync afterwards. */
+function useStoredTheme() {
+  const prefs = usePreferences();
+  useEffect(() => {
+    const theme = prefs.data?.theme;
+    if (!theme) return;
+    if (theme === "dark")
+      document.documentElement.setAttribute("data-theme", "dark");
+    else document.documentElement.removeAttribute("data-theme");
+    try {
+      localStorage.setItem("theme", theme);
+    } catch {
+      // storage unavailable
+    }
+  }, [prefs.data?.theme]);
+}
 
 function navClass({ isActive }: { isActive: boolean }): string {
   return [
@@ -28,6 +48,7 @@ function navClass({ isActive }: { isActive: boolean }): string {
 }
 
 export function Shell() {
+  useStoredTheme();
   return (
     <div className="min-h-screen bg-bg text-text">
       <header className="sticky top-0 z-20 border-b border-border bg-card/95 backdrop-blur">
@@ -84,6 +105,12 @@ export function Shell() {
 function SecondaryMenu() {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const user = currentUser();
+  // Without injected context (e.g. the Vite dev server) show everything;
+  // the server enforces the role on each destination anyway.
+  const items = SECONDARY.filter(
+    (item) => !user || !item.minRole || hasRole(user, item.minRole),
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -112,7 +139,12 @@ function SecondaryMenu() {
           role="menu"
           className="card absolute right-0 mt-1 w-44 overflow-hidden py-1 shadow-lg"
         >
-          {SECONDARY.map((item) => (
+          {user && (
+            <div className="border-b border-border px-3 py-1.5 text-xs text-muted">
+              {user.username} · {user.role}
+            </div>
+          )}
+          {items.map((item) => (
             <a
               key={item.href}
               role="menuitem"

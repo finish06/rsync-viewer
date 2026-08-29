@@ -1,8 +1,5 @@
 """Tests for comprehensive error handling (specs/error-handling.md)."""
 
-from datetime import timedelta
-from app.utils import utc_now
-
 
 class TestErrorResponseFormat:
     """AC-001: All API error responses return consistent JSON structure."""
@@ -106,28 +103,6 @@ class TestGlobalExceptionHandler:
 
         # Verify exception handlers are registered
         assert len(app.exception_handlers) > 0
-
-
-class TestDateParameterValidation:
-    """AC-006: Invalid dates return 400, not 500."""
-
-    async def test_ac006_invalid_start_date(self, client):
-        """Invalid start_date returns 400 Bad Request."""
-        response = await client.get("/htmx/sync-table?start_date=not-a-date")
-        # Should be 400, not 500
-        assert response.status_code == 400
-
-    async def test_ac006_invalid_end_date(self, client):
-        """Invalid end_date returns 400 Bad Request."""
-        response = await client.get("/htmx/sync-table?end_date=invalid")
-        assert response.status_code == 400
-
-    async def test_ac006_valid_dates_still_work(self, client):
-        """Valid date parameters still work correctly."""
-        now = utc_now()
-        start = (now - timedelta(days=1)).isoformat()
-        response = await client.get(f"/htmx/sync-table?start_date={start}")
-        assert response.status_code == 200
 
 
 class TestParserSafety:

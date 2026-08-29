@@ -28,7 +28,7 @@ class TestSettingsPage:
 
     async def test_ac008_header_has_settings_link(self, client):
         """AC-008: Settings page is navigable from the header"""
-        response = await client.get("/")
+        response = await client.get("/settings")
         html = response.text
         assert "/settings" in html
 

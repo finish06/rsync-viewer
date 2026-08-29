@@ -286,7 +286,7 @@ class TestAdminAccess:
     async def test_ac006_admin_shows_role_badge(self, db_session, admin_user):
         client = _make_cookie_client(db_session, admin_user)
         resp = await client.get("/")
-        assert "role-admin" in resp.text
+        assert '"role": "admin"' in resp.text
         await client.aclose()
         app.dependency_overrides.clear()
 

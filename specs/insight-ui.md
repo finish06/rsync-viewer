@@ -3,7 +3,7 @@
 **Version:** 0.1.0
 **Created:** 2026-08-29
 **PRD Reference:** docs/prd.md §5 (frontend architecture decision), §6 M16
-**Status:** SPECCED (awaiting human review)
+**Status:** IMPLEMENTED — C1–C6 (2026-08-29); UX artifact still awaiting human sign-off
 **Milestone:** M16 — Insight UI
 **UX artifact:** specs/ux/insight-ui-ux.md
 **Plan:** docs/plans/insight-ui-plan.md
