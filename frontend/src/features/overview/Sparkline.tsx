@@ -33,7 +33,7 @@ export function Sparkline({ daily, height = 28 }: SparklineProps) {
               fill={point.syncs ? "var(--primary)" : "var(--border)"}
               opacity={point.syncs ? 0.75 : 1}
             >
-              <title>{`${point.date}: ${point.syncs} syncs, ${point.failures} failed`}</title>
+              <title>{`${point.date}: ${point.syncs} ${point.syncs === 1 ? "sync" : "syncs"}, ${point.failures} failed`}</title>
             </rect>
             {failed > 0 && (
               <rect

@@ -3,6 +3,7 @@ import { format, subDays } from "date-fns";
 import { useSourcesHealth, useSyncLogs } from "../../api/hooks";
 import { EmptyNote, ErrorCard, Panel, Skeleton } from "../../components/Panel";
 import { ActivityStrip } from "./ActivityStrip";
+import { AttentionStrip } from "./AttentionStrip";
 import { NewThisWeek } from "./NewThisWeek";
 import { SourceGrid } from "./SourceGrid";
 
@@ -22,6 +23,9 @@ export function OverviewPage() {
 
   return (
     <div className="space-y-6">
+      {health.isSuccess && health.data.length > 0 && (
+        <AttentionStrip sources={health.data} />
+      )}
       <Panel title="Sources" aside="last 14 days" testId="sources-panel">
         {health.isPending && (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">

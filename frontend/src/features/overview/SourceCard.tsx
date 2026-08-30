@@ -66,9 +66,10 @@ export function SourceCard({ source }: { source: SourceHealth }) {
       </div>
       <div className="mt-1.5 flex justify-between text-xs text-muted">
         <span>
-          {syncs} syncs · {failures} ✕
+          {syncs} {syncs === 1 ? "sync" : "syncs"}
+          {failures > 0 && <span className="text-danger"> · {failures} ✕</span>}
         </span>
-        <span>{formatBytes(bytes)}</span>
+        <span>{bytes >= 1024 ? formatBytes(bytes) : "—"}</span>
       </div>
     </Link>
   );

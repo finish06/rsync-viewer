@@ -37,7 +37,7 @@ class TestOverview:
             "data-status", re.compile(r"passing|failing|unknown|disabled")
         )
 
-        card = admin_page.get_by_test_id("source-card").filter(has_text=source)
+        card = admin_page.get_by_test_id("source-row").filter(has_text=source)
         expect(card).to_be_visible(timeout=15000)
         expect(card).to_have_attribute("data-status", "ok")
 
@@ -45,7 +45,7 @@ class TestOverview:
         expect(day).to_contain_text("Today")
         _shot(admin_page, "step-01-overview")
 
-        # Card links to transfers filtered to the source (AC-006)
+        # Healthy row links to transfers filtered to the source (overview-v2 AC-002)
         expect(card).to_have_attribute("href", f"/app/transfers?source={source}")
 
     def test_tc002_drilldown_two_clicks(self, admin_page: Page, admin_api_key: str):
