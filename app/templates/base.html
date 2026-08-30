@@ -53,6 +53,9 @@
     <main>
         {% block content %}{% endblock %}
     </main>
+    <footer class="app-footer" style="text-align:center; padding:1.5rem 0; font-size:0.8rem; opacity:0.6;">
+        Rsync Viewer <a href="/app/settings/changelog" style="color:inherit;">v{{ app_version }}</a>
+    </footer>
     <div id="modal-container"></div>
     <script src="/static/js/theme.js"></script>
 </body>
