@@ -5,64 +5,88 @@
 > Agents read JSON for filtering; this file is for human review.
 
 ## Anti-Patterns
-
+- **[medium] A <label> wrapping a button renames the button (Testing Library + a11y)** (L-038, 2026-08-29)
+  settings-ui S2: the OIDC 'Callback URL' field reused the `Field` component, whose <label> wrapped a <code> plus a Copy button. The button's accessible name became 'Callback URLhttp://…', so `getByRole('button', {name: 'Copy'})` failed and screen readers announce the wrong thing. Read-only values with actions must not live inside <label>; render a <div> with a heading span instead. The interaction test caught it — keep writing tests that click every button by accessible name.
+- **[high] Media catalogue: rsync `deleting …` lines were classified as movies — parse control lines before classifying** (L-043, 2026-08-29)
+  The rsync parser keeps any line containing '/' in file_list, so 'deleting Movies/Title (2021)/x.mkv' reached the media classifier and became a movie under a 'deleting Movies' folder (found by the user after the production backfill). Fix: media_classifier.parse_rsync_line() now distinguishes transfers / deletions / control output (itemize flags, --stats summaries, 'created directory'); deletions retire items via removed_at, directory deletions retire by path prefix per source, re-transfers un-retire; the Alembic migration repairs existing phantoms via app.services.media_repair. Lesson: any feature that interprets file_list must treat it as raw rsync output, not a list of paths. Also: record_media_safely must commit even when nothing was inserted, or deletion-only logs lose their updates.
+- **[high] security-hardening-v2 AC-001/009/010: guarding an HTMX route broke handlers that call it as a function** (L-035, 2026-08-28)
+  ACs covered: AC-001, AC-009, AC-010. RED: 13 tests (10 failing). GREEN: router-level dependency on analytics; require_role_or_api_key on monitors/failures/webhooks; operator guard on HTMX webhook list/edit. Blocker: 13 existing UI tests failed because create/update/delete/toggle handlers re-render via `await htmx_webhooks_list(request, session)`, so the new guard saw user=None. Pattern: never add auth to a route function other handlers invoke directly — split rendering into a plain helper first (routes/webhooks.py, admin.py, api_keys.py all do this).
+- **[critical] CVEs accumulated unnoticed — need automated dependency auditing in CI** (L-027, 2026-03-14)
+  PyJWT CVE-2026-32597 and pip CVE-2026-1703 went undetected until a manual pip-audit during /add:verify. GA maturity requires dependency audit as a blocking check. Action: add GitHub Actions workflow running pip-audit on every PR and weekly schedule. This is a process gap, not a one-time fix.
+- **[critical] DB schema drift: EVERY model change needs manual ALTER TABLE on production DB** (L-011, 2026-02-28)
+  SQLModel create_all() handles test DBs but the live PostgreSQL DB requires explicit ALTER TABLE for new/changed columns. This has caused production outages twice: exit_code on sync_logs (M4) and auth_provider/oidc_subject/oidc_issuer on users (M7 OIDC merge). After ANY PR that adds or modifies model fields, immediately run the corresponding ALTER TABLE / CREATE INDEX on production via python3+psycopg using .env.production credentials. No psql on this Mac — use python3 scripts. Consider adding Alembic migrations to automate this.
+- **[high] API key prefix filter needs legacy fallback for keys without stored prefix** (L-025, 2026-02-27)
+  When optimizing API key lookup with key_prefix column filtering, legacy keys (created before prefix storage) have empty key_prefix. The prefix filter returns no candidates, breaking auth. Fix: fall back to scanning all active keys when prefix filter returns empty. This preserves backward compatibility while still optimizing for new keys.
+- **[critical] Always run ruff format + check before git commit — no exceptions** (L-022, 2026-02-26)
+  Ruff formatting drift has been a recurring issue across multiple retros. Before every git commit, run: ruff format . && ruff check . — even for docs-only or config-only commits. This prevents CI failures from accumulated formatting drift.
 - **[high] CI read-only volume mount breaks pytest-cov — set COVERAGE_FILE=/tmp/.coverage** (L-018, 2026-02-24)
   When docker-compose.dev.yml mounts the project as :ro, coverage.py cannot write .coverage to /app. Fix: pass -e COVERAGE_FILE=/tmp/.coverage to docker compose run. Also always run ruff format on new files before committing to avoid format check failures in CI.
 
-- **[high] DB schema drift: model changes need manual ALTER TABLE on live DB** (L-011, 2026-02-23)
-  SQLModel/Alembic create_all() handles test DBs but the live PostgreSQL DB requires explicit ALTER TABLE for new columns. When adding columns to models (e.g. exit_code on sync_logs), also apply the migration to the running DB. Consider adding Alembic migrations to prevent this class of issue.
-
 ## Technical
-
+- **[high] insight-ui C3: Vite 8/Node 26 install traps — fsevents node-gyp hang, optional-dep binaries, jsdom storage** (L-036, 2026-08-29)
+  ACs covered: AC-001/006/007/008/023/025/026 (frontend/, PR #44). Blockers: (1) `npm install` hung for 40+ min compiling fsevents via node-gyp on Node 26 — use `npm ci --ignore-scripts`; (2) `--omit=optional` breaks Vite 8 (rolldown) and oxlint because their platform binaries ARE optional deps; (3) Vitest 4 + jsdom 30 exposes no localStorage for about:blank — set environmentOptions.jsdom.url and stub Storage in setup; (4) date-fns formatDistanceToNowStrict ignores an injected `now` — use formatDistanceStrict(date, now) for testable relative times. Also: long foreground Bash calls (>~60s pytest) were cut off silently in this session — run suites in background with a log file.
+- **[medium] Browser constraint validation blocks submit before the server clamp is reachable in jsdom** (L-039, 2026-08-29)
+  settings-ui S2: a Vitest case typed 10 into an <input type=number min=30> and expected the server's clamp (30) to be reflected — the form never submitted because jsdom (like browsers) enforces `min` on submit, so the mutation never ran. Test valid input and assert the request body; cover the clamp at the API level. Keep the server clamp anyway as defence in depth.
+- **[medium] settings-ui S3: removing HTMX routes — re-point mixed test files, port service behaviour, don't just delete** (L-041, 2026-08-29)
+  Cut-over removed 4 route modules, 16 templates and 6 HTMX-only test files (26 files). 9 more test files mixed HTMX calls with service/API assertions: CSRF tests were re-pointed at cookie-authenticated `/api/v1` mutations (unauthenticated POSTs are now 401 not 403, so they need a session cookie), synthetic-settings tests moved to `PUT /api/v1/settings/synthetic` with the patch target on `app.api.endpoints.settings.*`, and the wizard's provisioning behaviour (suffix, sanitising, env vars, forwarded hub URL) was ported to `tests/test_monitoring_setup_service.py` against the service. Full suite 852 passed / 95 % afterwards.
+- **[medium] Feature complete: settings-ui (M17) — three stacked-then-serial PRs, v2.13.0–v2.15.0** (L-042, 2026-08-29)
+  Total ACs: 22 across S1 API (10), S2 SPA (9), S3 cut-over (3). TDD cycles: 3, rework: 2 (label-wrapped button a11y, jsdom min= validation) — both caught by tests. Spec revisions: 0. What went well: shipping API → UI → cut-over as separate releases kept every step deployable and let CSRF hardening land first; stable data-testids from S2 made the E2E rewrite a one-pass subagent job (35 E2E green, independently re-run). What to improve: the local docker image's CHANGELOG/app_version are stale relative to the worktree, so the 'current' badge E2E must skip locally — build the image or mount CHANGELOG.md for E2E. Pattern: merge each stage before opening the next PR (no stacked PRs) to avoid the auto-close trap (L-037).
+- **[high] security-hardening-v2 AC-005: alembic fileConfig() in tests silences caplog for later tests** (L-033, 2026-08-27)
+  ACs covered: AC-005. RED: 2 tests (fresh-DB `alembic check` + index inspection). GREEN: migration b7c2d9e1f3a4. Blocker: running alembic via Config('alembic.ini') triggers env.py fileConfig(), which reconfigures logging with disable_existing_loggers=True and made two unrelated caplog-based retention tests fail only in full-suite order. Fix: build Config() programmatically with set_main_option('script_location', ...). Also: drift tests must migrate a fresh database — the conftest engine uses create_all(), which would mask missing migrations.
+- **[medium] Feature complete: M7 OIDC Authentication — 634 tests, 82% coverage** (L-024, 2026-02-27)
+  M7 delivered OIDC Authorization Code Flow with state/nonce CSRF, discovery endpoint, auto-create/link users, admin settings UI with Fernet-encrypted client secret, and performance optimizations (API key prefix filter, async SMTP, changelog caching, retention correlated subqueries, stale checker bounded query). 2 specs (oidc-authentication, oidc-settings), 1 plan, ~70 new tests. Key patterns: effective_encryption_key property for backward-compatible config migration; PUBLIC_PREFIXES in auth middleware for unauthenticated OIDC routes; legacy API key fallback when prefix filter returns empty.
 - **[high] HTMX requests need 401 JSON, not 302 redirect, for session expiry** (L-020, 2026-02-26)
   AuthRedirectMiddleware must detect HX-Request header and return JSONResponse(status_code=401) instead of RedirectResponse to /login. HTMX handles the 401 via htmx:responseError event listener to show a re-login modal. Without this, HTMX swaps in the full login page HTML into the target element.
-
 - **[high] CSP blocks inline event handlers — use external JS for HTMX interactivity** (L-017, 2026-02-24)
   Inline onclick and hx-on::before-request attributes violate Content-Security-Policy 'default-src self'. Solution: create external JS files that listen for htmx events (e.g., htmx:configRequest) and manipulate DOM from there. This pattern is CSP-compliant and keeps templates clean.
-
-- **[medium] Webhook service TDD cycle: clean RED->GREEN->REFACTOR in one away session** (L-004, 2026-02-21)
-  ACs covered: AC-001 through AC-011 (except AC-007 UI). RED: 27 tests across 3 files. GREEN: all passed first attempt. Mock pattern for httpx.AsyncClient with AsyncMock __aenter__/__aexit__ works well.
+- **[medium] Webhook service TDD cycle: clean RED→GREEN→REFACTOR in one away session** (L-004, 2026-02-21)
+  ACs covered: AC-001 through AC-011 (except AC-007 UI). RED: 27 tests across 3 files (unit API, unit dispatcher, integration). GREEN: all passed first implementation attempt. Blockers: none. Mock pattern for httpx.AsyncClient with AsyncMock __aenter__/__aexit__ works well for testing async context managers. Proactively dropping/recreating test DB tables before RED phase avoided schema mismatch issues seen in failure-detection cycle.
 
 ## Architecture
-
 - **[low] Jinja2 filters taking full model objects keeps templates clean** (L-002, 2026-02-20)
-  format_rate(sync) accessing sync fields internally is cleaner than passing individual args. Template usage stays simple: {{ sync | format_rate }}.
+  format_rate(sync) accessing sync.bytes_received, sync.start_time, sync.end_time, sync.is_dry_run internally is cleaner than passing individual args. Template usage stays simple: {{ sync | format_rate }}. Apply this pattern for future computed display values.
+
+## Performance
+- **[high] Performance optimization: blocking bcrypt, deferred columns, API key index** (L-031, 2026-03-20)
+  Three optimizations applied: (1) verify_password offloaded to thread pool via run_in_executor in both login handlers. (2) raw_content and file_list deferred on list queries via SQLAlchemy defer() — reduces memory ~100x on dashboard. (3) Composite index on api_keys(is_active, key_prefix). All 950 tests pass, mypy clean. defer() with SQLModel fields needs type:ignore[arg-type] for mypy.
 
 ## Process
-
-- **[high] Retro 4: enforce ruff before commit, CI before done, proactive releases** (L-021, 2026-02-26)
-  M9 completed in 5 cycles (403->568 tests). Three agreed changes: (1) ruff before EVERY commit; (2) CI must pass before declaring work done — hard gate, was not enforced from last retro; (3) proactive release iteration after merging to main.
-
+- **[medium] Stacked PRs: GitHub closes a PR when its base branch is deleted; SPA at '/' needs a client route too** (L-037, 2026-08-29)
+  insight-ui C4→C5→C6 were stacked. `gh pr merge --merge` + deleting the base branch auto-CLOSED the dependent PR (#46) and it cannot be reopened (`Cannot change the base branch of a closed pull request`); a new PR had to be created. Retarget dependents with `gh pr edit N --base main` BEFORE deleting the merged base branch. Separately: serving the SPA shell at `/` is not enough — the browser router must also own `/` (added a `/` → `/app` Navigate) or the shell renders nothing; caught by E2E, not by unit tests rendering at `/app`.
+- **[low] `gh pr checks --watch --fail-level fail` exits 1 when main-only jobs are SKIPPED** (L-040, 2026-08-29)
+  S2 PR #51 had every job SUCCESS and two SKIPPED (container build, smoke tests run only on main). The watcher still returned rc=1, which looks like a failure. Read the per-check states (`gh pr checks N --json name,state`) before treating the exit code as a red light.
+- **[high] Gate failure: CI auto-disabled for inactivity; unpinned tools drifted (ruff, pytest-asyncio, setuptools)** (L-034, 2026-08-27)
+  After ~5 months without pushes GitHub set the CI workflow to disabled_inactivity, so PR pushes produced no checks at all (`gh workflow enable CI` + close/reopen PR fixes it). The first run then failed on three unrelated drifts: `pip install ruff>=0.3.0` unquoted is a shell redirect that installs latest ruff (0.16.5 flags ~340 findings vs 0.15.2 clean); runner-bundled setuptools had a CVE caught by pip-audit; pytest-asyncio 1.4 no longer leaves a loop on the main thread so sync tests calling asyncio.get_event_loop() break. Prevention: pin tool versions (lockfile, Phase 2.3), quote pip specs, upgrade setuptools before pip-audit, write async tests as `async def`, add workflow_dispatch so CI can be kicked manually.
+- **[medium] E2E developer guide needed for onboarding new test contributors** (L-032, 2026-03-20)
+  Human feedback: documentation on how to write new E2E tests is missing. README has run commands but no guide on fixture patterns (admin_page, viewer_page, ingest_sync_log), DB promotion approach, or HTMX wait patterns. Should create a tests/e2e/README.md or CONTRIBUTING section.
+- **[medium] Cycle 15 complete: 15 E2E error scenario tests in 1 session** (L-030, 2026-03-19)
+  Cycle 15 added 15 error scenario E2E tests to existing files. Key findings: (1) CSRF middleware only protects /htmx/* — /register and /login are unprotected by design. (2) Admin RBAC test must check for absence of admin table, not URL content (redirect URL may contain "admin"). (3) Splitting happy/error into separate cycles was the right call — happy paths needed selector debugging first.
+- **[medium] GA promotion verify: Gates 1-2 clean, 77 pre-existing code quality items deferred** (L-026, 2026-03-03)
+  GA promotion verify passed Gate 1 (ruff lint+format) and Gate 2 (mypy 0 errors in 62 files). Gate 3 skipped (no Docker in verify environment — runs in CI). Maturity-scaled GA checks found 77 blocking items (7 files >300 lines, 32 functions >50 lines, 33 missing docstrings, 5 deep-nesting functions) — all pre-existing, explicitly deferred in practical GA scope. Security and repo hygiene passed clean.
 - **[medium] M9 complete: full multi-user auth in 5 cycles, 568 tests** (L-019, 2026-02-26)
-  M9 delivered JWT auth, RBAC, login/register UI, per-user API keys, admin user management, password reset, and session timeout. 5 cycles (8-12) over 3 days, 9/9 success criteria. Released as v1.8.0.
-
-- **[medium] Cycle 7 complete: Beta promotion, changelog viewer, dev tooling, M7 planning** (L-016, 2026-02-24)
-  First cycle under Beta maturity. Delivered changelog viewer, dev seed data, OIDC spec/plan with M7 milestone, CI fixes, retention test coverage (65%->96%). 425 tests, 89% coverage.
-
-- **[high] Retro 3: CI must pass before PR, drop Playwright, promote to Beta** (L-015, 2026-02-24)
-  Three agreed changes: (1) verify CI passes before creating PRs; (2) mount project root in docker-compose.dev.yml; (3) drop Playwright e2e entirely. Promoted Alpha->Beta with 7/7 evidence criteria met.
-
+  M9 delivered JWT auth, RBAC (Admin/Operator/Viewer), login/register UI, per-user API keys, admin user management, password reset (console tokens), and session timeout handling. 5 cycles (8-12) over 3 days, 9/9 success criteria met. Key patterns: AuthRedirectMiddleware with PUBLIC_PATHS for unauthenticated routes; HTMX requests get 401 JSON (not 302 redirect) for expired sessions; cookie-based JWT for browser + Bearer header for API; password reset tokens are single-use with 1-hour expiry, hash stored in DB. Released as v1.8.0.
+- **[high] Retro 4: enforce ruff before commit, CI before done, proactive releases** (L-021, 2026-02-26)
+  Period 2026-02-24 to 2026-02-26: M9 completed in 5 cycles (403->568 tests). Three agreed changes: (1) Run ruff format + check before EVERY commit — formatting drift was recurring; (2) CI must pass before declaring work done — this was agreed last retro but not enforced, now a hard gate; (3) System must proactively suggest release iteration after merging feature work to main. Previous retro change #1 (CI before PR) was NOT followed through — escalating enforcement.
+- **[high] Proactively iterate releases after merging feature work to main** (L-023, 2026-02-26)
+  After merging PRs or significant feature work to main, the agent should proactively suggest a version bump + changelog update. Don't wait for the human to ask. Releases must always be iterated when work lands on main.
 - **[medium] Cycle 6 complete: M6 Observability — docs + Grafana in 1 day** (L-013, 2026-02-24)
-  6 documentation files and 2 Grafana dashboard templates, verified by 27 new tests. M6 complete: 8/8 success criteria met across 2 cycles.
-
+  Cycle 6 delivered 6 documentation files and 2 Grafana dashboard templates, verified by 27 new tests. TDD for documentation (test file existence + content assertions) is lightweight but effective. CI needed explicit Docker volume mounts for docs/ and grafana/. M6 complete: 8/8 success criteria met across 2 cycles.
+- **[high] Retro 3: CI must pass before PR, drop Playwright, promote to Beta** (L-015, 2026-02-24)
+  Period 2026-02-23→24 completed M6 Observability (2 cycles, 53 tests). Three agreed changes: (1) verify CI passes before creating PRs — never create PR with known failures; (2) mount project root in docker-compose.dev.yml to prevent recurring mount drift; (3) drop Playwright e2e entirely — caused more issues than value. Promoted Alpha→Beta with 7/7 evidence criteria met.
+- **[medium] Cycle 7 complete: Beta promotion, changelog viewer, dev tooling, M7 planning** (L-016, 2026-02-24)
+  First cycle under Beta maturity. Delivered changelog viewer (CSP-compliant HTMX accordion), dev seed data (Python SQLModel script over raw SQL — tables don't exist at initdb time), OIDC spec/plan with M7 milestone, CI reliability fixes (COVERAGE_FILE for read-only mounts, unused imports), and retention test coverage (65%→96%). 425 tests, 89% coverage. Key insight: inline onclick/hx-on violates CSP — use external JS with htmx:configRequest events. Seed scripts should use the app's own models rather than raw SQL to stay in sync with schema.
+- **[medium] Cycle 2 complete: M3 Reliability — 3 features, 57 new tests, 92% coverage** (L-006, 2026-02-23)
+  Cycle 2 delivered Structured Logging (15 tests), Error Handling (12 tests), and Security Hardening (30 tests). All 34 ACs verified. Total suite: 294 tests at 92% coverage. Key learnings: slowapi requires headers_enabled=True explicitly; CSRF middleware must be accounted for in all test fixtures; Python 3.13 venv upgrade was needed for dict|None syntax. M3 is the beta promotion gate — all criteria met.
+- **[medium] Cycle 3 complete: M4 Performance Foundations — 3 features, 25 new tests** (L-009, 2026-02-23)
+  Cycle 3 delivered Database Indexing (6 composite/individual indexes), Query Optimization (lazy file lists, connection pool config), and Cursor Pagination (keyset with offset fallback). 25 new tests, 319 total passing. Also ran deprecation cleanup (utc_now() helper replacing 61 datetime.utcnow() calls, Starlette TemplateResponse fix). Key insight: naive vs tz-aware datetime mismatch with PostgreSQL requires a centralized utc_now() helper returning naive UTC. Production indexes created manually with CREATE INDEX CONCURRENTLY.
+- **[medium] Cycle 4 complete: M4 Analytics — 3 features, 30+30 tests, 93% coverage** (L-010, 2026-02-23)
+  Cycle 4 delivered Statistics API, Data Export, and Dashboard Charts. 30 unit tests + 30 Playwright E2E tests. All 10 analytics ACs verified. Key findings: (1) live DB schema drift caused 500s — exit_code column was in the model but missing from DB, needed ALTER TABLE; (2) CSV StreamingResponse with Content-Disposition: attachment triggers Playwright download errors, use page.request.get() instead of page.goto(); (3) module-wide pytestmark=pytest.mark.asyncio is unnecessary with asyncio_mode=auto and generates warnings on sync tests. M4 at 8/9 success criteria — only response time benchmark remains.
 - **[medium] Retro 2: ruff format drift and E2E CI exclusion** (L-012, 2026-02-23)
-  Always run ruff format before committing. TDD cycle and quality gates are reliable.
-
-- **[medium] Cycle 4 complete: M4 Analytics** (L-010, 2026-02-23)
-  Statistics API, Data Export, Dashboard Charts. 60 tests. All 10 ACs verified.
-
-- **[medium] Cycle 3 complete: M4 Performance Foundations** (L-009, 2026-02-23)
-  Database Indexing, Query Optimization, Cursor Pagination. 25 new tests. Key: centralized utc_now() helper for naive UTC datetimes.
-
-- **[medium] Cycle 2 complete: M3 Reliability** (L-006, 2026-02-23)
-  Structured Logging, Error Handling, Security Hardening. 57 new tests, 92% coverage.
-
-- **[medium] Promoted POC -> Alpha: evidence score 9/10** (L-003, 2026-02-20)
-  M1 complete with 6 features. 92% coverage, CI pipeline, conventional commits, TDD evidence.
-
+  Period 2026-02-20→23 covered M2-M5 (132→350 tests, 93% coverage). Two process issues: (1) ruff format drift accumulated silently across 9 files — always run ruff format before committing; (2) Playwright E2E adds CI complexity at alpha maturity with marginal gain — defer to beta, keep local-only. Workflow otherwise solid — TDD cycle and quality gates are reliable.
 - **[medium] Cycle 1 complete: 2 dashboard features in 1 day** (L-001, 2026-02-20)
-  Date Range Quick Select and Average Transfer Rate. 132 tests, 92% coverage.
+  Cycle 1 delivered Date Range Quick Select and Average Transfer Rate. Both followed spec→plan→implement→test flow. 132 tests passing, 92% coverage. Reviewer caught JS duplication in quick-select — extracting shared functions early saves rework. format_rate filter pattern mirrors format_bytes, confirming the Jinja2 filter approach scales well.
+- **[medium] Promoted POC → Alpha: evidence score 9/10** (L-003, 2026-02-20)
+  M1 milestone complete with all 6 features shipped. Promotion backed by: 6 specs, 92% coverage, CI pipeline, 3 PRs merged, conventional commits (15/20), 3 release tags, TDD evidence. Only gap: branch protection not enforced on GitHub (only declared in config). Next target: Beta requires full TDD on all paths and 30+ days stability.
 
 ---
-*19 entries. Last updated: 2026-02-26. Source: .add/learnings.json*
-*6 workstation-scope entries promoted to ~/.claude/add/library.json (WL-001 through WL-006)*
+*37 entries. Last updated: 2026-08-29. Source: .add/learnings.json*

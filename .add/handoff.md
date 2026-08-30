@@ -1,42 +1,26 @@
 # Session Handoff
-**Written:** 2026-03-17
+**Written:** 2026-08-29 (goal: move admin settings over to new UI)
 
 ## In Progress
-- Cycle 14: E2E Playwright Happy Path Suite — implementation complete, awaiting live validation
-- Branch: `feature/e2e-playwright-happy-paths`
+- Nothing — brand shipped as v2.16.0. Media deletion fix merged as `d30ff3f`, released and deployed as v2.15.1. Previous goal "move admin settings over to new UI" (M17) is complete: PR #52 merged as `77fce28`, v2.15.0 tagged, released and deployed (main pipeline incl. smoke tests green). Local checkout is on `main`.
 
 ## Completed This Session
-- `/add:docs`: Added Monitor CRUD sequence diagram (21 flows total), all manifest flows documented
-- `/add:changelog`: Up to date (1 self-referential commit skipped)
-- Cycle 14 spec: `specs/e2e-playwright-happy-path.md` (22 ACs, 8 TCs)
-- Cycle 14 plan: `.add/cycles/cycle-14.md`
-- **40 new Playwright E2E tests** across 9 test files:
-  - `tests/e2e/conftest.py` — shared fixtures (admin/viewer contexts, API helpers)
-  - `test_login.py` (4 tests) — login flow, auth cookie, logout
-  - `test_registration.py` (3 tests) — register, success message, register-then-login
-  - `test_dashboard.py` (7 tests) — sync table, analytics tab, notifications tab, detail, filter
-  - `test_analytics.py` (2 tests) — redirect, analytics content
-  - `test_settings.py` (7 tests) — tabs, API keys, webhooks, SMTP, OIDC, monitoring, changelog
-  - `test_api_keys_e2e.py` (4 tests) — create, list, revoke, HTMX DOM updates
-  - `test_webhooks_e2e.py` (5 tests) — create, list, toggle, delete, HTMX DOM updates
-  - `test_admin_users_e2e.py` (4 tests) — page load, user list, role change, status toggle
-  - `test_password_reset_e2e.py` (4 tests) — forgot page, submit reset, reset page, link from login
-- Updated `.add/docs-manifest.json` flow coverage (0 undocumented)
+- S1 settings API + CSRF hardening — PR #50 merged → v2.13.0 (GitHub Release published).
+- S2 SPA settings sections — PR #51 merged → v2.14.0 (GitHub Release published).
+- v2.15.1 (PR #53 area): rsync deletion/control lines no longer classified as media; `removed_at` retirement; migration `c4d5e6f7a8b9` repairs phantom rows (specs/insight-ui.md AC-028–AC-030).
+- S3 backend: `/settings` → `/app/settings`, `/admin/users` → `/app/settings/users`; removed routes/settings|admin|api_keys|webhooks.py, 16 templates, `/htmx/changelog*`, `render_changelog_md`, HTMX CSRF prefix list; 6 HTMX-only test files deleted, 9 test files re-pointed at `/api/v1`, new `tests/test_monitoring_setup_service.py`; SPA `SettingsIndex` honours `#changelog`.
+- Docs: PRD M17 row + section (DONE), CLAUDE.md tree, CHANGELOG 2.15.0.
 
 ## Decisions Made
-- E2E approach: Playwright browser tests against running local instance
-- Test data: Self-contained via API calls (no shared seed data)
-- Happy paths only this cycle; error scenarios deferred to cycle 15
-- Local-only (no CI integration yet)
-- Pattern matches existing `test_changelog_playwright.py`
+- Brand mark = sync-loop arrows + green status dot on navy (#0f172a, #2563eb→#38bdf8, #22c55e); SVG in frontend/public is the source of truth, raster files derived. `.add/config.json` branding still says raspberry/logoPath null — user's uncommitted file, left alone (suggest updating palette + logoPath).
+- Interval `min=30` is enforced by the browser; the API clamp stays as defence in depth (frontend test asserts the request body, not a clamped echo).
+- Read-only "Callback URL" is not wrapped in `<label>` (a label wrapping a button renames the button for assistive tech).
+- Viewers hitting `/settings` are redirected into the SPA (which shows API keys + changelog) instead of 403.
+- CLAUDE.md committed including the user's one-line "E2E required: Yes" edit (documentation-only, consistent).
 
 ## Blockers
-- PR #35 (OIDC JWKS signature verification) — still awaiting manual smoke test
-- E2E tests require `docker-compose up -d` + `playwright install` to run
+- None. `.add/*` files carry the user's uncommitted edits — do not stage them.
 
 ## Next Steps
-1. Run E2E suite against live instance: `python3 -m pytest tests/e2e/ -v --timeout=120`
-2. Fix any selector mismatches found during live testing
-3. Commit and create PR for cycle 14
-4. Plan cycle 15: E2E error scenarios (invalid login, CSRF, auth redirects, RBAC)
-5. Merge PR #35 after smoke test
+1. After v2.15.1 deploys, re-run `docker compose exec app python -m scripts.backfill_media` on production so historical deletions retire items.
+2. Ask the user to sign off `specs/ux/insight-ui-ux.md` and `specs/ux/settings-ui-ux.md` (both DRAFT).

@@ -82,7 +82,7 @@
     "mode": "standard",
     "coverage_threshold": 80,
     "type_check_blocking": true,
-    "e2e_required": false,
+    "e2e_required": true,
     "screenshot_protocol": false,
     "lint": {
       "backend": "ruff check .",
@@ -95,7 +95,7 @@
     "test": {
       "unit": "pytest tests/unit/",
       "integration": "pytest tests/integration/",
-      "e2e": null
+      "e2e": "python3 -m pytest tests/e2e/ -v --rootdir=tests/e2e"
     }
   },
   "collaboration": {
@@ -115,25 +115,29 @@
     ]
   },
   "branding": {
-    "accentColor": "#b00149",
-    "presetName": "raspberry",
+    "accentColor": "#2563eb",
+    "presetName": "custom",
     "palette": {
-      "accent": "#b00149",
-      "accentLight": "#d4326d",
-      "accentDark": "#8a0038",
-      "accentMuted": "#c4607a",
-      "accentGlow": "rgba(176,1,73,0.4)",
-      "gradientStart": "#b00149",
-      "gradientMid": "#d4326d",
-      "gradientEnd": "#ff6b9d",
+      "accent": "#2563eb",
+      "accentLight": "#38bdf8",
+      "accentDark": "#1d4ed8",
+      "accentMuted": "#60a5fa",
+      "accentGlow": "rgba(37,99,235,0.4)",
+      "gradientStart": "#2563eb",
+      "gradientMid": "#3b82f6",
+      "gradientEnd": "#38bdf8",
       "success": "#22c55e",
       "warning": "#eab308",
-      "info": "#0ea5e9"
+      "info": "#0ea5e9",
+      "background": "#0f172a"
     },
-    "fonts": null,
-    "tone": null,
-    "logoPath": null,
-    "styleGuideSource": null
+    "fonts": {
+      "body": "system-ui, -apple-system, 'Segoe UI', sans-serif",
+      "code": "'SF Mono', Monaco, 'Cascadia Code', monospace"
+    },
+    "tone": "Confident, plain-spoken, homelab-friendly. Tagline: \"See every sync.\"",
+    "logoPath": "frontend/public/favicon.svg",
+    "styleGuideSource": "docs/brand/README.md"
   },
   "imageGeneration": {
     "enabled": false,
