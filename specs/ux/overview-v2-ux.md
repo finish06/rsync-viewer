@@ -29,3 +29,19 @@ Principles
 - Volume chart is ambient (no axes, tooltip on hover), sharing the strip so
   it costs no vertical space.
 - Declutter: "1 sync", failures shown only when > 0, "—" for < 1 KB.
+
+## Iteration 2 (2026-08-30): New-this-week diary
+
+```
+┌ New this week ──────────────────────┐
+│ Friday     📺 Severance ×2 · S02E05–06
+│            🎬 Dune: Part Two (2024)
+│ Thursday   📺 Slow Horses · S04E01
+│ Wednesday  — nothing new            (greyed)
+│ Tuesday    🎬 Heat (1995)
+│ Monday     — nothing new            (greyed)
+│ …          +3 more → Media          (per-day cap 4)
+└─────────────────────────────────────┘
+```
+- Day label = weekday name; today → "Today", yesterday → "Yesterday".
+- No counts headline, no sources, no times — this is a watch list.
