@@ -282,6 +282,24 @@ export const syntheticSettings: SyntheticSettings = {
   last_error: null,
 };
 
+export const updateStatusCurrent = {
+  current: "2.12.0",
+  latest: "2.12.0",
+  update_available: false,
+  release_url: null,
+  published_at: null,
+  checked_at: "2026-08-30T18:00:00Z",
+};
+
+export const updateStatusNewer = {
+  current: "2.12.0",
+  latest: "2.18.0",
+  update_available: true,
+  release_url: "https://github.com/finish06/rsync-viewer/releases/tag/v2.18.0",
+  published_at: "2026-08-30T12:00:00Z",
+  checked_at: "2026-08-30T18:00:00Z",
+};
+
 export const apiKeys: ApiKeyRead[] = [
   {
     id: "aaaaaaaa-0000-4000-8000-000000000001",
@@ -510,5 +528,8 @@ export const handlers = [
   http.get("/api/v1/media/summary", () => HttpResponse.json(mediaSummary)),
   http.get("/api/v1/users/me/preferences", () =>
     HttpResponse.json({ theme: "dark" }),
+  ),
+  http.get("/api/v1/version/updates", () =>
+    HttpResponse.json(updateStatusCurrent),
   ),
 ];
