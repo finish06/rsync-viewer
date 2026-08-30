@@ -2,12 +2,44 @@ import { Link } from "react-router";
 
 import { useMediaNew } from "../../api/hooks";
 import { EmptyNote, Skeleton } from "../../components/Panel";
-import { episodeLabel } from "../../lib/format";
+import { dayLabel, localDayKey } from "../../lib/format";
 
-const MAX_TITLES = 5;
+/** Titles shown per day before "+N more" (overview-v2 AC-009). */
+const MAX_PER_DAY = 4;
+const DAYS = 7;
 
+interface DiaryEntry {
+  key: string;
+  glyph: string;
+  label: string;
+}
+
+function pad(n: number): string {
+  return String(n).padStart(2, "0");
+}
+
+/** "S02E05" for one episode, "S02E05–06" for a same-season run, "×N" always. */
+function episodeNote(
+  episodes: { season: number | null; episode: number | null }[],
+): string {
+  const numbered = episodes
+    .filter((e) => e.season != null && e.episode != null)
+    .sort((a, b) => a.season! - b.season! || a.episode! - b.episode!);
+  if (numbered.length === 0) return "";
+  const first = numbered[0];
+  const last = numbered[numbered.length - 1];
+  const range =
+    numbered.length === 1
+      ? `S${pad(first.season!)}E${pad(first.episode!)}`
+      : first.season === last.season
+        ? `S${pad(first.season!)}E${pad(first.episode!)}–${pad(last.episode!)}`
+        : `S${pad(first.season!)}E${pad(first.episode!)}…S${pad(last.season!)}E${pad(last.episode!)}`;
+  return range;
+}
+
+/** Trailing 7-day watch-list diary (overview-v2 AC-007/008/009). */
 export function NewThisWeek() {
-  const { data, isPending, isError } = useMediaNew(7);
+  const { data, isPending, isError } = useMediaNew(DAYS);
 
   if (isPending) {
     return (
@@ -21,58 +53,92 @@ export function NewThisWeek() {
   if (isError || !data)
     return <EmptyNote>Media catalogue unavailable.</EmptyNote>;
 
-  const episodes = data.shows.reduce((n, s) => n + s.new_episodes.length, 0);
-  const titles = [
-    ...data.shows.map((s) => ({
-      key: `show-${s.title}-${s.year}`,
-      label: s.title,
-      note:
-        s.new_episodes.length === 1
-          ? episodeLabel(s.new_episodes[0].season, s.new_episodes[0].episode)
-          : `${s.new_episodes.length} episodes`,
-      glyph: "📺",
-    })),
-    ...data.movies.map((m) => ({
-      key: `movie-${m.title}-${m.year}`,
-      label: m.year ? `${m.title} (${m.year})` : m.title,
-      note: "",
+  // Bucket arrivals by local day key.
+  const byDay = new Map<string, DiaryEntry[]>();
+  const push = (iso: string, entry: DiaryEntry) => {
+    const key = localDayKey(iso);
+    byDay.set(key, [...(byDay.get(key) ?? []), entry]);
+  };
+  for (const show of data.shows) {
+    const perDay = new Map<string, typeof show.new_episodes>();
+    for (const ep of show.new_episodes) {
+      const key = localDayKey(ep.first_seen_at);
+      perDay.set(key, [...(perDay.get(key) ?? []), ep]);
+    }
+    for (const [key, eps] of perDay) {
+      const note = episodeNote(eps);
+      push(eps[0].first_seen_at, {
+        key: `show-${show.title}-${show.year}-${key}`,
+        glyph: "📺",
+        label:
+          eps.length > 1
+            ? `${show.title} ×${eps.length}${note ? ` · ${note}` : ""}`
+            : `${show.title}${note ? ` · ${note}` : ""}`,
+      });
+    }
+  }
+  for (const movie of data.movies) {
+    push(movie.first_seen_at, {
+      key: `movie-${movie.title}-${movie.year}`,
       glyph: "🎬",
-    })),
-  ];
+      label: movie.year ? `${movie.title} (${movie.year})` : movie.title,
+    });
+  }
 
-  if (titles.length === 0) return <EmptyNote>Nothing new this week.</EmptyNote>;
+  if (byDay.size === 0) return <EmptyNote>Nothing new this week.</EmptyNote>;
+
+  const days = Array.from({ length: DAYS }, (_, i) => {
+    const date = new Date(Date.now() - i * 86_400_000);
+    const key = localDayKey(date.toISOString());
+    return { key, label: dayLabel(key), entries: byDay.get(key) ?? [] };
+  });
 
   return (
-    <div data-testid="new-this-week">
-      <p className="mb-2 text-sm">
-        <span className="font-semibold">🎬 {data.movies.length}</span>{" "}
-        <span className="text-muted">
-          {data.movies.length === 1 ? "movie" : "movies"}
-        </span>
-        <span className="mx-2 text-muted">·</span>
-        <span className="font-semibold">📺 {data.shows.length}</span>{" "}
-        <span className="text-muted">
-          {data.shows.length === 1 ? "show" : "shows"} · {episodes}{" "}
-          {episodes === 1 ? "episode" : "episodes"}
-        </span>
-      </p>
-      <ul className="space-y-1 text-sm">
-        {titles.slice(0, MAX_TITLES).map((t) => (
-          <li key={t.key} className="flex items-baseline gap-2">
-            <span aria-hidden>{t.glyph}</span>
-            <span className="truncate">{t.label}</span>
-            {t.note && <span className="text-xs text-muted">{t.note}</span>}
-          </li>
-        ))}
-      </ul>
-      <Link
-        to="/app/media"
-        className="mt-2 inline-block text-sm text-primary hover:underline"
-      >
-        {titles.length > MAX_TITLES
-          ? `+${titles.length - MAX_TITLES} more → Media`
-          : "→ Media"}
-      </Link>
-    </div>
+    <ol className="space-y-1.5 text-sm" data-testid="new-this-week">
+      {days.map((day) => (
+        <li
+          key={day.key}
+          data-testid="media-day"
+          data-quiet={day.entries.length === 0}
+          className="flex gap-2"
+        >
+          <span
+            className={`w-20 shrink-0 text-xs leading-5 ${
+              day.entries.length ? "font-medium" : "text-muted/70"
+            }`}
+          >
+            {day.label}
+          </span>
+          {day.entries.length === 0 ? (
+            <span className="text-xs leading-5 text-muted/70">
+              — nothing new
+            </span>
+          ) : (
+            <span className="min-w-0 space-y-0.5">
+              {day.entries.slice(0, MAX_PER_DAY).map((entry) => (
+                <span
+                  key={entry.key}
+                  data-testid="media-title"
+                  className="flex items-baseline gap-1.5"
+                >
+                  <span aria-hidden className="text-xs">
+                    {entry.glyph}
+                  </span>
+                  <span className="truncate">{entry.label}</span>
+                </span>
+              ))}
+              {day.entries.length > MAX_PER_DAY && (
+                <Link
+                  to="/app/media"
+                  className="block text-xs text-primary hover:underline"
+                >
+                  +{day.entries.length - MAX_PER_DAY} more → Media
+                </Link>
+              )}
+            </span>
+          )}
+        </li>
+      ))}
+    </ol>
   );
 }

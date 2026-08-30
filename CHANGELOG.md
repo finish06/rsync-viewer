@@ -7,6 +7,14 @@ and this project adheres to [Conventional Commits](https://www.conventionalcommi
 
 ## [Unreleased]
 
+## [2.20.0] - 2026-08-30
+
+### Changed
+- The Overview "New this week" widget is now a trailing 7-day diary: day rows
+  newest-first ("Friday · Severance ×2 · S02E05–06, Dune: Part Two"), quiet
+  days greyed, at most 4 titles per day with "+N more → Media"; the counts
+  line and mixed flat list are gone (specs/overview-v2.md AC-007–009).
+
 ## [2.19.1] - 2026-08-30
 
 ### Fixed

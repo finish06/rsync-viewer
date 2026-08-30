@@ -25,6 +25,9 @@ telling me exactly what is broken, since when, and what was expected.
 | AC-003 | **Next sync due**: when a monitor defines `expected_interval_hours`, due = `last_sync_at + interval`; otherwise the cadence is inferred from the 14-day history (median gap between active days); if neither is known the chip is omitted. Display "due in ~Xh" (healthy) or "overdue by Xh". | Must |
 | AC-004 | A **volume trend** — bytes/day summed across sources over the window — is visible on the Overview without opening Trends (computed client-side from data already fetched). | Must |
 | AC-005 | **Declutter**: correct singular/plural ("1 sync"), failure counts hidden when zero, byte totals under 1 KB shown as "—", healthy rows carry no redundant status words. | Must |
+| AC-007 | **New-this-week diary** (iteration 2026-08-30): the widget lists the trailing 7 days newest-first as day rows ("Friday · …"). Within a day, episodes of one show collapse to a single entry with a count and episode range ("Severance ×2 · S02E05–06"); movies show "Title (Year)". Watch-list tone: no source names, sizes, or sync times. | Must |
+| AC-008 | Days without arrivals render greyed ("Wednesday — nothing new") so the 7-day rhythm stays visible; a week with no arrivals at all keeps the single "Nothing new this week" note. | Must |
+| AC-009 | At most 4 titles render per day; overflow becomes "+N more" linking to the Media page. The aggregate counts line is removed — the diary is the content. | Must |
 | AC-006 | Existing behaviours are preserved: empty-state call to action, inactive-source toggle, `data-status` attributes for tests, links to `/app/transfers?source=…`. E2E selectors move from `source-card` (now problems only) to `source-row` for healthy sources. | Must |
 
 ## 3. User Test Cases
@@ -32,6 +35,7 @@ telling me exactly what is broken, since when, and what was expected.
 - **TC-002** One source failing with a streak → attention card names it, shows "3 in a row" and overdue time; healthy sources stay as rows below. (screenshot `step-02-failure`)
 - **TC-003** A source with a monitor at 24 h that last synced 30 h ago → "overdue by ~6h" on its card/row.
 - **TC-004** A fresh instance → unchanged "Waiting for your first sync" call to action.
+- **TC-005** A week with arrivals on three days → three normal day rows (newest first) + four greyed rows; a show that received two episodes on Friday shows once with "×2 · S02E05–06". (screenshot `step-03-diary`)
 
 ## 4. Data
 No backend changes: `GET /api/v1/sources/health?days=14` already provides

@@ -59,13 +59,16 @@ describe("OverviewPage (AC-006, AC-008, AC-026)", () => {
     );
   });
 
-  it("shows the new-this-week summary with titles", async () => {
+  it("shows the new-this-week diary with day rows (AC-007)", async () => {
     renderWithProviders(<OverviewPage />);
     const panel = await screen.findByTestId("new-this-week");
-    expect(panel).toHaveTextContent("1 movie");
-    expect(panel).toHaveTextContent("1 show · 2 episodes");
-    expect(panel).toHaveTextContent("Severance");
-    expect(panel).toHaveTextContent("The Polar Express (2004)");
+    const days = within(panel).getAllByTestId("media-day");
+    expect(days).toHaveLength(7);
+    expect(days[0]).toHaveTextContent("Today");
+    expect(days[0]).toHaveTextContent("Severance · S02E03");
+    expect(days[0]).toHaveTextContent("The Polar Express (2004)");
+    expect(days[1]).toHaveTextContent("Severance · S02E02");
+    expect(panel).not.toHaveTextContent("1 movie");
   });
 
   it("shows the waiting-for-first-sync state when there are no sources", async () => {
