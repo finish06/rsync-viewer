@@ -8,25 +8,30 @@ import { server } from "../../test/setup";
 import { OverviewPage } from "./OverviewPage";
 
 describe("OverviewPage (AC-006, AC-008, AC-026)", () => {
-  it("renders one health card per source with status and sparkline", async () => {
+  it("splits sources: problem cards, healthy rows, attention cards (AC-002)", async () => {
     renderWithProviders(<OverviewPage />);
+    // fixtures: movies ok · nas-backup failed · photos stale
     const cards = await screen.findAllByTestId("source-card");
-    expect(cards).toHaveLength(3);
+    expect(cards).toHaveLength(2);
     const byName = Object.fromEntries(
       cards.map((c) => [
-        within(c).getByText(/^(movies|nas-backup|photos)$/).textContent,
+        within(c).getByText(/^(nas-backup|photos)$/).textContent,
         c,
       ]),
     );
-    expect(byName["movies"]).toHaveAttribute("data-status", "ok");
     expect(byName["nas-backup"]).toHaveAttribute("data-status", "failed");
     expect(byName["nas-backup"]).toHaveTextContent("2 in a row");
     expect(byName["photos"]).toHaveAttribute("data-status", "stale");
-    expect(byName["movies"]).toHaveAttribute(
-      "href",
-      "/app/transfers?source=movies",
-    );
-    expect(within(byName["movies"]).getByRole("img")).toBeInTheDocument();
+
+    const rows = screen.getAllByTestId("source-row");
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toHaveTextContent("movies");
+    expect(rows[0]).toHaveAttribute("data-status", "ok");
+    expect(rows[0]).toHaveAttribute("href", "/app/transfers?source=movies");
+
+    // exceptions-first: the attention strip names both problems
+    const attention = screen.getAllByTestId("attention-card");
+    expect(attention).toHaveLength(2);
   });
 
   it("groups activity by day and expands a day to its transfers, then a transfer to detail", async () => {

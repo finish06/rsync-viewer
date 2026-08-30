@@ -36,7 +36,7 @@ class TestDashboardPage:
         ingest_sync_log(admin_api_key, source)
         admin_page.goto(f"{BASE_URL}/")
         admin_page.wait_for_load_state("networkidle")
-        card = admin_page.get_by_test_id("source-card").filter(has_text=source)
+        card = admin_page.get_by_test_id("source-row").filter(has_text=source)
         expect(card).to_be_visible(timeout=15000)
         expect(card).to_have_attribute("data-status", "ok")
 

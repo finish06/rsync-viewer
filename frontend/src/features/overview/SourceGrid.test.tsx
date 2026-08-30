@@ -51,17 +51,20 @@ describe("SourceGrid (AC-006)", () => {
     renderWithProviders(
       <SourceGrid sources={[quiet1, busy, failed, quiet2, stale]} />,
     );
-    expect(screen.getAllByTestId("source-card")).toHaveLength(3);
+    expect(screen.getAllByTestId("source-card")).toHaveLength(2);
+    expect(screen.getAllByTestId("source-row")).toHaveLength(1);
     const toggle = screen.getByTestId("toggle-inactive");
     expect(toggle).toHaveTextContent("Show 2 inactive sources");
 
     await user.click(toggle);
-    expect(screen.getAllByTestId("source-card")).toHaveLength(5);
+    expect(screen.getAllByTestId("source-row")).toHaveLength(3);
     expect(toggle).toHaveTextContent("Hide 2 inactive sources");
   });
 
   it("renders no toggle when every source is active", () => {
     renderWithProviders(<SourceGrid sources={[busy, failed]} />);
+    expect(screen.getAllByTestId("source-card")).toHaveLength(1);
+    expect(screen.getAllByTestId("source-row")).toHaveLength(1);
     expect(screen.queryByTestId("toggle-inactive")).not.toBeInTheDocument();
   });
 

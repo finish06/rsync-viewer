@@ -7,6 +7,17 @@ and this project adheres to [Conventional Commits](https://www.conventionalcommi
 
 ## [Unreleased]
 
+## [2.19.0] - 2026-08-30
+
+### Changed
+- **Overview v2 — exceptions first** (specs/overview-v2.md): the page now
+  leads with an attention strip — one calm "All N sources healthy" line when
+  everything is fine, loud per-problem cards (failure streak, overdue time)
+  when it is not. Healthy sources collapse into compact rows with a
+  "due in ~Xh / overdue by Xh" chip (monitor interval, else inferred
+  cadence); a 14-day volume trend lives in the strip; counts are decluttered
+  ("1 sync", no zero-failure noise, "—" under 1 KB).
+
 ## [2.18.0] - 2026-08-30
 
 ### Added
