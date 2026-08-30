@@ -219,6 +219,21 @@ rsync-viewer/
 └── requirements.txt          # Python dependencies
 ```
 
+## Reverse proxy
+
+If Rsync Viewer runs behind a reverse proxy (nginx, Traefik, Caddy, …), set
+`FORWARDED_ALLOW_IPS` to the proxy's IP (comma-separated for several) so
+uvicorn trusts its `X-Forwarded-Proto` / `X-Forwarded-Host` headers:
+
+```
+FORWARDED_ALLOW_IPS=172.18.0.2
+```
+
+The default is `127.0.0.1` — with an unconfigured proxy the app still works,
+but every client shares one rate-limit bucket (the proxy's IP) and generated
+monitoring snippets use the internal scheme/host. Never set `*` unless the
+app is reachable only through the proxy.
+
 ## Development
 
 ### Environment Setup

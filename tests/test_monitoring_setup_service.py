@@ -69,21 +69,39 @@ class TestSanitizeAndParse:
 
 
 class TestHubUrl:
-    def test_ac007_hub_url_from_request(self):
+    def _request(self, headers, client_host="127.0.0.1"):
         request = MagicMock()
-        request.headers = {"host": "hub.local:8000"}
+        request.headers = headers
         request.url.scheme = "http"
+        request.client.host = client_host
+        return request
+
+    def test_ac007_hub_url_from_request(self):
+        request = self._request({"host": "hub.local:8000"})
         assert detect_hub_url(request) == "http://hub.local:8000"
 
-    def test_ac007_hub_url_respects_forwarded_headers(self):
-        request = MagicMock()
-        request.headers = {
-            "host": "internal:8000",
-            "X-Forwarded-Proto": "https",
-            "X-Forwarded-Host": "rsync.example.com",
-        }
-        request.url.scheme = "http"
+    def test_ac007_forwarded_honoured_from_trusted_proxy(self):
+        # Default FORWARDED_ALLOW_IPS trusts loopback only.
+        request = self._request(
+            {
+                "host": "internal:8000",
+                "X-Forwarded-Proto": "https",
+                "X-Forwarded-Host": "rsync.example.com",
+            },
+            client_host="127.0.0.1",
+        )
         assert detect_hub_url(request) == "https://rsync.example.com"
+
+    def test_ac006_forwarded_ignored_from_untrusted_client(self):
+        request = self._request(
+            {
+                "host": "internal:8000",
+                "X-Forwarded-Proto": "https",
+                "X-Forwarded-Host": "evil.example.com",
+            },
+            client_host="203.0.113.9",
+        )
+        assert detect_hub_url(request) == "http://internal:8000"
 
 
 class TestComposeSnippet:

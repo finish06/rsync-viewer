@@ -327,6 +327,7 @@ class TestOidcCallback:
                 "sub": sub,
                 "email": email,
                 "preferred_username": "oidcuser",
+                "email_verified": True,
                 "nonce": nonce,
                 "iss": "https://auth.example.com",
                 "aud": "rsync-viewer",
@@ -558,3 +559,149 @@ class TestOidcEdgeCases:
         _cleanup()
 
         assert result.id == user_a.id  # sub match wins
+
+
+# --- AC-007 (specs/security-hardening-v2.md): email_verified gate ---
+
+
+class TestAC007EmailVerifiedGate:
+    """OIDC may link or create accounts only for provider-verified emails."""
+
+    def _claims(self, verified, sub="ver-sub", email="local@test.local"):
+        claims = {"sub": sub, "email": email, "preferred_username": "verifieduser"}
+        if verified is not None:
+            claims["email_verified"] = verified
+        return claims
+
+    def test_ac007_unverified_email_does_not_link_existing_user(
+        self, test_engine, db_session
+    ):
+        from app.services.oidc import OidcLoginError, get_or_create_oidc_user
+
+        _setup_overrides(db_session)
+        admin = _create_user(db_session, "oidc-ver-admin", ROLE_ADMIN)
+        config = _create_oidc_config(db_session, admin)
+        local = _create_user(
+            db_session, "local-ver", ROLE_OPERATOR, email="local@test.local"
+        )
+
+        with pytest.raises(OidcLoginError, match="verified"):
+            get_or_create_oidc_user(db_session, self._claims(False), config)
+        db_session.refresh(local)
+        assert local.auth_provider == "local"
+        assert local.oidc_subject is None
+        _cleanup()
+
+    def test_ac007_missing_email_verified_treated_as_unverified(
+        self, test_engine, db_session
+    ):
+        from app.services.oidc import OidcLoginError, get_or_create_oidc_user
+
+        _setup_overrides(db_session)
+        admin = _create_user(db_session, "oidc-miss-admin", ROLE_ADMIN)
+        config = _create_oidc_config(db_session, admin)
+
+        with pytest.raises(OidcLoginError, match="verified"):
+            get_or_create_oidc_user(
+                db_session, self._claims(None, email="nobody@test.local"), config
+            )
+        assert (
+            db_session.exec(
+                select(User).where(User.email == "nobody@test.local")
+            ).first()
+            is None
+        )
+        _cleanup()
+
+    def test_ac007_verified_email_links(self, test_engine, db_session):
+        from app.services.oidc import get_or_create_oidc_user
+
+        _setup_overrides(db_session)
+        admin = _create_user(db_session, "oidc-ok-admin", ROLE_ADMIN)
+        config = _create_oidc_config(db_session, admin)
+        local = _create_user(
+            db_session, "local-ok", ROLE_OPERATOR, email="local@test.local"
+        )
+
+        result = get_or_create_oidc_user(db_session, self._claims(True), config)
+        assert result.id == local.id
+        assert result.oidc_subject == "ver-sub"
+        _cleanup()
+
+    def test_ac007_returning_sub_match_allowed_without_claim(
+        self, test_engine, db_session
+    ):
+        """A user already linked by ``sub`` may log in regardless of the claim."""
+        from app.services.oidc import get_or_create_oidc_user
+
+        _setup_overrides(db_session)
+        admin = _create_user(db_session, "oidc-ret-admin", ROLE_ADMIN)
+        config = _create_oidc_config(db_session, admin)
+        returning = _create_user(
+            db_session, "returning", ROLE_VIEWER, email="ret@test.local"
+        )
+        returning.oidc_subject = "ret-sub"
+        returning.auth_provider = "oidc"
+        db_session.flush()
+
+        result = get_or_create_oidc_user(
+            db_session,
+            self._claims(None, sub="ret-sub", email="ret@test.local"),
+            config,
+        )
+        assert result.id == returning.id
+        _cleanup()
+
+    @pytest.mark.anyio
+    async def test_ac007_callback_shows_error_for_unverified(
+        self, test_engine, db_session
+    ):
+        _setup_overrides(db_session)
+        admin = _create_user(db_session, "oidc-cb-ver-admin", ROLE_ADMIN)
+        _create_oidc_config(db_session, admin)
+        _create_user(db_session, "cb-local", ROLE_OPERATOR, email="cb@test.local")
+
+        state, nonce = generate_state("/")
+        id_token = pyjwt.encode(
+            {
+                "sub": "cb-unverified",
+                "email": "cb@test.local",
+                "email_verified": False,
+                "preferred_username": "cbuser",
+                "nonce": nonce,
+                "iss": "https://auth.example.com",
+                "aud": "rsync-viewer",
+                "iat": int(time.time()),
+                "exp": int(time.time()) + 300,
+            },
+            "unused",
+            algorithm="HS256",
+        )
+        with patch(
+            "app.routes.auth.exchange_code_for_tokens",
+            new_callable=AsyncMock,
+            return_value={"id_token": id_token, "access_token": "at"},
+        ):
+            async with _make_client() as client:
+                response = await client.get(
+                    f"/auth/oidc/callback?code=test-code&state={state}",
+                    follow_redirects=False,
+                )
+        _cleanup()
+
+        assert response.status_code == 302
+        assert response.headers["location"] == "/login?error=oidc_unverified"
+        assert not any(
+            "access_token" in c for c in response.headers.get_list("set-cookie")
+        )
+
+    @pytest.mark.anyio
+    async def test_ac007_login_page_shows_unverified_message(
+        self, test_engine, db_session
+    ):
+        _setup_overrides(db_session)
+        async with _make_client() as client:
+            response = await client.get("/login?error=oidc_unverified")
+        _cleanup()
+        assert response.status_code == 200
+        assert "not verified" in response.text

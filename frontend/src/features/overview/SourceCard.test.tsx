@@ -65,6 +65,13 @@ describe("SourceCard", () => {
     );
   });
 
+  it("renders a hostile source name as literal text (AC-002)", () => {
+    const name = "<img src=x onerror=alert(1)>";
+    renderWithProviders(<SourceCard source={source({ source_name: name })} />);
+    expect(screen.getByText(name)).toBeInTheDocument();
+    expect(document.querySelector("img[src='x']")).toBeNull();
+  });
+
   it("handles a source that has never synced", () => {
     renderWithProviders(
       <SourceCard

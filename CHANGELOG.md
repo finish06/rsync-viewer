@@ -7,6 +7,34 @@ and this project adheres to [Conventional Commits](https://www.conventionalcommi
 
 ## [Unreleased]
 
+## [2.17.0] - 2026-08-30
+
+### Security
+- `source_name` on `POST /api/v1/sync-logs` is restricted to
+  `^[A-Za-z0-9._-]{1,100}$` (**422** otherwise). Update any client that sent
+  spaces or other characters in source names (AC-002).
+- Rate limiting is keyed on client IP only — different `X-API-Key` values no
+  longer mint separate buckets, so key brute-forcing exhausts one bucket
+  (AC-003).
+- Unknown API-key prefixes fall back to bcrypt checks against legacy
+  (prefix-less) keys only, and successful legacy auth logs a rotation
+  warning (AC-004).
+- Uvicorn's `--forwarded-allow-ips` comes from `FORWARDED_ALLOW_IPS`
+  (default `127.0.0.1`, never `*`); the monitoring wizard honours
+  `X-Forwarded-*` only from those proxies (AC-006).
+- OIDC sign-in links or creates accounts by email only when the provider
+  reports `email_verified: true`; otherwise login is refused with a clear
+  message (AC-007).
+- An API key's effective role is now `min(role_override, owner role)` —
+  demoting an owner immediately demotes every key they issued (AC-008).
+
+### Fixed
+- Backward cursor pagination on `GET /api/v1/sync-logs` computes `has_next`
+  under the same source/date/synthetic filters as the page itself (AC-011).
+
+### Removed
+- The unreferenced legacy `analytics.html` template.
+
 ## [2.16.0] - 2026-08-29
 
 ### Added

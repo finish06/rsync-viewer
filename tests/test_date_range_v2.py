@@ -271,3 +271,71 @@ class TestNotificationsDatePagination:
         html = response.text
         # The "Next" pagination link should include date_from
         assert f"date_from={date_from}" in html
+
+
+class TestAC011BackwardCursorProbe:
+    """AC-011: backward `has_next` uses the same filters as the page query."""
+
+    @pytest.mark.asyncio
+    async def test_ac011_backward_has_next_respects_start_date(
+        self, client, create_sync_log
+    ):
+        base = utc_now() - timedelta(days=3)
+        for i in range(6):  # day-1 rows: outside the window, older than it
+            create_sync_log(
+                source_name="probe-src",
+                start_time=base + timedelta(minutes=i),
+                end_time=base + timedelta(minutes=i + 1),
+            )
+        day2 = [
+            create_sync_log(
+                source_name="probe-src",
+                start_time=base + timedelta(days=1, minutes=i),
+                end_time=base + timedelta(days=1, minutes=i + 1),
+            )
+            for i in range(6)
+        ]
+        start = (base + timedelta(days=1)).isoformat()
+
+        # Backward from the window start shows the oldest in-window rows.
+        response = await client.get(
+            "/api/v1/sync-logs?limit=3&direction=backward"
+            f"&start_date={start}&source_name=probe-src"
+        )
+        assert response.status_code == 200
+        body = response.json()
+        assert [i["id"] for i in body["items"]] == [
+            str(log.id) for log in (day2[2], day2[1], day2[0])
+        ]
+        # Six day-1 rows are older than this page but filtered out — the
+        # probe must respect start_date and report nothing further.
+        assert body["pagination"]["has_next"] is False
+
+    @pytest.mark.asyncio
+    async def test_ac011_backward_has_next_respects_synthetic_filter(
+        self, client, create_sync_log
+    ):
+        from app.services.synthetic_check import SYNTHETIC_SOURCE_NAME
+
+        base = utc_now() - timedelta(hours=10)
+        for i in range(4):
+            create_sync_log(
+                source_name=SYNTHETIC_SOURCE_NAME,
+                start_time=base + timedelta(minutes=i),
+                end_time=base + timedelta(minutes=i + 1),
+            )
+        for i in range(4):
+            create_sync_log(
+                source_name="probe-real",
+                start_time=base + timedelta(hours=1, minutes=i),
+                end_time=base + timedelta(hours=1, minutes=i + 1),
+            )
+
+        response = await client.get(
+            "/api/v1/sync-logs?limit=2&direction=backward&synthetic=hide"
+        )
+        body = response.json()
+        assert len(body["items"]) == 2
+        assert all(i["source_name"] == "probe-real" for i in body["items"])
+        # Only synthetic rows are older; hidden, so has_next must be False.
+        assert body["pagination"]["has_next"] is False

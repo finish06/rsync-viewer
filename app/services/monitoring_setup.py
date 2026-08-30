@@ -15,6 +15,7 @@ from fastapi import Request
 from sqlmodel import Session, select
 
 from app.api.deps import hash_api_key
+from app.config import get_settings
 from app.models.sync_log import ApiKey
 from app.utils import utc_now
 
@@ -36,12 +37,26 @@ def parse_rsync_source(rsync_source: str) -> Optional[tuple[str, str, str]]:
     return match.group(1), match.group(2), match.group(3)
 
 
+def _client_is_trusted_proxy(request: Request) -> bool:
+    allowed = get_settings().forwarded_allow_ips.strip()
+    if allowed == "*":
+        return True
+    client_host = request.client.host if request.client else None
+    return client_host in {ip.strip() for ip in allowed.split(",") if ip.strip()}
+
+
 def detect_hub_url(request: Request) -> str:
-    """Hub URL as seen by the client, honouring proxy headers uvicorn trusts."""
-    proto = request.headers.get("X-Forwarded-Proto", request.url.scheme)
-    host = request.headers.get(
-        "X-Forwarded-Host", request.headers.get("host", "localhost:8000")
-    )
+    """Hub URL as seen by the client.
+
+    ``X-Forwarded-*`` is only honoured when the direct peer is a proxy listed
+    in ``FORWARDED_ALLOW_IPS`` (AC-006) — otherwise any caller could steer the
+    generated compose snippet at an attacker-controlled hub.
+    """
+    proto = request.url.scheme
+    host = request.headers.get("host", "localhost:8000")
+    if _client_is_trusted_proxy(request):
+        proto = request.headers.get("X-Forwarded-Proto", proto)
+        host = request.headers.get("X-Forwarded-Host", host)
     return f"{proto}://{host}"
 
 

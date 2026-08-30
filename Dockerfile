@@ -32,4 +32,6 @@ COPY entrypoint.sh .
 COPY --from=frontend /app/static/app ./app/static/app
 
 ENTRYPOINT ["/app/entrypoint.sh"]
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers", "--forwarded-allow-ips", "*"]
+# FORWARDED_ALLOW_IPS: IPs allowed to set X-Forwarded-* (default: loopback only).
+# Set it to your reverse proxy's IP; wildcard trust is opt-in and discouraged.
+CMD ["sh", "-c", "exec uvicorn app.main:app --host 0.0.0.0 --port 8000 --proxy-headers --forwarded-allow-ips \"${FORWARDED_ALLOW_IPS:-127.0.0.1}\""]

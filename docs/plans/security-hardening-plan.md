@@ -1,5 +1,15 @@
 # Implementation Plan: Security Hardening — Phase 0
 
+> **Status 2026-08-30:** All PRs delivered — A, B in v2.6.x (Phase 0); C, D, E,
+> F, G in v2.17.0 (branch `feature/security-hardening-c-g`). File paths in the
+> C/D sections predate the M17 SPA cut-over: the analytics partial no longer
+> exists (the SPA renders source names as text — regression-tested in
+> `SourceCard.test.tsx`), and `_detect_hub_url` lives in
+> `app/services/monitoring_setup.py`, gated on `FORWARDED_ALLOW_IPS`.
+> PR E was implemented without the "merge PR #35 first" pre-step (#35 is
+> still awaiting the user's manual smoke test); the email_verified gate is
+> independent and #35 rebases cleanly on top.
+
 **Spec:** specs/security-hardening-v2.md (extends the completed v1 spec `specs/security-hardening.md`; do not edit v1)
 **Parent plan:** docs/plans/robustness-hardening-plan.md (Phase 0)
 **Test naming:** new tests go in `tests/test_security_hardening_v2.py` (or the feature's existing file where noted) so `test_acNNN_` names do not collide with the v1 tests in `tests/test_security_hardening.py`.

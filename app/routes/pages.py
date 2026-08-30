@@ -62,6 +62,11 @@ async def login_page(
         error_message = "Authentication failed. Please try again."
     elif error == "oidc_invalid":
         error_message = "Invalid authentication response. Please try again."
+    elif error == "oidc_unverified":
+        error_message = (
+            "Sign-in refused: this email address is not verified by your "
+            "identity provider. Verify it there, then try again."
+        )
 
     # Check OIDC configuration
     oidc_config = get_oidc_config(session)

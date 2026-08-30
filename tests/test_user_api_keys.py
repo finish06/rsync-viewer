@@ -456,7 +456,7 @@ class TestLegacyApiKeyCompat:
         legacy_key = ApiKey(
             id=uuid4(),
             key_hash=hash_api_key(legacy_key_raw),
-            key_prefix="lega",
+            key_prefix="",  # true legacy rows predate prefixes (AC-004)
             name="Legacy Key",
             is_active=True,
             user_id=None,  # legacy — no user

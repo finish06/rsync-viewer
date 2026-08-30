@@ -84,7 +84,7 @@ class TestNavigationAndAuth:
             expect(nav.get_by_role("link", name=label)).to_be_visible()
         admin_page.get_by_role("button", name="Settings menu").click()
         expect(admin_page.get_by_role("menuitem", name="Settings")).to_have_attribute(
-            "href", "/settings"
+            "href", "/app/settings"
         )
 
     def test_tc009_mobile_no_horizontal_scroll(self, admin_context):

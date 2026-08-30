@@ -17,6 +17,7 @@ from app.config import get_settings
 from app.csrf import generate_csrf_token
 from app.database import get_session
 from app.main import app
+from app.models.sync_log import ApiKey
 from app.models.user import User
 from app.services.auth import (
     ROLE_ADMIN,
@@ -500,5 +501,53 @@ class TestApiKeyBackwardCompat:
         # Delete requires admin role via AdminDep, not dual auth
         # API key doesn't satisfy AdminDep (requires JWT user)
         assert resp.status_code == 401
+        await client.aclose()
+        app.dependency_overrides.clear()
+
+
+class TestAC008RoleClampEndToEnd:
+    """AC-008: demoting a key's owner immediately lowers the key's power."""
+
+    @pytest.mark.asyncio
+    async def test_ac008_demoted_owner_key_loses_admin(self, db_session, admin_user):
+        import bcrypt as _bcrypt
+
+        raw = "rsv_clamp01_secret"
+        key = ApiKey(
+            name="clamp-key",
+            key_hash=_bcrypt.hashpw(raw.encode(), _bcrypt.gensalt(4)).decode(),
+            key_prefix=raw[:8],
+            role_override="admin",
+            user_id=admin_user.id,
+            is_active=True,
+        )
+        db_session.add(key)
+        db_session.commit()
+
+        client = _make_unauth_client(db_session)
+        headers = {"X-API-Key": raw}
+        # Owner is admin → operator-level dual-auth endpoint works
+        resp = await client.post(
+            "/api/v1/monitors",
+            json={"source_name": "clamp-src", "expected_interval_hours": 24},
+            headers=headers,
+        )
+        assert resp.status_code == 201
+        monitor_id = resp.json()["id"]
+
+        # Demote the owner → the same key must lose power immediately
+        admin_user.role = "viewer"
+        db_session.add(admin_user)
+        db_session.commit()
+
+        resp = await client.delete(f"/api/v1/monitors/{monitor_id}", headers=headers)
+        assert resp.status_code == 403
+
+        # Restoring the owner restores the key
+        admin_user.role = "admin"
+        db_session.add(admin_user)
+        db_session.commit()
+        resp = await client.delete(f"/api/v1/monitors/{monitor_id}", headers=headers)
+        assert resp.status_code == 204
         await client.aclose()
         app.dependency_overrides.clear()

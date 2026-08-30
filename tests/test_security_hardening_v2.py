@@ -6,9 +6,11 @@ Covers:
   AC-010: Webhook read paths require operator (secrets hidden from viewers)
 """
 
+from pathlib import Path
 from uuid import uuid4
 
 import pytest
+from fastapi import Request
 from sqlmodel import Session
 
 from app.api.deps import hash_api_key
@@ -154,3 +156,40 @@ class TestAC010WebhookReadsRequireOperator:
         resp = await client.get("/api/v1/webhooks")
         assert resp.status_code == 403
         assert "SECRET-TOKEN" not in resp.text
+
+
+class TestAC003RateLimitKey:
+    """AC-003: the limiter buckets on client IP, never on the API key header."""
+
+    def _request(self, api_key: str) -> Request:
+        scope = {
+            "type": "http",
+            "method": "POST",
+            "path": "/api/v1/sync-logs",
+            "headers": [(b"x-api-key", api_key.encode())],
+            "client": ("198.51.100.7", 1234),
+            "query_string": b"",
+            "server": ("test", 80),
+            "scheme": "http",
+        }
+        return Request(scope)
+
+    def test_ac003_rate_limit_key_ignores_api_key_header(self):
+        from app.rate_limit import limiter
+
+        key_a = limiter._key_func(self._request("rsv_attempt_one"))
+        key_b = limiter._key_func(self._request("rsv_attempt_two"))
+        assert key_a == key_b == "198.51.100.7"
+
+
+class TestAC006ForwardedAllowIps:
+    """AC-006: proxy trust is opt-in via FORWARDED_ALLOW_IPS (default 127.0.0.1)."""
+
+    def test_ac006_dockerfile_does_not_trust_all_proxies(self):
+        dockerfile = Path("Dockerfile").read_text()
+        assert '"*"' not in dockerfile
+        assert "FORWARDED_ALLOW_IPS" in dockerfile
+
+    def test_ac006_prod_compose_and_env_example_document_the_variable(self):
+        assert "FORWARDED_ALLOW_IPS" in Path("docker-compose.prod.yml").read_text()
+        assert "FORWARDED_ALLOW_IPS" in Path(".env.example").read_text()

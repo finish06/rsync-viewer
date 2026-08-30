@@ -8,7 +8,7 @@ import asyncio
 import bcrypt
 import jwt as pyjwt
 from fastapi import Cookie, Depends, HTTPException, Header, Request, status
-from sqlmodel import Session, select
+from sqlmodel import Session, col, or_, select
 
 from app.config import Settings, get_settings
 from app.database import get_session
@@ -16,6 +16,7 @@ from app.models.sync_log import ApiKey
 from app.models.user import User
 from app.services.auth import (
     ROLE_ADMIN,
+    ROLE_HIERARCHY,
     ROLE_OPERATOR,
     ROLE_VIEWER,
     decode_token,
@@ -53,9 +54,16 @@ def _lookup_and_verify_api_key(
     api_keys = session.exec(statement).all()
 
     if not api_keys:
-        # Fallback: scan all active keys (legacy keys without prefix)
+        # Legacy keys (pre-prefix) have key_prefix == "" — only those may need
+        # a full bcrypt check; never scan every active key (AC-004).
         api_keys = session.exec(
-            select(ApiKey).where(ApiKey.is_active.is_(True))  # type: ignore[attr-defined]
+            select(ApiKey).where(
+                ApiKey.is_active.is_(True),  # type: ignore[attr-defined]
+                or_(
+                    ApiKey.key_prefix == "",
+                    col(ApiKey.key_prefix).is_(None),
+                ),
+            )
         ).all()
 
     matched_key: Optional[ApiKey] = None
@@ -67,6 +75,11 @@ def _lookup_and_verify_api_key(
             break
 
     if matched_key:
+        if not matched_key.key_prefix:
+            logger.warning(
+                "Authenticated with legacy API key %s — rotate it to a prefixed key",
+                matched_key.name,
+            )
         now = utc_now()
         if (
             matched_key.last_used_at is None
@@ -350,11 +363,18 @@ def _get_api_key_effective_role(user: Optional[User], api_key: Optional[ApiKey])
     """Determine the effective role for an API key authentication.
 
     Priority:
-    1. If api_key has role_override, use it (already validated <= user's role at creation)
+    1. If api_key has role_override, use min(override, owner.role) — AC-008
     2. If api_key has a user (loaded via user_id), use user's role
     3. Legacy keys (no user_id) default to operator
     """
     if api_key and api_key.role_override:
+        if user:
+            # Clamp to the owner's current role: demoting the owner instantly
+            # lowers every key they issued (AC-008).
+            return min(
+                (api_key.role_override, user.role),
+                key=lambda role: ROLE_HIERARCHY.get(role, -1),
+            )
         return api_key.role_override
     if user:
         return user.role
