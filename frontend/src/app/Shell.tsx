@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, NavLink, Outlet } from "react-router";
 
 import { usePreferences } from "../api/hooks";
+import { useUpdateCheck } from "../api/hooks";
 import { currentUser, hasRole, type Role } from "./user";
 import { LivenessPill } from "../features/liveness/LivenessPill";
 import { ThemeToggle } from "./ThemeToggle";
@@ -122,6 +123,8 @@ function SecondaryMenu() {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const user = currentUser();
+  const update = useUpdateCheck();
+  const newer = update.data?.update_available ? update.data : null;
   // Without injected context (e.g. the Vite dev server) show everything;
   // the server enforces the role on each destination anyway.
   const items = SECONDARY.filter(
@@ -149,6 +152,13 @@ function SecondaryMenu() {
         className="rounded-md border border-border px-2 py-1 text-sm text-muted hover:text-text"
       >
         ⚙ ▾
+        {newer && (
+          <span
+            data-testid="update-badge"
+            title={`Update available: v${newer.latest}`}
+            className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-ok"
+          />
+        )}
       </button>
       {open && (
         <div
@@ -159,6 +169,17 @@ function SecondaryMenu() {
             <div className="border-b border-border px-3 py-1.5 text-xs text-muted">
               {user.username} · {user.role}
             </div>
+          )}
+          {newer && newer.release_url && (
+            <a
+              role="menuitem"
+              href={newer.release_url}
+              target="_blank"
+              rel="noreferrer"
+              className="block border-b border-border px-3 py-1.5 text-sm text-ok hover:bg-bg-secondary"
+            >
+              Update available — v{newer.latest}
+            </a>
           )}
           {items.map((item) =>
             item.spa ? (

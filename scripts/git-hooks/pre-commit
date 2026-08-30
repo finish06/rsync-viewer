@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+# Pre-commit hook: static checks only (specs/cicd-release.md AC-002).
+# The full pytest/vitest suites run exactly once, in PR CI — running them
+# here too was the "same tests three times" waste.
+# Install: ln -sf ../../scripts/git-hooks/pre-commit .git/hooks/pre-commit
+set -euo pipefail
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+if [ -f "$REPO_ROOT/.venv/bin/activate" ]; then
+    # shellcheck source=/dev/null
+    source "$REPO_ROOT/.venv/bin/activate"
+fi
+
+echo "[pre-commit] ruff format check..."
+python3 -m ruff format --check . || {
+    echo "[pre-commit] FAIL: run 'python3 -m ruff format .'"
+    exit 1
+}
+
+echo "[pre-commit] ruff lint..."
+python3 -m ruff check . || exit 1
+
+echo "[pre-commit] mypy..."
+python3 -m mypy app/ || exit 1
+
+echo "[pre-commit] Static checks passed (full suites run in PR CI)"

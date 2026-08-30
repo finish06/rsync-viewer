@@ -167,6 +167,16 @@ Full API documentation is available at http://localhost:8000/docs (Swagger UI).
 
 ## Testing
 
+**Where tests run (one run per suite):** the pre-commit hook does static
+checks only (`scripts/git-hooks/pre-commit` — install with
+`ln -sf ../../scripts/git-hooks/pre-commit .git/hooks/pre-commit`); the full
+backend/frontend suites gate the pull request in CI (required by branch
+protection); the merge to `main` runs tag → container build → smoke tests →
+GitHub Release only. A newer release shows up in the app itself (settings
+menu badge) via `GET /api/v1/version/updates`; disable the outbound check
+with `UPDATE_CHECK_ENABLED=false`.
+
+
 ```bash
 # Run all tests
 pytest

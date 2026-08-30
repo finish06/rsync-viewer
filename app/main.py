@@ -17,6 +17,7 @@ from starlette.responses import Response as StarletteResponse
 from app.config import get_settings
 from app.database import engine
 from app.api.endpoints import (
+    version_updates,
     sync_logs,
     monitors,
     failures,
@@ -298,6 +299,7 @@ app.include_router(spa.router)
 app.include_router(media.router, prefix="/api/v1")
 app.include_router(settings_api.router, prefix="/api/v1")
 app.include_router(changelog.router, prefix="/api/v1")
+app.include_router(version_updates.router, prefix="/api/v1")
 
 # HTMX / UI route modules (AC-001, AC-002)
 app.include_router(pages.router)

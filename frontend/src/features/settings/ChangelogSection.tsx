@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-import { useChangelog } from "../../api/hooks";
+import { useChangelog, useUpdateCheck } from "../../api/hooks";
 import type { ChangelogVersion } from "../../api/types";
 import { ErrorCard, Panel, Skeleton } from "../../components/Panel";
 
@@ -8,6 +8,8 @@ export function ChangelogSection() {
   const [all, setAll] = useState(false);
   const changelog = useChangelog(all);
   const [open, setOpen] = useState<string | null>(null);
+  const update = useUpdateCheck();
+  const newer = update.data?.update_available ? update.data : null;
 
   return (
     <Panel
@@ -15,6 +17,22 @@ export function ChangelogSection() {
       testId="changelog-section"
       aside={changelog.data && `current v${changelog.data.app_version}`}
     >
+      {newer && newer.release_url && (
+        <p
+          data-testid="update-notice"
+          className="mb-3 rounded-md border border-ok/50 bg-ok/5 p-2 text-sm"
+        >
+          v{newer.latest} is available —{" "}
+          <a
+            href={newer.release_url}
+            target="_blank"
+            rel="noreferrer"
+            className="text-primary hover:underline"
+          >
+            release notes
+          </a>
+        </p>
+      )}
       {changelog.isPending && <Skeleton className="h-24" />}
       {changelog.isError && (
         <ErrorCard

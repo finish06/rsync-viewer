@@ -8,6 +8,7 @@ import {
   oidcSettings,
   smtpSettings,
   syntheticSettings,
+  updateStatusNewer,
 } from "../../test/handlers";
 import { renderWithProviders } from "../../test/render";
 import { server } from "../../test/setup";
@@ -372,5 +373,30 @@ describe("Changelog (AC-018)", () => {
         screen.queryByRole("button", { name: "Show older versions" }),
       ).not.toBeInTheDocument(),
     );
+  });
+});
+
+describe("Changelog update notice (AC-008)", () => {
+  it("offers the newer release above the version list", async () => {
+    server.use(
+      http.get("/api/v1/version/updates", () =>
+        HttpResponse.json(updateStatusNewer),
+      ),
+    );
+    renderSettings("/app/settings/changelog");
+    const notice = await screen.findByTestId("update-notice");
+    expect(notice).toHaveTextContent("v2.18.0");
+    expect(
+      within(notice).getByRole("link", { name: /release notes/i }),
+    ).toHaveAttribute(
+      "href",
+      "https://github.com/finish06/rsync-viewer/releases/tag/v2.18.0",
+    );
+  });
+
+  it("shows no notice when up to date", async () => {
+    renderSettings("/app/settings/changelog");
+    await screen.findAllByTestId("changelog-version");
+    expect(screen.queryByTestId("update-notice")).not.toBeInTheDocument();
   });
 });

@@ -7,6 +7,24 @@ and this project adheres to [Conventional Commits](https://www.conventionalcommi
 
 ## [Unreleased]
 
+## [2.18.0] - 2026-08-30
+
+### Added
+- **Official releases**: merging to `main` now tags, builds the container,
+  smoke-tests it, and publishes a GitHub Release with the matching CHANGELOG
+  section — no manual step (specs/cicd-release.md AC-004/005).
+- **Update awareness**: `GET /api/v1/version/updates` compares the running
+  version against the latest GitHub Release (cached, disable with
+  `UPDATE_CHECK_ENABLED=false`); the SPA shows a badge on the settings menu
+  and an update notice in the changelog section when a newer version exists
+  (AC-006–008).
+
+### Changed
+- Test suites run exactly once per change: lint/type/backend/frontend/audit
+  gate the pull request (enforced by branch protection); the merge push runs
+  only tag → build → smoke → release; the pre-commit hook is static checks
+  only (`scripts/git-hooks/pre-commit`) (AC-001–003).
+
 ## [2.17.0] - 2026-08-30
 
 ### Security

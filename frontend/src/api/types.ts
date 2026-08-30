@@ -307,3 +307,12 @@ export interface WebhookWrite {
   options?: Record<string, unknown> | null;
   enabled: boolean;
 }
+
+export interface UpdateStatus {
+  current: string;
+  latest: string | null;
+  update_available: boolean;
+  release_url: string | null;
+  published_at: string | null;
+  checked_at: string | null;
+}

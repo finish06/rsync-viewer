@@ -7,6 +7,7 @@ import {
 
 import { buildQuery, fetchJson, mutateJson } from "./client";
 import type {
+  UpdateStatus,
   MediaNewResponse,
   MediaSummary,
   PaginatedSyncLogs,
@@ -384,4 +385,14 @@ export function useWebhookMutations() {
       ),
   });
   return { create, update, remove, test };
+}
+
+/** Once per session is plenty — the server caches the GitHub lookup anyway. */
+export function useUpdateCheck() {
+  return useQuery({
+    queryKey: ["version", "updates"],
+    queryFn: () => fetchJson<UpdateStatus>("/version/updates"),
+    staleTime: Infinity,
+    retry: false,
+  });
 }
