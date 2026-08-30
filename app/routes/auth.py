@@ -14,6 +14,7 @@ from app.models.user import User
 from app.schemas.user import UserCreate
 from app.services.auth import create_access_token, verify_password
 from app.services.oidc import (
+    OidcLoginError,
     build_authorize_url,
     decode_id_token,
     exchange_code_for_tokens,
@@ -204,6 +205,9 @@ async def oidc_callback(
         )
         return redirect
 
+    except OidcLoginError as e:
+        logger.warning("OIDC login refused", extra={"reason": str(e)})
+        return RedirectResponse(url="/login?error=oidc_unverified", status_code=302)
     except Exception as e:
         logger.error("OIDC callback failed", extra={"error": str(e)})
         return RedirectResponse(url="/login?error=oidc_failed", status_code=302)

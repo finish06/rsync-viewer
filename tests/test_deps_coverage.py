@@ -517,3 +517,29 @@ class TestRequireRoleOrApiKey:
         with pytest.raises(HTTPException) as exc_info:
             await dep(auth=(user, api_key))
         assert exc_info.value.status_code == 403
+
+
+class TestAC008RoleClamp:
+    """AC-008: effective role = min(role_override, owner.role)."""
+
+    def test_ac008_role_override_clamped_to_owner_role(self):
+        api_key = MagicMock(spec=ApiKey)
+        api_key.role_override = ROLE_ADMIN
+        user = MagicMock(spec=User)
+        user.role = ROLE_VIEWER
+
+        assert _get_api_key_effective_role(user, api_key) == ROLE_VIEWER
+
+    def test_ac008_override_below_owner_still_wins(self):
+        api_key = MagicMock(spec=ApiKey)
+        api_key.role_override = ROLE_VIEWER
+        user = MagicMock(spec=User)
+        user.role = ROLE_ADMIN
+
+        assert _get_api_key_effective_role(user, api_key) == ROLE_VIEWER
+
+    def test_ac008_legacy_key_override_unclamped(self):
+        api_key = MagicMock(spec=ApiKey)
+        api_key.role_override = ROLE_ADMIN
+
+        assert _get_api_key_effective_role(None, api_key) == ROLE_ADMIN

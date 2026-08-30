@@ -12,6 +12,8 @@ class Settings(BaseSettings):
     default_api_key: str = "rsv_dev_key"
     log_level: str = "INFO"
     log_format: str = "json"
+    # Uvicorn honours X-Forwarded-* only from these IPs (comma-separated, or "*").
+    forwarded_allow_ips: str = "127.0.0.1"
     rate_limit_authenticated: str = "60/minute"
     rate_limit_unauthenticated: str = "20/minute"
     max_request_body_size: int = 10_485_760  # 10MB

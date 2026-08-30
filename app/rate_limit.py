@@ -1,6 +1,10 @@
-"""Shared rate limiter instance for use across endpoint modules."""
+"""Shared rate limiter instance for use across endpoint modules.
 
-from fastapi import Request
+The limiter is keyed on the client IP only (AC-003). Keying on the
+``X-API-Key`` header would let an attacker mint a fresh bucket per guessed
+key, turning the brute-force limit into no limit at all.
+"""
+
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
@@ -8,18 +12,14 @@ from app.config import get_settings
 
 settings = get_settings()
 
-
-def _get_rate_limit_key(request: Request) -> str:
-    """Rate limit key: API key if present, else client IP."""
-    api_key = request.headers.get("X-API-Key")
-    if api_key:
-        return f"apikey:{api_key}"
-    return get_remote_address(request)
-
+# One bucket per client IP. In debug/test mode the shared bucket would be
+# exhausted by the test suite itself, so it is relaxed the same way as the
+# auth-specific limits below.
+_DEFAULT_LIMIT = "10000/minute" if settings.debug else settings.rate_limit_authenticated
 
 limiter = Limiter(
-    key_func=_get_rate_limit_key,
-    default_limits=[settings.rate_limit_authenticated],
+    key_func=get_remote_address,
+    default_limits=[_DEFAULT_LIMIT],
     headers_enabled=True,
 )
 

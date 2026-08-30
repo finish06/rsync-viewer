@@ -214,23 +214,25 @@ async def list_sync_logs(
     # Determine pagination mode: cursor takes precedence, offset is fallback
     use_offset = cursor is None and offset is not None
 
+    def apply_filters(stmt):
+        """Shared filters — the page query and the has_next probe must match
+        (security-hardening-v2 AC-011)."""
+        if synthetic == "hide":
+            stmt = stmt.where(SyncLog.source_name != SYNTHETIC_SOURCE_NAME)
+        elif synthetic == "only":
+            stmt = stmt.where(SyncLog.source_name == SYNTHETIC_SOURCE_NAME)
+        if synthetic != "only" and source_name:
+            stmt = stmt.where(SyncLog.source_name == source_name)
+        if start_date:
+            stmt = stmt.where(SyncLog.start_time >= start_date)
+        if end_date:
+            stmt = stmt.where(SyncLog.start_time <= end_date)
+        return stmt
+
     # Build base query with filters — defer heavy columns for list view
-    statement = select(SyncLog).options(
-        defer(SyncLog.raw_content), defer(SyncLog.file_list)
+    statement = apply_filters(
+        select(SyncLog).options(defer(SyncLog.raw_content), defer(SyncLog.file_list))
     )
-
-    # Synthetic filter (AC-008)
-    if synthetic == "hide":
-        statement = statement.where(SyncLog.source_name != SYNTHETIC_SOURCE_NAME)
-    elif synthetic == "only":
-        statement = statement.where(SyncLog.source_name == SYNTHETIC_SOURCE_NAME)
-
-    if synthetic != "only" and source_name:
-        statement = statement.where(SyncLog.source_name == source_name)
-    if start_date:
-        statement = statement.where(SyncLog.start_time >= start_date)
-    if end_date:
-        statement = statement.where(SyncLog.start_time <= end_date)
 
     if use_offset:
         # Legacy offset pagination mode
@@ -304,33 +306,17 @@ async def list_sync_logs(
     if results:
         if is_backward:
             has_prev = has_more
-            # Check if there are items after the last result (has_next)
+            # Probe for items after the last result, under the SAME filters
+            # as the page query (AC-011).
             last = results[-1]
-            check_next = select(func.count()).select_from(
-                select(SyncLog.id)
-                .where(
-                    (SyncLog.start_time < last.start_time)  # type: ignore[operator]
-                    | (
-                        (SyncLog.start_time == last.start_time)  # type: ignore[operator]
-                        & (SyncLog.id < last.id)  # type: ignore[operator]
-                    )
+            probe = apply_filters(select(SyncLog.id)).where(
+                (SyncLog.start_time < last.start_time)  # type: ignore[operator]
+                | (
+                    (SyncLog.start_time == last.start_time)  # type: ignore[operator]
+                    & (SyncLog.id < last.id)  # type: ignore[operator]
                 )
-                .subquery()
             )
-            # Apply original filters
-            if source_name:
-                check_next = select(func.count()).select_from(
-                    select(SyncLog.id)
-                    .where(SyncLog.source_name == source_name)
-                    .where(
-                        (SyncLog.start_time < last.start_time)  # type: ignore[operator]
-                        | (
-                            (SyncLog.start_time == last.start_time)  # type: ignore[operator]
-                            & (SyncLog.id < last.id)  # type: ignore[operator]
-                        )
-                    )
-                    .subquery()
-                )
+            check_next = select(func.count()).select_from(probe.subquery())
             has_next = session.exec(check_next).one() > 0
         else:
             has_next = has_more

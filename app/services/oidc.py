@@ -17,6 +17,10 @@ from app.models.oidc_config import OidcConfig
 logger = logging.getLogger(__name__)
 
 
+class OidcLoginError(Exception):
+    """Login refused for a policy reason; message is safe to show the user."""
+
+
 # --- Encryption helpers (shared Fernet key with SMTP) ---
 
 
@@ -290,6 +294,12 @@ def get_or_create_oidc_user(
         session.add(user)
         session.flush()
         return user
+
+    # Linking or creating by email requires the provider to vouch for it
+    # (AC-007). Without this, anyone who can register an unverified address
+    # at the IdP could take over the matching local account.
+    if claims.get("email_verified") is not True:
+        raise OidcLoginError("Email address not verified by the identity provider")
 
     # 2. Look up by email (auto-link)
     user = session.exec(select(User).where(User.email == email)).first()

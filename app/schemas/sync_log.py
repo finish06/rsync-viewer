@@ -10,7 +10,12 @@ class SyncLogCreate(BaseModel):
     source_name: str = Field(
         ...,
         min_length=1,
-        description="Identifier for the sync source (e.g., 'backup-server', 'media-sync')",
+        max_length=100,
+        pattern=r"^[A-Za-z0-9._-]+$",
+        description=(
+            "Identifier for the sync source (e.g., 'backup-server', 'media-sync'). "
+            "Letters, digits, dot, underscore and hyphen only (AC-002)."
+        ),
         examples=["backup-server"],
     )
     start_time: datetime = Field(

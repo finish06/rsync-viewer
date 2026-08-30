@@ -1,3 +1,5 @@
+import pytest
+
 from datetime import timedelta
 from app.utils import utc_now
 
@@ -229,3 +231,33 @@ class TestHealthEndpoint:
         assert response.status_code == 200
         data = response.json()
         assert data["status"] == "ok"
+
+
+class TestAC002SourceNameValidation:
+    """specs/security-hardening-v2.md AC-002 — source_name is a strict slug."""
+
+    @pytest.mark.asyncio
+    async def test_ac002_source_name_rejects_markup(self, client, sample_sync_log_data):
+        payload = {
+            **sample_sync_log_data,
+            "source_name": "<img src=x onerror=alert(1)>",
+        }
+        response = await client.post("/api/v1/sync-logs", json=payload)
+        assert response.status_code == 422
+
+    @pytest.mark.asyncio
+    async def test_ac002_source_name_rejects_overlong(
+        self, client, sample_sync_log_data
+    ):
+        payload = {**sample_sync_log_data, "source_name": "a" * 101}
+        response = await client.post("/api/v1/sync-logs", json=payload)
+        assert response.status_code == 422
+
+    @pytest.mark.asyncio
+    async def test_ac002_source_name_accepts_slug_characters(
+        self, client, sample_sync_log_data
+    ):
+        payload = {**sample_sync_log_data, "source_name": "backup-server.01_x"}
+        response = await client.post("/api/v1/sync-logs", json=payload)
+        assert response.status_code == 201
+        assert response.json()["source_name"] == "backup-server.01_x"
