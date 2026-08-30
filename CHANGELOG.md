@@ -7,6 +7,13 @@ and this project adheres to [Conventional Commits](https://www.conventionalcommi
 
 ## [Unreleased]
 
+## [2.19.1] - 2026-08-30
+
+### Fixed
+- CI builds stamp the container with the git tag (`v2.18.0`); the version is
+  now normalised to `2.18.0`, so the changelog "current" badge matches on
+  production and `/api/v1/version/updates` reports a consistent `current`.
+
 ## [2.19.0] - 2026-08-30
 
 ### Changed

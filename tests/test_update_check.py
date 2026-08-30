@@ -151,3 +151,24 @@ class TestAC006Endpoint:
     async def test_ac006_endpoint_requires_auth(self, unauth_client):
         response = await unauth_client.get("/api/v1/version/updates")
         assert response.status_code in (401, 403)
+
+
+class TestAppVersionNormalisation:
+    """The container is built with the tag (v2.18.0); everything downstream
+    expects the bare version — normalise once in Settings."""
+
+    def test_leading_v_is_stripped(self, monkeypatch):
+        from app.config import Settings, get_settings
+
+        monkeypatch.setenv("APP_VERSION", "v2.18.0")
+        get_settings.cache_clear()
+        try:
+            assert Settings().app_version == "2.18.0"
+        finally:
+            get_settings.cache_clear()
+
+    def test_plain_and_dev_versions_unchanged(self):
+        from app.config import Settings
+
+        assert Settings(app_version="2.18.0").app_version == "2.18.0"
+        assert Settings(app_version="dev").app_version == "dev"

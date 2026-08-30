@@ -1,4 +1,5 @@
 from functools import lru_cache
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -45,6 +46,14 @@ class Settings(BaseSettings):
         ""  # Dedicated API key; falls back to default_api_key
     )
     app_version: str = "dev"
+
+    @field_validator("app_version")
+    @classmethod
+    def _strip_tag_prefix(cls, value: str) -> str:
+        """CI builds pass the git tag (v2.18.0); everything downstream —
+        changelog "current" badge, update comparison — expects 2.18.0."""
+        return value[1:] if value.startswith("v") and value[1:2].isdigit() else value
+
     base_url: str = "http://127.0.0.1:8000"  # Used by synthetic monitoring
     spa_dist_dir: str = "app/static/app"  # Vite build output served at /app
 
