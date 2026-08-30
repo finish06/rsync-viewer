@@ -12,7 +12,9 @@ def spa_dist(tmp_path):
     """Point SPA_DIST_DIR at a temp build containing a stub index.html."""
     dist = tmp_path / "app"
     dist.mkdir()
-    (dist / "index.html").write_text('<!doctype html><div id="root"></div>')
+    (dist / "index.html").write_text(
+        '<!doctype html><head></head><div id="root"></div>'
+    )
     previous = os.environ.get("SPA_DIST_DIR")
     os.environ["SPA_DIST_DIR"] = str(dist)
     get_settings.cache_clear()
@@ -46,3 +48,22 @@ class TestAC022SpaServing:
         resp = await unauth_client.get("/app/media", follow_redirects=False)
         assert resp.status_code == 302
         assert resp.headers["location"] == "/login?return_url=/app/media"
+
+
+class TestFooterVersionInjection:
+    """specs/footer-version.md AC-001/AC-003."""
+
+    @pytest.mark.anyio
+    async def test_ac001_shell_carries_app_version(self, spa_dist, client):
+        response = await client.get("/app")
+        assert response.status_code == 200
+        assert 'window.__APP_VERSION__ = "' in response.text
+
+    @pytest.mark.anyio
+    async def test_ac003_login_page_has_version_footer(self, client):
+        response = await client.get("/login")
+        assert response.status_code == 200
+        assert 'class="app-footer"' in response.text
+        assert 'href="/app/settings/changelog"' in response.text
+        # the version itself is the link text
+        assert '/app/settings/changelog" style="color:inherit;">v' in response.text

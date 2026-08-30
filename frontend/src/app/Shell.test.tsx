@@ -111,3 +111,27 @@ describe("Shell (AC-001, AC-023)", () => {
     }
   });
 });
+
+describe("footer version (footer-version AC-002)", () => {
+  it("shows the version linking to the changelog", async () => {
+    window.__APP_VERSION__ = "2.21.0";
+    try {
+      renderShell();
+      const footer = await screen.findByTestId("app-footer");
+      expect(footer).toHaveTextContent("Rsync Viewer v2.21.0");
+      expect(
+        within(footer).getByRole("link", { name: "v2.21.0" }),
+      ).toHaveAttribute("href", "/app/settings/changelog");
+    } finally {
+      delete window.__APP_VERSION__;
+    }
+  });
+
+  it("degrades to plain text when no version was injected", async () => {
+    renderShell();
+    const footer = await screen.findByTestId("app-footer");
+    expect(footer).toHaveTextContent("Rsync Viewer");
+    expect(footer).not.toHaveTextContent("undefined");
+    expect(within(footer).queryByRole("link")).not.toBeInTheDocument();
+  });
+});

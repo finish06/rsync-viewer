@@ -7,6 +7,12 @@ and this project adheres to [Conventional Commits](https://www.conventionalcommi
 
 ## [Unreleased]
 
+## [2.21.0] - 2026-08-30
+
+### Added
+- The running version now sits in the footer of every page ("Rsync Viewer
+  v2.21.0"); clicking it opens the changelog (specs/footer-version.md).
+
 ## [2.20.0] - 2026-08-30
 
 ### Changed

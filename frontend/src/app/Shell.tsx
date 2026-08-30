@@ -3,7 +3,7 @@ import { Link, NavLink, Outlet } from "react-router";
 
 import { usePreferences } from "../api/hooks";
 import { useUpdateCheck } from "../api/hooks";
-import { currentUser, hasRole, type Role } from "./user";
+import { appVersion, currentUser, hasRole, type Role } from "./user";
 import { LivenessPill } from "../features/liveness/LivenessPill";
 import { ThemeToggle } from "./ThemeToggle";
 
@@ -96,9 +96,24 @@ export function Shell() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-7xl px-4 py-6 pb-20 md:pb-6">
+      <main className="mx-auto max-w-7xl px-4 py-6">
         <Outlet />
       </main>
+
+      <footer
+        data-testid="app-footer"
+        className="mx-auto max-w-7xl px-4 pb-20 pt-2 text-center text-xs text-muted md:pb-6"
+      >
+        Rsync Viewer{" "}
+        {appVersion() && (
+          <Link
+            to="/app/settings/changelog"
+            className="hover:text-text hover:underline"
+          >
+            v{appVersion()}
+          </Link>
+        )}
+      </footer>
 
       <nav
         aria-label="Primary (mobile)"

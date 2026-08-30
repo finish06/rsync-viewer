@@ -30,7 +30,7 @@ SPA_MISSING_DETAIL = (
 LEGACY_TAB_TARGETS = {"analytics": "/app/trends", "notifications": "/notifications"}
 
 
-def _user_context_script(user) -> str:
+def _user_context_script(user, app_version: str = "") -> str:
     """Inline script with the current user; JSON is made safe for a <script> body."""
     theme = (user.preferences or {}).get("theme") if user else None
     payload = {
@@ -40,8 +40,10 @@ def _user_context_script(user) -> str:
     }
     safe = json.dumps(payload).replace("</", "<\\/")
     theme_js = json.dumps(theme).replace("</", "<\\/") if theme else "null"
+    version_js = json.dumps(app_version).replace("</", "<\\/")
     return (
-        f"<script>window.__USER__ = {safe};window.__USER_THEME__ = {theme_js};</script>"
+        f"<script>window.__USER__ = {safe};window.__USER_THEME__ = {theme_js};"
+        f"window.__APP_VERSION__ = {version_js};</script>"
     )
 
 
@@ -54,7 +56,9 @@ def _index_response(
             status_code=status.HTTP_404_NOT_FOUND, detail=SPA_MISSING_DETAIL
         )
     html = index.read_text(encoding="utf-8")
-    html = html.replace("<head>", "<head>" + _user_context_script(user), 1)
+    html = html.replace(
+        "<head>", "<head>" + _user_context_script(user, settings.app_version), 1
+    )
     response = HTMLResponse(html, headers={"Cache-Control": "no-store"})
     # The SPA sends this cookie's value as X-CSRF-Token on every mutation
     # (double-submit); make sure a session always has one.

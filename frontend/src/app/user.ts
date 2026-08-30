@@ -13,6 +13,7 @@ declare global {
   interface Window {
     __USER__?: CurrentUser;
     __USER_THEME__?: string;
+    __APP_VERSION__?: string;
   }
 }
 
@@ -27,4 +28,11 @@ export function currentUser(): CurrentUser | null {
 export function hasRole(user: CurrentUser | null, minimum: Role): boolean {
   if (!user || !(user.role in RANK)) return false;
   return RANK[user.role] >= RANK[minimum];
+}
+
+/** Server-injected build version; null on an old cached shell or dev proxy. */
+export function appVersion(): string | null {
+  const version =
+    typeof window !== "undefined" ? window.__APP_VERSION__ : undefined;
+  return typeof version === "string" && version.length > 0 ? version : null;
 }
