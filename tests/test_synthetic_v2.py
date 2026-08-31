@@ -419,3 +419,140 @@ class TestLifespanDbConfig:
             async with app.router.lifespan_context(app):
                 pass
             mock_stop.assert_called_once()
+
+
+# ---------------------------------------------------------------------------
+# specs/synthetic-hygiene.md — leak, warm-up, purge
+# ---------------------------------------------------------------------------
+
+
+class TestSyntheticHygiene:
+    """S/AC-001..004: no leaked rows, no startup failure webhook, backlog purge."""
+
+    @pytest.mark.anyio
+    @pytest.mark.usefixtures("_clean_synthetic_config")
+    async def test_ac001_check_cycle_leaves_no_row(self, admin_client, db_session):
+        from app.models.sync_log import SyncLog
+        from app.services.synthetic_check import (
+            SYNTHETIC_SOURCE_NAME,
+            run_synthetic_check,
+        )
+
+        def count():
+            return len(
+                db_session.exec(
+                    select(SyncLog).where(SyncLog.source_name == SYNTHETIC_SOURCE_NAME)
+                ).all()
+            )
+
+        before = count()
+        # run against the in-process ASGI app via the admin_client's transport
+        import httpx as _httpx
+
+        transport = admin_client._transport
+
+        real_async_client = _httpx.AsyncClient
+
+        def patched_client(*args, **kwargs):
+            kwargs["transport"] = transport
+            kwargs.setdefault("base_url", "http://test")
+            return real_async_client(*args, **kwargs)
+
+        with patch("app.services.synthetic_check.httpx.AsyncClient", patched_client):
+            result = await run_synthetic_check(
+                base_url="http://test",
+                api_key="test-api-key",
+                db_session=db_session,
+            )
+        assert result.status == "passing"
+        assert count() == before  # no leak (S/AC-001)
+
+    @pytest.mark.anyio
+    async def test_ac002_warmup_failure_fires_no_webhook(self, db_session):
+        from unittest.mock import AsyncMock
+
+        from app.models.failure_event import FailureEvent
+        from app.services.synthetic_check import run_synthetic_check
+
+        with patch(
+            "app.services.synthetic_check.dispatch_webhooks", new_callable=AsyncMock
+        ) as dispatch:
+            result = await run_synthetic_check(
+                base_url="http://127.0.0.1:1",  # nothing listens here
+                api_key="k",
+                db_session=db_session,
+                suppress_alerts=True,  # warm-up mode
+            )
+        assert result.status == "failing"
+        assert dispatch.call_count == 0
+        assert (
+            db_session.exec(
+                select(FailureEvent).where(
+                    FailureEvent.failure_type == "synthetic_failure"
+                )
+            ).first()
+            is None
+        )
+
+    @pytest.mark.anyio
+    async def test_ac002_wait_until_healthy_polls_health(self):
+        from app.services.synthetic_check import wait_until_healthy
+
+        calls = []
+
+        class FakeResponse:
+            def __init__(self, code):
+                self.status_code = code
+
+        class FakeClient:
+            async def __aenter__(self):
+                return self
+
+            async def __aexit__(self, *a):
+                return False
+
+            async def get(self, url):
+                calls.append(url)
+                if len(calls) < 3:
+                    raise __import__("httpx").ConnectError("not yet")
+                return FakeResponse(200)
+
+        with patch(
+            "app.services.synthetic_check.httpx.AsyncClient",
+            lambda *a, **k: FakeClient(),
+        ):
+            ok = await wait_until_healthy(
+                "http://test", timeout_seconds=5, poll_seconds=0
+            )
+        assert ok is True
+        assert len(calls) == 3
+        assert calls[0].endswith("/health")
+
+    def test_ac003_purge_removes_old_synthetic_rows_only(
+        self, db_session, create_sync_log
+    ):
+        from datetime import timedelta
+
+        from app.models.sync_log import SyncLog
+        from app.services.retention import cleanup_synthetic_logs
+        from app.services.synthetic_check import SYNTHETIC_SOURCE_NAME
+        from app.utils import utc_now
+
+        old = utc_now() - timedelta(hours=3)
+        for i in range(5):
+            create_sync_log(
+                source_name=SYNTHETIC_SOURCE_NAME,
+                start_time=old,
+                created_at=old,
+            )
+        create_sync_log(source_name=SYNTHETIC_SOURCE_NAME)  # fresh — kept
+        create_sync_log(source_name="real-source", start_time=old, created_at=old)
+
+        deleted = cleanup_synthetic_logs(db_session)
+        db_session.commit()
+        assert deleted == 5
+        remaining = db_session.exec(
+            select(SyncLog.source_name)  # type: ignore[call-overload]
+        ).all()
+        assert remaining.count("real-source") == 1
+        assert remaining.count(SYNTHETIC_SOURCE_NAME) == 1

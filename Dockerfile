@@ -17,6 +17,11 @@ ENV APP_VERSION=${APP_VERSION}
 
 WORKDIR /app
 
+# postgresql-client: pg_dump/pg_restore for scripts/backup.py (backup-restore AC)
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends postgresql-client \
+    && rm -rf /var/lib/apt/lists/*
+
 # Install dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
@@ -27,6 +32,8 @@ COPY alembic.ini .
 COPY alembic ./alembic
 COPY CHANGELOG.md .
 COPY entrypoint.sh .
+# Operational tooling: backups, restore, media backfill (python -m scripts.…)
+COPY scripts ./scripts
 
 # Built SPA assets, served by the /static mount and the /app shell route
 COPY --from=frontend /app/static/app ./app/static/app

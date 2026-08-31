@@ -7,7 +7,7 @@ import asyncio
 import logging
 from datetime import timedelta
 
-from sqlmodel import Session, func, select, delete
+from sqlmodel import Session, col, delete, func, select
 
 from app.models.failure_event import FailureEvent
 from app.models.notification_log import NotificationLog
@@ -82,6 +82,37 @@ def cleanup_old_sync_logs(session: Session, retention_days: int) -> int:
     return count
 
 
+def cleanup_synthetic_logs(session: Session, max_age_hours: int = 1) -> int:
+    """Delete synthetic-source sync logs older than ``max_age_hours``.
+
+    Runs regardless of the retention setting (synthetic-hygiene AC-003) —
+    these rows are probe artifacts, not user data. FailureEvents that
+    reference them are detached the same way full retention does.
+    """
+    from datetime import timedelta
+
+    from app.services.synthetic_check import SYNTHETIC_SOURCE_NAME
+    from app.utils import utc_now
+
+    cutoff = utc_now() - timedelta(hours=max_age_hours)
+    doomed = select(SyncLog.id).where(
+        col(SyncLog.source_name) == SYNTHETIC_SOURCE_NAME,
+        col(SyncLog.created_at) < cutoff,
+    )
+    session.exec(  # type: ignore[call-overload]
+        delete(FailureEvent).where(
+            FailureEvent.sync_log_id.in_(doomed)  # type: ignore[union-attr]
+        )
+    )
+    result = session.exec(  # type: ignore[call-overload]
+        delete(SyncLog).where(
+            col(SyncLog.source_name) == SYNTHETIC_SOURCE_NAME,
+            col(SyncLog.created_at) < cutoff,
+        )
+    )
+    return result.rowcount or 0
+
+
 async def retention_background_task(
     retention_days: int,
     interval_hours: int,
@@ -115,6 +146,7 @@ async def retention_background_task(
             if engine is not None:
                 with Session(engine) as session:
                     deleted = cleanup_old_sync_logs(session, retention_days)
+                    deleted += cleanup_synthetic_logs(session)
                     if deleted > 0:
                         logger.info(
                             "Retention cleanup deleted records",
