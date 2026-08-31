@@ -229,6 +229,15 @@ rsync-viewer/
 └── requirements.txt          # Python dependencies
 ```
 
+## Backups
+
+Daily `pg_dump` backups with rotation and a tested recovery path:
+see [docs/backup-restore.md](docs/backup-restore.md).
+
+```bash
+docker compose exec app python -m scripts.backup --dir /data/backups --keep 14
+```
+
 ## Reverse proxy
 
 If Rsync Viewer runs behind a reverse proxy (nginx, Traefik, Caddy, …), set

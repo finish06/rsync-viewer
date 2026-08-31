@@ -275,11 +275,36 @@ async def stop_synthetic_monitoring() -> None:
 # ---------------------------------------------------------------------------
 
 
+async def wait_until_healthy(
+    base_url: str,
+    *,
+    timeout_seconds: float = 60.0,
+    poll_seconds: float = 1.0,
+) -> bool:
+    """Poll our own /health until it answers (synthetic-hygiene AC-002).
+
+    The lifespan starts this task before uvicorn accepts connections; without
+    a warm-up the very first check always failed and paged the operator.
+    """
+    deadline = time.monotonic() + timeout_seconds
+    while time.monotonic() < deadline:
+        try:
+            async with httpx.AsyncClient(timeout=2.0) as client:
+                response = await client.get(f"{base_url}/health")
+            if response.status_code == 200:
+                return True
+        except httpx.HTTPError:
+            pass
+        await asyncio.sleep(poll_seconds)
+    return False
+
+
 async def run_synthetic_check(
     *,
     base_url: str,
     api_key: str,
     db_session: "Optional[Session]" = None,
+    suppress_alerts: bool = False,
 ) -> SyntheticCheckResult:
     """Execute one synthetic check cycle: POST, verify, DELETE.
 
@@ -322,8 +347,8 @@ async def run_synthetic_check(
                 synthetic_check_status.set(0)
                 synthetic_check_duration.observe(elapsed_ms / 1000)
 
-                # Fire webhook (AC-004)
-                if db_session is not None:
+                # Fire webhook (AC-004) — not during startup warm-up
+                if db_session is not None and not suppress_alerts:
                     event = FailureEvent(
                         source_name=SYNTHETIC_SOURCE_NAME,
                         failure_type="synthetic_failure",
@@ -346,20 +371,16 @@ async def run_synthetic_check(
             data = post_response.json()
             log_id = data.get("id")
 
-            # Step 2: DELETE the created log (AC-003)
-            if log_id:
-                delete_response = await client.delete(
-                    f"{base_url}/api/v1/sync-logs/{log_id}",
-                    headers=headers,
-                )
-                if delete_response.status_code != 204:
-                    logger.warning(
-                        "Synthetic check DELETE failed (non-critical)",
-                        extra={
-                            "log_id": log_id,
-                            "status_code": delete_response.status_code,
-                        },
-                    )
+            # Step 2: remove our own row in-process (synthetic-hygiene AC-001).
+            # The HTTP DELETE endpoint is admin-JWT-only; calling it with the
+            # API key failed forever and leaked one row per check.
+            if log_id and db_session is not None:
+                from app.models.sync_log import SyncLog as _SyncLog
+
+                row = db_session.get(_SyncLog, log_id)
+                if row is not None:
+                    db_session.delete(row)
+                    db_session.commit()
 
             # Record passing metrics
             synthetic_check_status.set(1)
@@ -385,8 +406,8 @@ async def run_synthetic_check(
         synthetic_check_status.set(0)
         synthetic_check_duration.observe(elapsed_ms / 1000)
 
-        # Fire webhook on connection/timeout failures (AC-004)
-        if db_session is not None:
+        # Fire webhook on connection/timeout failures (AC-004) — not during warm-up
+        if db_session is not None and not suppress_alerts:
             event = FailureEvent(
                 source_name=SYNTHETIC_SOURCE_NAME,
                 failure_type="synthetic_failure",
@@ -447,6 +468,30 @@ async def synthetic_check_background_task(
         "Synthetic monitoring started",
         extra={"interval_seconds": initial_interval, "base_url": base_url},
     )
+
+    # Warm-up: wait for our own /health before the first check so a restart
+    # never records a failure or fires a webhook (synthetic-hygiene AC-002).
+    healthy = await wait_until_healthy(base_url)
+    if not healthy:
+        logger.warning("Synthetic warm-up timed out; first check may fail")
+
+    # Drain leaked synthetic rows from before the in-process cleanup existed
+    # (synthetic-hygiene AC-003).
+    if engine is not None:
+        try:
+            from sqlmodel import Session as _Session
+
+            from app.services.retention import cleanup_synthetic_logs
+
+            with _Session(engine) as purge_session:
+                purged = cleanup_synthetic_logs(purge_session)
+                purge_session.commit()
+            if purged:
+                logger.info(
+                    "Purged leaked synthetic sync logs", extra={"deleted": purged}
+                )
+        except Exception:
+            logger.exception("Synthetic backlog purge failed")
 
     while not shutdown_event.is_set():
         try:

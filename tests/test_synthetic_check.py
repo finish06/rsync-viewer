@@ -107,12 +107,12 @@ class TestRunSyntheticCheck:
             )
 
         # POST was called with correct payload
-        post_kwargs = mock_client.post.call_args.kwargs
-        assert post_kwargs["json"]["source_name"] == "__synthetic_check"
-
-        # DELETE was called with the returned ID
-        delete_args = mock_client.delete.call_args.args
-        assert delete_args[0].endswith("/abc-123")
+        mock_client.post.assert_called_once()
+        payload = mock_client.post.call_args.kwargs["json"]
+        assert payload["source_name"] == "__synthetic_check"
+        # Cleanup no longer goes over HTTP (synthetic-hygiene AC-001): the
+        # admin-only DELETE endpoint is not called with the API key any more.
+        mock_client.delete.assert_not_called()
 
     @pytest.mark.anyio
     async def test_ac004_post_failure_returns_failing(self):
@@ -566,6 +566,13 @@ class TestSyntheticBackgroundTask:
                 "app.services.synthetic_check.run_synthetic_check",
                 side_effect=mock_run,
             ),
+            # Loop-mechanics test: skip the real /health warm-up (it polls the
+            # network for up to 60 s when nothing listens — as in CI).
+            patch(
+                "app.services.synthetic_check.wait_until_healthy",
+                new_callable=AsyncMock,
+                return_value=True,
+            ),
             patch(
                 "app.services.synthetic_check.MINIMUM_INTERVAL_SECONDS",
                 0,
@@ -603,9 +610,16 @@ class TestSyntheticBackgroundTask:
             await asyncio.sleep(0.2)
             shutdown.set()
 
-        with patch(
-            "app.services.synthetic_check.run_synthetic_check",
-            side_effect=mock_run,
+        with (
+            patch(
+                "app.services.synthetic_check.run_synthetic_check",
+                side_effect=mock_run,
+            ),
+            patch(
+                "app.services.synthetic_check.wait_until_healthy",
+                new_callable=AsyncMock,
+                return_value=True,
+            ),
         ):
             asyncio.create_task(trigger_shutdown())
             await asyncio.wait_for(

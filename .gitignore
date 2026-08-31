@@ -72,3 +72,6 @@ tests/screenshots/errors/
 # Multi-agent scratch workspace and macOS metadata
 .swarm/
 .DS_Store
+
+# Database backups (scripts/backup.py)
+backups/

@@ -7,6 +7,23 @@ and this project adheres to [Conventional Commits](https://www.conventionalcommi
 
 ## [Unreleased]
 
+## [2.22.0] - 2026-08-31
+
+### Added
+- **Backup & restore tooling**: `python -m scripts.backup` (pg_dump custom
+  format, timestamped, `--keep N` rotation) and `python -m scripts.restore`
+  (`--yes`-gated `pg_restore --clean`), with a recovery runbook at
+  `docs/backup-restore.md` (specs/backup-restore.md).
+
+### Fixed
+- The synthetic check leaked one `__synthetic_check` sync_log per run (its
+  HTTP DELETE hit an admin-only endpoint) — it now cleans up in-process, and
+  leftover synthetic rows (~50k on long-running installs) are purged at
+  monitor start and on every retention pass.
+- Restarting the app no longer fires a "synthetic check failing" webhook: the
+  monitor waits for the app's own /health before the first check
+  (specs/synthetic-hygiene.md).
+
 ## [2.21.0] - 2026-08-30
 
 ### Added
