@@ -566,6 +566,13 @@ class TestSyntheticBackgroundTask:
                 "app.services.synthetic_check.run_synthetic_check",
                 side_effect=mock_run,
             ),
+            # Loop-mechanics test: skip the real /health warm-up (it polls the
+            # network for up to 60 s when nothing listens — as in CI).
+            patch(
+                "app.services.synthetic_check.wait_until_healthy",
+                new_callable=AsyncMock,
+                return_value=True,
+            ),
             patch(
                 "app.services.synthetic_check.MINIMUM_INTERVAL_SECONDS",
                 0,
@@ -603,9 +610,16 @@ class TestSyntheticBackgroundTask:
             await asyncio.sleep(0.2)
             shutdown.set()
 
-        with patch(
-            "app.services.synthetic_check.run_synthetic_check",
-            side_effect=mock_run,
+        with (
+            patch(
+                "app.services.synthetic_check.run_synthetic_check",
+                side_effect=mock_run,
+            ),
+            patch(
+                "app.services.synthetic_check.wait_until_healthy",
+                new_callable=AsyncMock,
+                return_value=True,
+            ),
         ):
             asyncio.create_task(trigger_shutdown())
             await asyncio.wait_for(
