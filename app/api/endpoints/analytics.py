@@ -208,7 +208,13 @@ async def export_data(
     format: str = Query(..., description="Export format: csv or json"),
     start: Optional[date] = Query(None, description="Start date filter"),
     end: Optional[date] = Query(None, description="End date filter"),
-    source: Optional[str] = Query(None, description="Filter by source name"),
+    source: Optional[list[str]] = Query(
+        None,
+        description=(
+            "Filter by source name; repeat the parameter to select several "
+            "(?source=a&source=b). Omit for all sources."
+        ),
+    ),
     limit: int = Query(default=10000, ge=1, description="Max records"),
     offset: int = Query(default=0, ge=0, description="Pagination offset"),
     synthetic: str = Query(
@@ -246,7 +252,8 @@ async def export_data(
         statement = statement.where(SyncLog.source_name == SYNTHETIC_SOURCE_NAME)
 
     if synthetic != "only" and source:
-        statement = statement.where(SyncLog.source_name == source)
+        # One or many: ``?source=a&source=b`` unions the selection (AC-001).
+        statement = statement.where(col(SyncLog.source_name).in_(source))
     if start:
         start_dt = datetime(start.year, start.month, start.day, 0, 0, 0)
         statement = statement.where(SyncLog.start_time >= start_dt)
@@ -306,10 +313,14 @@ def _csv_response(records: list[ExportRecord]) -> StreamingResponse:
         writer.writerow(record.model_dump())
 
     output.seek(0)
+    # Dated filename so repeat exports do not overwrite each other. The
+    # browser honours Content-Disposition over an <a download> attribute,
+    # so the name has to come from here (specs/csv-export-ui.md AC-005).
+    filename = f"rsync-export-{date.today():%Y%m%d}.csv"
     return StreamingResponse(
         iter([output.getvalue()]),
         media_type="text/csv",
-        headers={"Content-Disposition": "attachment; filename=sync_export.csv"},
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
     )
 
 

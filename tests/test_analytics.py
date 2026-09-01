@@ -465,3 +465,75 @@ class TestExportEndpoint:
         assert response.status_code == 200
         lines = response.text.strip().split("\n")
         assert len(lines) == 1  # header only
+
+
+class TestAC001MultiSourceExport:
+    """specs/csv-export-ui.md AC-001..003 — repeated ?source= parameters."""
+
+    @pytest.fixture()
+    def seeded(self, create_sync_log):
+        from app.services.synthetic_check import SYNTHETIC_SOURCE_NAME
+
+        for name in ("movies", "tv", "photos", SYNTHETIC_SOURCE_NAME):
+            create_sync_log(source_name=name)
+        return True
+
+    async def _rows(self, client, query):
+        response = await client.get(f"/api/v1/analytics/export?format=csv&{query}")
+        assert response.status_code == 200
+        lines = [line for line in response.text.splitlines() if line.strip()]
+        return [line.split(",")[0] for line in lines[1:]]
+
+    @pytest.mark.anyio
+    async def test_ac001_repeated_source_params_union(self, client, seeded):
+        names = await self._rows(client, "source=movies&source=tv")
+        assert set(names) == {"movies", "tv"}
+
+    @pytest.mark.anyio
+    async def test_ac001_single_source_unchanged(self, client, seeded):
+        assert set(await self._rows(client, "source=movies")) == {"movies"}
+
+    @pytest.mark.anyio
+    async def test_ac001_no_source_exports_all_but_synthetic(self, client, seeded):
+        from app.services.synthetic_check import SYNTHETIC_SOURCE_NAME
+
+        names = await self._rows(client, "")
+        assert {"movies", "tv", "photos"} <= set(names)
+        assert SYNTHETIC_SOURCE_NAME not in names
+
+    @pytest.mark.anyio
+    async def test_ac002_synthetic_hidden_even_when_selected(self, client, seeded):
+        from app.services.synthetic_check import SYNTHETIC_SOURCE_NAME
+
+        names = await self._rows(
+            client, f"source=movies&source={SYNTHETIC_SOURCE_NAME}&synthetic=hide"
+        )
+        assert set(names) == {"movies"}
+
+    @pytest.mark.anyio
+    async def test_ac002_synthetic_show_includes_it(self, client, seeded):
+        from app.services.synthetic_check import SYNTHETIC_SOURCE_NAME
+
+        names = await self._rows(
+            client, f"source=movies&source={SYNTHETIC_SOURCE_NAME}&synthetic=show"
+        )
+        assert set(names) == {"movies", SYNTHETIC_SOURCE_NAME}
+
+    @pytest.mark.anyio
+    async def test_ac001_unknown_source_is_not_an_error(self, client, seeded):
+        assert await self._rows(client, "source=nope") == []
+
+
+class TestAC005ExportFilename:
+    """AC-005: the server names the file (Content-Disposition beats <a download>)."""
+
+    @pytest.mark.anyio
+    async def test_ac005_csv_filename_is_dated(self, client):
+        from datetime import date
+
+        response = await client.get("/api/v1/analytics/export?format=csv")
+        assert response.status_code == 200
+        expected = f"rsync-export-{date.today():%Y%m%d}.csv"
+        assert response.headers["content-disposition"] == (
+            f"attachment; filename={expected}"
+        )
