@@ -7,6 +7,15 @@ and this project adheres to [Conventional Commits](https://www.conventionalcommi
 
 ## [Unreleased]
 
+## [2.23.0] - 2026-08-31
+
+### Added
+- **CSV export from the UI**: an Export panel on the Transfers page with
+  source selection (all or a subset), an include-synthetic toggle, a date
+  range prefilled from the current filters, and CSV/JSON output. The export
+  API now accepts repeated `source` parameters
+  (specs/csv-export-ui.md).
+
 ## [2.22.0] - 2026-08-31
 
 ### Added

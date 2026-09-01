@@ -13,6 +13,7 @@ import {
   type RangeKey,
   type TransferFilters,
 } from "./filters";
+import { ExportPanel } from "./ExportPanel";
 import { isFailed, SyncRow } from "./SyncRow";
 
 interface SourceGroup {
@@ -69,7 +70,9 @@ export function TransfersPage() {
     setSearchParams(filtersToSearch(next), { replace: true });
 
   const sources = useSources();
-  const query = useInfiniteSyncLogs(filtersToParams(filters));
+  const [exportOpen, setExportOpen] = useState(false);
+  const params = filtersToParams(filters);
+  const query = useInfiniteSyncLogs(params);
   const items = useMemo(() => {
     const all = query.data?.pages.flatMap((p) => p.items) ?? [];
     return all.filter(
@@ -174,11 +177,28 @@ export function TransfersPage() {
           />
           dry runs
         </label>
+        <div className="relative ml-auto">
+          <button
+            type="button"
+            onClick={() => setExportOpen((v) => !v)}
+            aria-expanded={exportOpen}
+            className="rounded border border-border px-2 py-1 text-muted hover:text-text"
+          >
+            Export
+          </button>
+          {exportOpen && (
+            <ExportPanel
+              from={params.start_date}
+              to={params.end_date}
+              onClose={() => setExportOpen(false)}
+            />
+          )}
+        </div>
         {searchParams.toString() !== "" && (
           <button
             type="button"
             onClick={() => setFilters(DEFAULT_FILTERS)}
-            className="ml-auto text-xs text-primary hover:underline"
+            className="text-xs text-primary hover:underline"
           >
             Clear filters
           </button>
